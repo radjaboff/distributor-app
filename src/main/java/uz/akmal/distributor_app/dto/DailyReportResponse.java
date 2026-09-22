@@ -17,6 +17,8 @@ public class DailyReportResponse {
     private BigDecimal dailyProfit;
     private Map<PaymentType, BigDecimal> revenueByType;
     private BigDecimal totalDebtAllShops;
+    private java.math.BigDecimal totalStockInCost;
+    private List<StockInSummary> stockIns;
 
     @Getter
     @Setter
@@ -31,5 +33,14 @@ public class DailyReportResponse {
     public static class PaymentSummary {
         private String shopName;
         private BigDecimal amount;
+    }
+
+
+    @Getter
+    @Setter
+    public static class StockInSummary {
+        private String productName;
+        private Integer packageCount;
+        private java.math.BigDecimal totalCost;
     }
 }

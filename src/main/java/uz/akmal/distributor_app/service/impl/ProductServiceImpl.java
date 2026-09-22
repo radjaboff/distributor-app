@@ -28,7 +28,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductResponse> getAll() {
-        return productRepository.findAll().stream()
+        return productRepository.findByIsDeletedFalse().stream()
                 .map(ProductMapper::toResponse)
                 .toList();
     }
@@ -53,7 +53,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public void delete(Long id) {
-        productRepository.deleteById(id);
+        Product existing = findEntityById(id);
+        existing.setIsDeleted(true);
+        productRepository.save(existing);
     }
 
     private Product findEntityById(Long id) {

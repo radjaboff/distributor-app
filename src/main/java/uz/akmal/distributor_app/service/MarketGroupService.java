@@ -9,4 +9,5 @@ public interface MarketGroupService {
     List<MarketGroupResponse> getAll();
     MarketGroupResponse getById(Long id);
     void delete(Long id);
+    MarketGroupResponse update(Long id, MarketGroupRequest request);
 }

@@ -21,7 +21,7 @@ public class Shop extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Do'kon nomi bo'sh bo'lishi mumkin emas")
+
     @Column(nullable = false)
     private String name;
 
@@ -33,8 +33,12 @@ public class Shop extends BaseEntity{
     @Column(name = "current_debt", precision = 15, scale = 2)
     private BigDecimal currentDebt = BigDecimal.ZERO;
 
-    @NotNull(message = "Toifa (MarketGroup) ko'rsatilishi shart")
+
     @ManyToOne
     @JoinColumn(name = "market_group_id", nullable = false)
     private MarketGroup marketGroup;
+
+
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 }

@@ -19,7 +19,10 @@ public class MarketGroup extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Toifa nomi bo'sh bo'lishi mumkin emas")
+
     @Column(nullable = false)
     private String name;
+
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 }

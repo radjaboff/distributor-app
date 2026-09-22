@@ -36,4 +36,9 @@ public class MarketGroupController {
     public void delete(@PathVariable Long id) {
         marketGroupService.delete(id);
     }
+
+    @PutMapping("/{id}")
+    public MarketGroupResponse update(@PathVariable Long id, @Valid @RequestBody MarketGroupRequest request) {
+        return marketGroupService.update(id, request);
+    }
 }

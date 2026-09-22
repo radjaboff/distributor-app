@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kirish — Bozor Distributor</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { justify-content: center; align-items: center; padding: 24px; }
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+            background: var(--color-paper);
+            border: 1px solid var(--color-line);
+            border-radius: 20px;
+            padding: 36px 26px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3B82F6, #10B981);
+        }
+        .login-logo {
+            width: 68px; height: 68px; border-radius: 20px;
+            background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px auto;
+            color: #FFFFFF;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .login-title {
+            text-align: center;
+            font-size: 22px; font-weight: 700; color: #FFFFFF;
+            letter-spacing: -0.4px;
+            margin-bottom: 6px;
+        }
+        .login-subtitle {
+            text-align: center;
+            font-size: 13px; color: var(--color-ink-dim);
+            margin-bottom: 26px;
+            line-height: 1.4;
+        }
+        .login-error {
+            background: var(--color-debt-bg);
+            color: var(--color-debt);
+            border: 1px solid rgba(244,63,94,0.3);
+            border-radius: var(--radius-sm);
+            padding: 11px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+<div class="login-card">
+    <div class="login-logo">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+    </div>
+    <div class="login-title">Bozor Distributor</div>
+    <div class="login-subtitle">Ulgurji savdo va hisob-kitob tizimi</div>
+    <div id="errorBox" class="login-error" style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span>Login yoki parol noto'g'ri</span>
+    </div>
+    <form method="POST" action="/login">
+        <div class="form-group">
+            <label class="form-label">Login</label>
+            <input type="text" class="form-input" name="username" placeholder="Loginni kiriting" required autofocus>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Parol</label>
+            <input type="password" class="form-input" name="password" placeholder="Parolni kiriting" required>
+        </div>
+        <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top: 6px;">
+            <input type="checkbox" name="remember-me" id="rememberMe" checked style="width: 17px; height: 17px; accent-color: var(--color-accent); cursor: pointer;">
+            <label for="rememberMe" style="color:var(--color-ink-dim); font-size:13.5px; cursor: pointer; user-select: none;">Meni eslab qol</label>
+        </div>
+        <div class="form-group" style="margin-top: 22px;">
+            <button type="submit" class="btn btn--primary btn--full" style="padding: 15px; font-size: 15.5px; font-weight: 600;">Kirish</button>
+        </div>
+    </form>
+</div>
+<script>
+    if (window.location.search.includes('error')) {
+        document.getElementById('errorBox').style.display = 'flex';
+    }
+</script>
+</body>
+</html>

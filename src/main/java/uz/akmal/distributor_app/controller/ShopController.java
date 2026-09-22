@@ -1,10 +1,14 @@
 package uz.akmal.distributor_app.controller;
 
+import uz.akmal.distributor_app.dto.OverdueShopResponse;
+import uz.akmal.distributor_app.dto.ShopLedgerResponse;
 import uz.akmal.distributor_app.dto.ShopRequest;
 import uz.akmal.distributor_app.dto.ShopResponse;
 import uz.akmal.distributor_app.service.ShopService;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -43,5 +47,23 @@ public class ShopController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         shopService.delete(id);
+    }
+
+    @GetMapping("/{id}/debt")
+    public BigDecimal getDebt(@PathVariable Long id) {
+        return shopService.getDebt(id);
+    }
+
+
+    @GetMapping("/{id}/ledger")
+    public ShopLedgerResponse getLedger(@PathVariable Long id) {
+        return shopService.getLedger(id);
+    }
+
+
+
+    @GetMapping("/overdue")
+    public List<OverdueShopResponse> getOverdue(@RequestParam(defaultValue = "14") int days) {
+        return shopService.getOverdueShops(days);
     }
 }

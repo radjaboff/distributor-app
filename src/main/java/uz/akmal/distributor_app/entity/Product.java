@@ -22,29 +22,33 @@ public class Product extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Mahsulot nomi bo'sh bo'lishi mumkin emas")
+
     @Column(nullable = false)
     private String name;
 
     private String unit;
 
-    @NotBlank(message = "Qadoq turi ko'rsatilishi shart")
+
     @Column(name = "package_name", nullable = false)
     private String packageName;
 
     @Column(name = "units_per_package", precision = 15, scale = 3)
     private BigDecimal unitsPerPackage;
 
-    @NotNull(message = "Tannarx ko'rsatilishi shart")
+
     @Positive(message = "Tannarx musbat son bo'lishi kerak")
     @Column(name = "purchase_price", precision = 15, scale = 2, nullable = false)
     private BigDecimal purchasePrice;
 
-    @NotNull(message = "Sotish narxi ko'rsatilishi shart")
-    @Positive(message = "Sotish narxi musbat son bo'lishi kerak")
+
+
     @Column(name = "sell_price", precision = 15, scale = 2, nullable = false)
     private BigDecimal sellPrice;
 
     @Column(name = "stock_quantity")
     private Integer stockQuantity = 0;
+
+
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 }

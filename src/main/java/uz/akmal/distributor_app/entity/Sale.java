@@ -30,6 +30,9 @@ public class Sale extends BaseEntity{
     @Column(nullable = false)
     private LocalDateTime date = LocalDateTime.now();
 
+    @Column(name = "initial_paid_amount", precision = 15, scale = 2)
+    private BigDecimal initialPaidAmount = BigDecimal.ZERO;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_type", nullable = false)
     private PaymentType paymentType;
@@ -39,4 +42,6 @@ public class Sale extends BaseEntity{
 
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleItem> items = new ArrayList<>();
+
+
 }

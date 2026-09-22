@@ -1,5 +1,6 @@
 package uz.akmal.distributor_app.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import uz.akmal.distributor_app.dto.*;
 import uz.akmal.distributor_app.entity.*;
 import uz.akmal.distributor_app.enums.PaymentMethod;
@@ -10,11 +11,14 @@ import uz.akmal.distributor_app.repository.*;
 import uz.akmal.distributor_app.service.SaleService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import uz.akmal.distributor_app.exception.InvalidPaymentException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
+@Slf4j
 public class SaleServiceImpl implements SaleService {
 
     private final SaleRepository saleRepository;
@@ -39,6 +43,8 @@ public class SaleServiceImpl implements SaleService {
         Shop shop = shopRepository.findById(request.getShopId())
                 .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi"));
 
+        log.info("Yangi sotuv boshlandi: shopId={}", request.getShopId());
+
         Sale sale = new Sale();
         sale.setShop(shop);
         sale.setDate(LocalDateTime.now());
@@ -51,6 +57,8 @@ public class SaleServiceImpl implements SaleService {
 
             int currentStock = (product.getStockQuantity() != null) ? product.getStockQuantity() : 0;
             if (currentStock < itemRequest.getPackageCount()) {
+                log.warn("Omborda yetarli mahsulot yo'q: productId={}, so'ralgan={}, mavjud={}",
+                        product.getId(), itemRequest.getPackageCount(), currentStock);
                 throw new InsufficientStockException("Omborda yetarli mahsulot yo'q: " + product.getName());
             }
 
@@ -72,7 +80,14 @@ public class SaleServiceImpl implements SaleService {
 
         sale.setTotalAmount(totalAmount);
 
+
         BigDecimal paidAmount = (request.getInitialPaidAmount() == null) ? BigDecimal.ZERO : request.getInitialPaidAmount();
+
+        sale.setInitialPaidAmount(paidAmount);
+
+        if (paidAmount.compareTo(BigDecimal.ZERO) > 0 && request.getInitialPaymentMethod() == null) {
+            throw new InvalidPaymentException("To'lov summasi kiritilgan bo'lsa, to'lov usuli (initialPaymentMethod) ham ko'rsatilishi shart");
+        }
 
         if (paidAmount.compareTo(totalAmount) >= 0) {
             sale.setPaymentType(
@@ -93,9 +108,13 @@ public class SaleServiceImpl implements SaleService {
             paymentRepository.save(payment);
         }
 
+        BigDecimal currentDebt = (shop.getCurrentDebt() != null) ? shop.getCurrentDebt() : BigDecimal.ZERO;
         BigDecimal debtIncrease = totalAmount.subtract(paidAmount);
-        shop.setCurrentDebt(shop.getCurrentDebt().add(debtIncrease));
+        shop.setCurrentDebt(currentDebt.add(debtIncrease));
         shopRepository.save(shop);
+
+        log.info("Sotuv muvaffaqiyatli yaratildi: saleId={}, shopId={}, totalAmount={}, paymentType={}",
+                savedSale.getId(), shop.getId(), totalAmount, savedSale.getPaymentType());
 
         return SaleMapper.toResponse(savedSale);
     }
@@ -108,9 +127,8 @@ public class SaleServiceImpl implements SaleService {
     }
 
     @Override
-    public java.util.List<SaleResponse> getByShop(Long shopId) {
-        return saleRepository.findAll().stream()
-                .filter(s -> s.getShop().getId().equals(shopId))
+    public List<SaleResponse> getByShop(Long shopId) {
+        return saleRepository.findByShopId(shopId).stream()
                 .map(SaleMapper::toResponse)
                 .toList();
     }

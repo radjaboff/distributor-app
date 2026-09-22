@@ -23,17 +23,16 @@ public class Payment extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "Do'kon ko'rsatilishi shart")
+
     @ManyToOne
     @JoinColumn(name = "shop_id", nullable = false)
     private Shop shop;
 
-    @NotNull(message = "Summa ko'rsatilishi shart")
-    @Positive(message = "Summa musbat son bo'lishi kerak")
+
     @Column(precision = 15, scale = 2, nullable = false)
     private BigDecimal amount;
 
-    @NotNull(message = "To'lov usuli ko'rsatilishi shart")
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentMethod method;

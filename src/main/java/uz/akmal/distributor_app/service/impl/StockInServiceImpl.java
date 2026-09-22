@@ -1,5 +1,6 @@
 package uz.akmal.distributor_app.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import uz.akmal.distributor_app.dto.StockInMapper;
 import uz.akmal.distributor_app.dto.StockInRequest;
 import uz.akmal.distributor_app.dto.StockInResponse;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Slf4j
 public class StockInServiceImpl implements StockInService {
 
     private final StockInRepository stockInRepository;
@@ -38,7 +40,12 @@ public class StockInServiceImpl implements StockInService {
         StockIn stockIn = StockInMapper.toEntity(request, product);
         stockIn.setDate(LocalDateTime.now());
 
-        return StockInMapper.toResponse(stockInRepository.save(stockIn));
+        StockIn saved = stockInRepository.save(stockIn);
+
+        log.info("Bazadan kirim qilindi: productId={}, packageCount={}, yangiQoldiq={}",
+                product.getId(), request.getPackageCount(), product.getStockQuantity());
+
+        return StockInMapper.toResponse(saved);
     }
 
     @Override
@@ -50,8 +57,7 @@ public class StockInServiceImpl implements StockInService {
 
     @Override
     public List<StockInResponse> getByProduct(Long productId) {
-        return stockInRepository.findAll().stream()
-                .filter(s -> s.getProduct().getId().equals(productId))
+        return stockInRepository.findByProductId(productId).stream()
                 .map(StockInMapper::toResponse)
                 .toList();
     }

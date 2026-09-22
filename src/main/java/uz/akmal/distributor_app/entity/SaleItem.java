@@ -27,13 +27,12 @@ public class SaleItem extends BaseEntity{
     @JsonIgnore
     private Sale sale;
 
-    @NotNull(message = "Mahsulot ko'rsatilishi shart")
+
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @NotNull(message = "Paket soni ko'rsatilishi shart")
-    @Positive(message = "Paket soni musbat son bo'lishi kerak")
+
     @Column(name = "package_count", nullable = false)
     private Integer packageCount;
 

@@ -27,7 +27,7 @@ public class MarketGroupServiceImpl implements MarketGroupService {
 
     @Override
     public List<MarketGroupResponse> getAll() {
-        return marketGroupRepository.findAll().stream()
+        return marketGroupRepository.findByIsDeletedFalse().stream()
                 .map(MarketGroupMapper::toResponse)
                 .toList();
     }
@@ -39,11 +39,20 @@ public class MarketGroupServiceImpl implements MarketGroupService {
 
     @Override
     public void delete(Long id) {
-        marketGroupRepository.deleteById(id);
+        MarketGroup existing = findEntityById(id);
+        existing.setIsDeleted(true);
+        marketGroupRepository.save(existing);
     }
 
     private MarketGroup findEntityById(Long id) {
         return marketGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Toifa topilmadi, id: " + id));
+    }
+
+    @Override
+    public MarketGroupResponse update(Long id, MarketGroupRequest request) {
+        MarketGroup existing = findEntityById(id);
+        existing.setName(request.getName());
+        return MarketGroupMapper.toResponse(marketGroupRepository.save(existing));
     }
 }
