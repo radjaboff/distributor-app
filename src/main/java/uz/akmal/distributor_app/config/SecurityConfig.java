@@ -66,13 +66,21 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                .exceptionHandling(ex -> ex
-                        .defaultAuthenticationEntryPointFor(
-                                new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED),
-                                request -> request.getRequestURI() != null && request.getRequestURI().startsWith("/api/")
-                        )
-                        .authenticationEntryPoint(new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/login.html"))
-                )
+                .exceptionHandling(ex -> {
+                    org.springframework.security.web.AuthenticationEntryPoint loginEntryPoint =
+                            new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/login.html");
+                    org.springframework.security.web.AuthenticationEntryPoint apiEntryPoint =
+                            new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED);
+
+                    ex.authenticationEntryPoint((request, response, authException) -> {
+                        String uri = request.getRequestURI();
+                        if (uri != null && uri.startsWith("/api/")) {
+                            apiEntryPoint.commence(request, response, authException);
+                        } else {
+                            loginEntryPoint.commence(request, response, authException);
+                        }
+                    });
+                })
                 .rememberMe(remember -> remember
                         .key(rememberMeKey)
                         .tokenValiditySeconds(60 * 60 * 24 * 30) // 30 kun
