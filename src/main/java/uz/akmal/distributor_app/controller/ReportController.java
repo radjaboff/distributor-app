@@ -41,12 +41,6 @@ public class ReportController {
         return reportService.getMonthlyReport(month);
     }
 
-    @GetMapping("/dashboard/summary")
-    public DashboardSummaryResponse getDashboardSummary() {
-        return reportService.getDashboardSummary();
-    }
-
-
     @GetMapping("/range")
     public RangeReportResponse getRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,

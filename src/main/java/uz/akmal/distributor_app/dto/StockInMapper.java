@@ -8,6 +8,7 @@ public class StockInMapper {
     public static StockIn toEntity(StockInRequest request, Product product) {
         StockIn stockIn = new StockIn();
         stockIn.setProduct(product);
+        stockIn.setProductName(product != null ? product.getName() : null);
         stockIn.setPackageCount(request.getPackageCount());
         stockIn.setTotalCost(request.getTotalCost());
         return stockIn;
@@ -16,8 +17,8 @@ public class StockInMapper {
     public static StockInResponse toResponse(StockIn stockIn) {
         StockInResponse response = new StockInResponse();
         response.setId(stockIn.getId());
-        response.setProductId(stockIn.getProduct().getId());
-        response.setProductName(stockIn.getProduct().getName());
+        response.setProductId(stockIn.getProduct() != null ? stockIn.getProduct().getId() : null);
+        response.setProductName(stockIn.getEffectiveProductName());
         response.setPackageCount(stockIn.getPackageCount());
         response.setTotalCost(stockIn.getTotalCost());
         response.setDate(stockIn.getDate());

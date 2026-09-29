@@ -9,11 +9,18 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "stock_ins")
+@Table(
+    name = "stock_ins",
+    indexes = {
+        @Index(name = "idx_stock_ins_product_id", columnList = "product_id"),
+        @Index(name = "idx_stock_ins_date", columnList = "date")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 public class StockIn extends BaseEntity{
 
     @Id
@@ -33,6 +40,16 @@ public class StockIn extends BaseEntity{
     @Column(name = "total_cost", precision = 15, scale = 2, nullable = false)
     private BigDecimal totalCost;
 
+    @Column(name = "product_name")
+    private String productName;
+
     @Column(nullable = false)
     private LocalDateTime date = LocalDateTime.now();
+
+    public String getEffectiveProductName() {
+        if (productName != null && !productName.trim().isEmpty()) {
+            return productName;
+        }
+        return product != null ? product.getName() : "";
+    }
 }

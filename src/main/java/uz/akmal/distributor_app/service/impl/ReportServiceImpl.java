@@ -46,8 +46,12 @@ public class ReportServiceImpl implements ReportService {
         LocalDateTime start = month.atDay(1).atStartOfDay();
         LocalDateTime end = month.plusMonths(1).atDay(1).atStartOfDay();
 
-        List<Sale> sales = saleRepository.findByDateBetween(start, end);
-        List<Payment> payments = paymentRepository.findByDateBetween(start, end);
+        List<Sale> sales = saleRepository.findByDateBetweenWithDetails(start, end).stream()
+                .filter(s -> !Boolean.TRUE.equals(s.getIsCancelled()))
+                .toList();
+        List<Payment> payments = paymentRepository.findByDateBetweenWithShop(start, end).stream()
+                .filter(p -> !Boolean.TRUE.equals(p.getIsCancelled()))
+                .toList();
 
         MonthlyReportResponse response = new MonthlyReportResponse();
         response.setMonth(month);
@@ -61,12 +65,13 @@ public class ReportServiceImpl implements ReportService {
             totalSales = totalSales.add(sale.getTotalAmount());
 
             for (SaleItem item : sale.getItems()) {
-                BigDecimal itemProfit = item.getPriceAtSale()
-                        .subtract(item.getCostAtSale())
-                        .multiply(BigDecimal.valueOf(item.getPackageCount()));
+                BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
+                BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
+                int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
+                BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
                 totalProfit = totalProfit.add(itemProfit);
 
-                String productName = item.getProduct().getName();
+                String productName = item.getEffectiveProductName();
                 productVolumeMap.merge(productName, item.getPackageCount(), Integer::sum);
             }
         }
@@ -104,7 +109,7 @@ public class ReportServiceImpl implements ReportService {
                 .toList();
         response.setProductSalesVolume(productVolumes);
 
-        List<StockIn> stockIns = stockInRepository.findByDateBetween(start, end);
+        List<StockIn> stockIns = stockInRepository.findByDateBetweenWithProduct(start, end);
 
         BigDecimal totalStockInCost = stockIns.stream()
                 .map(StockIn::getTotalCost)
@@ -113,7 +118,7 @@ public class ReportServiceImpl implements ReportService {
 
         Map<String, Integer> stockInVolumeMap = new java.util.HashMap<>();
         for (StockIn stockIn : stockIns) {
-            stockInVolumeMap.merge(stockIn.getProduct().getName(), stockIn.getPackageCount(), Integer::sum);
+            stockInVolumeMap.merge(stockIn.getEffectiveProductName(), stockIn.getPackageCount(), Integer::sum);
         }
         List<MonthlyReportResponse.StockInVolume> stockInVolumes = stockInVolumeMap.entrySet().stream()
                 .map(entry -> {
@@ -127,12 +132,13 @@ public class ReportServiceImpl implements ReportService {
         response.setStockInVolume(stockInVolumes);
 
         // 3) TOP qarzdor do'konlar (eng ko'p qarzi bor 5 tasi)
-        List<MonthlyReportResponse.TopShop> topShops = shopRepository.findAll().stream()
+        List<MonthlyReportResponse.TopShop> topShops = shopRepository.findByIsDeletedFalse().stream()
+                .filter(s -> s.getCurrentDebt() != null && s.getCurrentDebt().compareTo(BigDecimal.ZERO) > 0)
                 .sorted((a, b) -> {
-            BigDecimal debtA = a.getCurrentDebt() != null ? a.getCurrentDebt() : BigDecimal.ZERO;
-            BigDecimal debtB = b.getCurrentDebt() != null ? b.getCurrentDebt() : BigDecimal.ZERO;
-            return debtB.compareTo(debtA);
-        }).limit(5)
+                    BigDecimal debtA = a.getCurrentDebt() != null ? a.getCurrentDebt() : BigDecimal.ZERO;
+                    BigDecimal debtB = b.getCurrentDebt() != null ? b.getCurrentDebt() : BigDecimal.ZERO;
+                    return debtB.compareTo(debtA);
+                }).limit(5)
                 .map(shop -> {
                     MonthlyReportResponse.TopShop ts = new MonthlyReportResponse.TopShop();
                     ts.setShopName(shop.getName());
@@ -151,9 +157,13 @@ public class ReportServiceImpl implements ReportService {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.plusDays(1).atStartOfDay();
 
-        List<Sale> sales = saleRepository.findByDateBetween(start, end);
-        List<Payment> payments = paymentRepository.findByDateBetween(start, end);
-        List<StockIn> stockIns = stockInRepository.findByDateBetween(start, end);
+        List<Sale> sales = saleRepository.findByDateBetweenWithDetails(start, end).stream()
+                .filter(s -> !Boolean.TRUE.equals(s.getIsCancelled()))
+                .toList();
+        List<Payment> payments = paymentRepository.findByDateBetweenWithShop(start, end).stream()
+                .filter(p -> !Boolean.TRUE.equals(p.getIsCancelled()))
+                .toList();
+        List<StockIn> stockIns = stockInRepository.findByDateBetweenWithProduct(start, end);
 
         DailyReportResponse response = new DailyReportResponse();
         response.setDate(date);
@@ -164,6 +174,7 @@ public class ReportServiceImpl implements ReportService {
             s.setShopName(sale.getShop().getName());
             s.setAmount(sale.getTotalAmount());
             s.setPaymentType(sale.getPaymentType());
+            s.setCreatedBy(sale.getCreatedBy() != null && !sale.getCreatedBy().trim().isEmpty() ? sale.getCreatedBy() : "admin");
             return s;
         }).toList());
 
@@ -172,6 +183,7 @@ public class ReportServiceImpl implements ReportService {
             DailyReportResponse.PaymentSummary p = new DailyReportResponse.PaymentSummary();
             p.setShopName(payment.getShop().getName());
             p.setAmount(payment.getAmount());
+            p.setCreatedBy(payment.getCreatedBy() != null && !payment.getCreatedBy().trim().isEmpty() ? payment.getCreatedBy() : "admin");
             return p;
         }).toList());
 
@@ -179,9 +191,10 @@ public class ReportServiceImpl implements ReportService {
         BigDecimal profit = BigDecimal.ZERO;
         for (Sale sale : sales) {
             for (SaleItem item : sale.getItems()) {
-                BigDecimal itemProfit = item.getPriceAtSale()
-                        .subtract(item.getCostAtSale())
-                        .multiply(BigDecimal.valueOf(item.getPackageCount()));
+                BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
+                BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
+                int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
+                BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
                 profit = profit.add(itemProfit);
             }
         }
@@ -207,17 +220,19 @@ public class ReportServiceImpl implements ReportService {
         response.setRevenueByType(revenueByType);
 
         // 5) Barcha do'konlarning umumiy joriy qarzi
-        BigDecimal totalDebt = shopRepository.findAll().stream()
-                .map(shop -> shop.getCurrentDebt() != null ? shop.getCurrentDebt() : BigDecimal.ZERO)
+        BigDecimal totalDebt = shopRepository.findByIsDeletedFalse().stream()
+                .filter(shop -> shop.getCurrentDebt() != null && shop.getCurrentDebt().compareTo(BigDecimal.ZERO) > 0)
+                .map(Shop::getCurrentDebt)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         response.setTotalDebtAllShops(totalDebt);
 
         // 6) Bazadan kirimlar (StockIn) ro'yxati va umumiy xarajat
         response.setStockIns(stockIns.stream().map(stockIn -> {
             DailyReportResponse.StockInSummary s = new DailyReportResponse.StockInSummary();
-            s.setProductName(stockIn.getProduct().getName());
+            s.setProductName(stockIn.getEffectiveProductName());
             s.setPackageCount(stockIn.getPackageCount());
             s.setTotalCost(stockIn.getTotalCost());
+            s.setCreatedBy(stockIn.getCreatedBy() != null && !stockIn.getCreatedBy().trim().isEmpty() ? stockIn.getCreatedBy() : "admin");
             return s;
         }).toList());
 
@@ -235,25 +250,33 @@ public class ReportServiceImpl implements ReportService {
         DashboardSummaryResponse response = new DashboardSummaryResponse();
 
         // 1) Barcha do'konlarning umumiy joriy qarzi
-        BigDecimal totalDebt = shopRepository.findAll().stream()
-                .map(shop -> shop.getCurrentDebt() != null ? shop.getCurrentDebt() : BigDecimal.ZERO)
+        BigDecimal totalDebt = shopRepository.findByIsDeletedFalse().stream()
+                .filter(shop -> shop.getCurrentDebt() != null && shop.getCurrentDebt().compareTo(BigDecimal.ZERO) > 0)
+                .map(Shop::getCurrentDebt)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         response.setTotalDebtAllShops(totalDebt);
 
         // 2) Bugungi sotuvlar va foyda
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
         LocalDateTime todayEnd = LocalDate.now().plusDays(1).atStartOfDay();
-        List<Sale> todaysSales = saleRepository.findByDateBetween(todayStart, todayEnd);
+        List<Sale> todaysSales = saleRepository.findByDateBetweenWithDetails(todayStart, todayEnd).stream()
+                .filter(s -> !Boolean.TRUE.equals(s.getIsCancelled()))
+                .toList();
 
         BigDecimal salesTotal = BigDecimal.ZERO;
         BigDecimal profit = BigDecimal.ZERO;
         for (Sale sale : todaysSales) {
-            salesTotal = salesTotal.add(sale.getTotalAmount());
-            for (SaleItem item : sale.getItems()) {
-                BigDecimal itemProfit = item.getPriceAtSale()
-                        .subtract(item.getCostAtSale())
-                        .multiply(BigDecimal.valueOf(item.getPackageCount()));
-                profit = profit.add(itemProfit);
+            if (sale.getTotalAmount() != null) {
+                salesTotal = salesTotal.add(sale.getTotalAmount());
+            }
+            if (sale.getItems() != null) {
+                for (SaleItem item : sale.getItems()) {
+                    BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
+                    BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
+                    int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
+                    BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
+                    profit = profit.add(itemProfit);
+                }
             }
         }
         response.setTodaysSalesTotal(salesTotal);
@@ -261,7 +284,7 @@ public class ReportServiceImpl implements ReportService {
 
         // 3) Kam qolgan mahsulotlar (5 tadan kam paket qolganlar)
         final int LOW_STOCK_THRESHOLD = 5;
-        List<DashboardSummaryResponse.LowStockProduct> lowStock = productRepository.findAll().stream()
+        List<DashboardSummaryResponse.LowStockProduct> lowStock = productRepository.findByIsDeletedFalse().stream()
                 .filter(p -> p.getStockQuantity() != null && p.getStockQuantity() < LOW_STOCK_THRESHOLD)
                 .map(p -> {
                     DashboardSummaryResponse.LowStockProduct lp = new DashboardSummaryResponse.LowStockProduct();
@@ -281,8 +304,12 @@ public class ReportServiceImpl implements ReportService {
         LocalDateTime startDt = start.atStartOfDay();
         LocalDateTime endDt = end.plusDays(1).atStartOfDay();
 
-        List<Sale> sales = saleRepository.findByDateBetween(startDt, endDt);
-        List<Payment> payments = paymentRepository.findByDateBetween(startDt, endDt);
+        List<Sale> sales = saleRepository.findByDateBetweenWithDetails(startDt, endDt).stream()
+                .filter(s -> !Boolean.TRUE.equals(s.getIsCancelled()))
+                .toList();
+        List<Payment> payments = paymentRepository.findByDateBetweenWithShop(startDt, endDt).stream()
+                .filter(p -> !Boolean.TRUE.equals(p.getIsCancelled()))
+                .toList();
 
         RangeReportResponse response = new RangeReportResponse();
         response.setStartDate(start);
@@ -296,12 +323,13 @@ public class ReportServiceImpl implements ReportService {
             totalSales = totalSales.add(sale.getTotalAmount());
 
             for (SaleItem item : sale.getItems()) {
-                BigDecimal itemProfit = item.getPriceAtSale()
-                        .subtract(item.getCostAtSale())
-                        .multiply(BigDecimal.valueOf(item.getPackageCount()));
+                BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
+                BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
+                int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
+                BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
                 totalProfit = totalProfit.add(itemProfit);
 
-                productVolumeMap.merge(item.getProduct().getName(), item.getPackageCount(), Integer::sum);
+                productVolumeMap.merge(item.getEffectiveProductName(), item.getPackageCount(), Integer::sum);
             }
         }
         response.setTotalSalesAmount(totalSales);
@@ -337,7 +365,7 @@ public class ReportServiceImpl implements ReportService {
                 .toList();
         response.setProductSalesVolume(productVolumes);
 
-        List<StockIn> stockIns = stockInRepository.findByDateBetween(startDt, endDt);
+        List<StockIn> stockIns = stockInRepository.findByDateBetweenWithProduct(startDt, endDt);
 
         BigDecimal totalStockInCost = stockIns.stream()
                 .map(StockIn::getTotalCost)
@@ -346,7 +374,7 @@ public class ReportServiceImpl implements ReportService {
 
         Map<String, Integer> stockInVolumeMap = new java.util.HashMap<>();
         for (StockIn stockIn : stockIns) {
-            stockInVolumeMap.merge(stockIn.getProduct().getName(), stockIn.getPackageCount(), Integer::sum);
+            stockInVolumeMap.merge(stockIn.getEffectiveProductName(), stockIn.getPackageCount(), Integer::sum);
         }
         List<MonthlyReportResponse.StockInVolume> stockInVolumes = stockInVolumeMap.entrySet().stream()
                 .map(entry -> {
@@ -359,7 +387,7 @@ public class ReportServiceImpl implements ReportService {
                 .toList();
         response.setStockInVolume(stockInVolumes);
 
-        List<MonthlyReportResponse.TopShop> topShops = shopRepository.findAll().stream()
+        List<MonthlyReportResponse.TopShop> topShops = shopRepository.findByIsDeletedFalse().stream()
                 .filter(s -> s.getCurrentDebt() != null && s.getCurrentDebt().compareTo(BigDecimal.ZERO) > 0)
                 .sorted((a, b) -> b.getCurrentDebt().compareTo(a.getCurrentDebt()))
                 .limit(5)

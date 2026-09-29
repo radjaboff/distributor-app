@@ -40,20 +40,36 @@ public class SaleServiceImpl implements SaleService {
     @Transactional
     public SaleResponse createSale(SaleRequest request) {
 
-        Shop shop = shopRepository.findById(request.getShopId())
-                .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi"));
+        Shop shop = shopRepository.findByIdWithLock(request.getShopId())
+                .filter(s -> !Boolean.TRUE.equals(s.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi yoki o'chirilgan"));
 
-        log.info("Yangi sotuv boshlandi: shopId={}", request.getShopId());
+        log.info("Yangi sotuv boshlandi (qulflangan): shopId={}", request.getShopId());
+
+        // Deadlock oldini olish uchun mahsulot ID larni tartiblangan holda qulflaymiz
+        java.util.List<Long> productIds = request.getItems().stream()
+                .map(SaleItemRequest::getProductId)
+                .distinct()
+                .sorted()
+                .toList();
+
+        java.util.Map<Long, Product> lockedProducts = new java.util.HashMap<>();
+        for (Long pId : productIds) {
+            Product product = productRepository.findByIdWithLock(pId)
+                    .filter(p -> !Boolean.TRUE.equals(p.getIsDeleted()))
+                    .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi yoki o'chirilgan: ID=" + pId));
+            lockedProducts.put(pId, product);
+        }
 
         Sale sale = new Sale();
         sale.setShop(shop);
         sale.setDate(LocalDateTime.now());
+        sale.setCreatedBy(uz.akmal.distributor_app.util.SecurityUtils.getCurrentUsername());
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
         for (SaleItemRequest itemRequest : request.getItems()) {
-            Product product = productRepository.findById(itemRequest.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi"));
+            Product product = lockedProducts.get(itemRequest.getProductId());
 
             int currentStock = (product.getStockQuantity() != null) ? product.getStockQuantity() : 0;
             if (currentStock < itemRequest.getPackageCount()) {
@@ -64,6 +80,7 @@ public class SaleServiceImpl implements SaleService {
 
             SaleItem item = new SaleItem();
             item.setProduct(product);
+            item.setProductName(product.getName());
             item.setSale(sale);
             item.setPackageCount(itemRequest.getPackageCount());
             item.setPriceAtSale(product.getSellPrice());
@@ -82,6 +99,14 @@ public class SaleServiceImpl implements SaleService {
 
 
         BigDecimal paidAmount = (request.getInitialPaidAmount() == null) ? BigDecimal.ZERO : request.getInitialPaidAmount();
+
+        if (paidAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidPaymentException("Boshlang'ich to'lov manfiy bo'lishi mumkin emas");
+        }
+
+        if (paidAmount.compareTo(totalAmount) > 0) {
+            throw new InvalidPaymentException("Boshlang'ich to'lov jami sotuv summasidan ko'p bo'lishi mumkin emas");
+        }
 
         sale.setInitialPaidAmount(paidAmount);
 
@@ -102,9 +127,11 @@ public class SaleServiceImpl implements SaleService {
         if (paidAmount.compareTo(BigDecimal.ZERO) > 0) {
             Payment payment = new Payment();
             payment.setShop(shop);
+            payment.setSale(savedSale);
             payment.setAmount(paidAmount);
             payment.setMethod(request.getInitialPaymentMethod());
             payment.setDate(sale.getDate());
+            payment.setCreatedBy(uz.akmal.distributor_app.util.SecurityUtils.getCurrentUsername());
             paymentRepository.save(payment);
         }
 
@@ -116,6 +143,86 @@ public class SaleServiceImpl implements SaleService {
         log.info("Sotuv muvaffaqiyatli yaratildi: saleId={}, shopId={}, totalAmount={}, paymentType={}",
                 savedSale.getId(), shop.getId(), totalAmount, savedSale.getPaymentType());
 
+        return SaleMapper.toResponse(savedSale);
+    }
+
+    @Override
+    @Transactional
+    public SaleResponse cancelSale(Long id, String reason) {
+        Sale sale = saleRepository.findByIdWithLock(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sotuv topilmadi, id: " + id));
+
+        if (Boolean.TRUE.equals(sale.getIsCancelled())) {
+            throw new IllegalStateException("Ushbu sotuv allaqachon bekor qilingan (ID: " + id + ")");
+        }
+
+        Shop shop = shopRepository.findByIdForUpdate(sale.getShop().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi: id=" + sale.getShop().getId()));
+
+        String currentUser = uz.akmal.distributor_app.util.SecurityUtils.getCurrentUsername();
+        String cancelReason = (reason != null && !reason.trim().isEmpty()) ? reason.trim() : "Sotuv bekor qilindi";
+        LocalDateTime now = LocalDateTime.now();
+
+        log.info("Sotuvni bekor qilish (Storno) boshlandi: saleId={}, shopId={}, reason={}", id, shop.getId(), cancelReason);
+
+        // 1. Ombordagi mahsulot qoldiqlarini qaytarish
+        List<SaleItem> items = sale.getItems();
+        if (items != null && !items.isEmpty()) {
+            List<Long> productIds = items.stream()
+                    .map(item -> item.getProduct().getId())
+                    .distinct()
+                    .sorted()
+                    .toList();
+
+            java.util.Map<Long, Product> lockedProducts = new java.util.HashMap<>();
+            for (Long pId : productIds) {
+                Product product = productRepository.findByIdForUpdate(pId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi: ID=" + pId));
+                lockedProducts.put(pId, product);
+            }
+
+            for (SaleItem item : items) {
+                Product product = lockedProducts.get(item.getProduct().getId());
+                int currentStock = (product.getStockQuantity() != null) ? product.getStockQuantity() : 0;
+                product.setStockQuantity(currentStock + item.getPackageCount());
+                productRepository.save(product);
+                log.info("Mahsulot omborga qaytarildi: productId={}, qaytarilgan={}, yangiQoldiq={}",
+                        product.getId(), item.getPackageCount(), product.getStockQuantity());
+            }
+        }
+
+        // 2. Do'kon qarzini kamaytirish (totalAmount - initialPaidAmount)
+        BigDecimal initialPaid = (sale.getInitialPaidAmount() != null) ? sale.getInitialPaidAmount() : BigDecimal.ZERO;
+        BigDecimal debtIncreaseFromSale = sale.getTotalAmount().subtract(initialPaid);
+        BigDecimal currentDebt = (shop.getCurrentDebt() != null) ? shop.getCurrentDebt() : BigDecimal.ZERO;
+        shop.setCurrentDebt(currentDebt.subtract(debtIncreaseFromSale));
+        shopRepository.save(shop);
+
+        // 3. Bog'langan boshlang'ich to'lovni ham bekor qilish (faqat aniq bog'langan to'lovlar)
+        List<Payment> linkedPayments = paymentRepository.findBySaleId(sale.getId());
+        for (Payment payment : linkedPayments) {
+            if (!Boolean.TRUE.equals(payment.getIsCancelled())) {
+                payment.setIsCancelled(true);
+                payment.setCancelReason("Sotuv bekor qilinganligi sababli: " + cancelReason);
+                payment.setCancelledAt(now);
+                payment.setCancelledBy(currentUser);
+                paymentRepository.save(payment);
+                log.info("Bog'langan to'lov bekor qilindi: paymentId={}, amount={}", payment.getId(), payment.getAmount());
+            }
+        }
+
+        if (linkedPayments.isEmpty() && initialPaid.compareTo(BigDecimal.ZERO) > 0) {
+            log.warn("Sotuvda boshlang'ich to'lov ko'rsatilgan, lekin bog'langan to'lov yozuvi topilmadi (saleId={}). Begona to'lovlarni bekor qilmaslik uchun taxminiy bekor qilish bajarilmadi.", sale.getId());
+        }
+
+        // 4. Sotuvni bekor qilingan deb belgilash
+        sale.setIsCancelled(true);
+        sale.setCancelReason(cancelReason);
+        sale.setCancelledAt(now);
+        sale.setCancelledBy(currentUser);
+        Sale savedSale = saleRepository.save(sale);
+
+        log.info("Sotuv muvaffaqiyatli bekor qilindi (Storno): saleId={}, bekorQildi={}", id, currentUser);
         return SaleMapper.toResponse(savedSale);
     }
 

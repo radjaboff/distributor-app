@@ -1,4 +1,4 @@
-const CACHE_NAME = 'distributor-app-v3';
+const CACHE_NAME = 'distributor-app-v24';
 const urlsToCache = [
     '/',
     '/index.html',
@@ -25,25 +25,24 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
+// Network-First strategiyasi:
+// 1. Internet bo'lsa: har doim tarmoqdan eng yangi versiyani yuklaydi va keshni yangilab boradi.
+// 2. Internet bo'lmasa (oflayn): keshda saqlangan nusxani ochib beradi.
 self.addEventListener('fetch', (event) => {
-    // API so'rovlarini keshlamaymiz (har doim to'g'ridan-to'g'ri tarmoqqa)
+    // API so'rovlarini keshlamaymiz (har doim to'g'ridan-to'g'ri serverga)
     if (event.request.url.includes('/api/') || event.request.method !== 'GET') {
         return;
     }
 
     event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            const fetchPromise = fetch(event.request)
-                .then((networkResponse) => {
-                    if (networkResponse && networkResponse.status === 200) {
-                        const responseClone = networkResponse.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-                    }
-                    return networkResponse;
-                })
-                .catch(() => cachedResponse);
-
-            return cachedResponse || fetchPromise;
-        })
+        fetch(event.request)
+            .then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+                }
+                return networkResponse;
+            })
+            .catch(() => caches.match(event.request))
     );
 });

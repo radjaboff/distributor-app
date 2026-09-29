@@ -8,7 +8,12 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 @Entity
-@Table(name = "market_groups")
+@Table(
+    name = "market_groups",
+    indexes = {
+        @Index(name = "idx_market_groups_is_deleted", columnList = "is_deleted")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor

@@ -11,7 +11,12 @@ import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "products")
+@Table(
+    name = "products",
+    indexes = {
+        @Index(name = "idx_products_is_deleted", columnList = "is_deleted")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor

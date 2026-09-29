@@ -12,11 +12,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "sales")
+@Table(
+    name = "sales",
+    indexes = {
+        @Index(name = "idx_sales_shop_id", columnList = "shop_id"),
+        @Index(name = "idx_sales_date", columnList = "date"),
+        @Index(name = "idx_sales_is_cancelled", columnList = "is_cancelled")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 public class Sale extends BaseEntity{
 
     @Id
@@ -43,5 +51,15 @@ public class Sale extends BaseEntity{
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleItem> items = new ArrayList<>();
 
+    @Column(name = "is_cancelled", nullable = false, columnDefinition = "boolean default false")
+    private Boolean isCancelled = false;
 
+    @Column(name = "cancel_reason", length = 500)
+    private String cancelReason;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
+    @Column(name = "cancelled_by", length = 100)
+    private String cancelledBy;
 }

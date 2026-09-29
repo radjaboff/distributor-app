@@ -2,10 +2,27 @@ const API_BASE = '/api';
 
 const contentEl = document.getElementById('content');
 const titleEl = document.getElementById('pageTitle');
+const subtitleEl = document.getElementById('pageSubtitle');
+const titleBadgeEl = document.getElementById('pageTitleBadge');
 const backBtn = document.getElementById('backBtn');
 const fabBtn = document.getElementById('fabBtn');
 const pwaInstallBtn = document.getElementById('pwaInstallBtn');
 const networkStatusEl = document.getElementById('networkStatus');
+
+function updateHeaderMeta(title, subtitle = '', badge = 'PRO') {
+    if (titleEl) titleEl.textContent = title;
+    if (subtitleEl) {
+        if (subtitle) {
+            subtitleEl.style.display = 'block';
+            subtitleEl.textContent = subtitle;
+        } else {
+            subtitleEl.style.display = 'none';
+        }
+    }
+    if (titleBadgeEl) {
+        titleBadgeEl.textContent = badge;
+    }
+}
 
 let currentShopId = null;
 let currentGroupId = null;
@@ -14,6 +31,27 @@ let saleItems = [];
 let allShopsInGroup = [];
 let allProductsList = [];
 let shopSortMode = 'none'; // 'none' | 'debtDesc' | 'nameAsc'
+let currentLoggedInUser = 'admin';
+
+async function fetchCurrentUserInfo() {
+    try {
+        const res = await apiGet('/auth/me');
+        if (res && res.username) {
+            currentLoggedInUser = res.username;
+        }
+    } catch (e) {
+        console.warn('Foydalanuvchi ma\'lumotini olib bo\'lmadi:', e);
+    }
+}
+fetchCurrentUserInfo();
+
+function formatAdminBadge(name) {
+    const user = (name && name.trim()) ? name.trim() : (currentLoggedInUser || 'admin');
+    return `<span class="badge-admin" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; background:rgba(59,130,246,0.14); color:#60A5FA; border:1px solid rgba(59,130,246,0.28); padding:2px 7px; border-radius:6px; flex-shrink:0; letter-spacing:0.2px;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.9;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span>${escHtml(user)}</span>
+    </span>`;
+}
 
 // ==========================================
 // 1. PROFESSIONAL VEKTOR ICONKALAR (SVG)
@@ -61,7 +99,25 @@ function escHtml(str) {
 
 function escAttr(str) {
     if (str === null || str === undefined) return '';
-    return String(str).replace(/'/g, "\\'");
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function escJs(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\r/g, '\\r')
+        .replace(/\n/g, '\\n');
 }
 
 function formatMoney(amount) {
@@ -260,6 +316,184 @@ function closeBottomSheet() {
     if (bs) bs.classList.remove('show');
 }
 
+// Maxsus Tasdiqlash Modali (Brauzerning xunuk confirm dialogi o'rniga)
+function showConfirmDialog({
+    title = "O'chirishni tasdiqlang",
+    message = "Rostdan ham ushbu ma'lumotni o'chirmoqchimisiz?",
+    itemName = '',
+    confirmText = "O'chirish",
+    cancelText = "Bekor qilish",
+    icon = null,
+    isDanger = true,
+    htmlContent = '',
+    onConfirm = () => {}
+}) {
+    let dialogEl = document.getElementById('globalConfirmDialog');
+    if (!dialogEl) {
+        dialogEl = document.createElement('div');
+        dialogEl.id = 'globalConfirmDialog';
+        dialogEl.className = 'confirm-overlay';
+        document.body.appendChild(dialogEl);
+    }
+
+    const badgeIcon = icon || (isDanger ? Icons.trash : Icons.check);
+    const badgeStyle = isDanger 
+        ? 'background: rgba(239, 68, 68, 0.15); color: #F87171;' 
+        : 'background: rgba(59, 130, 246, 0.15); color: #60A5FA;';
+    const submitBtnStyle = isDanger
+        ? ''
+        : 'background: linear-gradient(135deg, #2563EB, #1D4ED8); border-color: rgba(59, 130, 246, 0.5); color: #FFF;';
+
+    dialogEl.innerHTML = `
+        <div class="confirm-backdrop" onclick="closeConfirmDialog()"></div>
+        <div class="confirm-card">
+            <div class="confirm-icon-wrap">
+                <div class="confirm-icon-badge" style="${badgeStyle}">
+                    ${badgeIcon}
+                </div>
+            </div>
+            <div class="confirm-title">${escHtml(title)}</div>
+            ${itemName ? `<div class="confirm-item-name">${escHtml(itemName)}</div>` : ''}
+            <div class="confirm-message">${escHtml(message)}</div>
+            ${htmlContent ? `<div style="margin: 12px 0 16px 0;">${htmlContent}</div>` : ''}
+            <div class="confirm-actions">
+                <button type="button" class="confirm-btn-cancel" onclick="closeConfirmDialog()">
+                    ${escHtml(cancelText)}
+                </button>
+                <button type="button" class="confirm-btn-submit" id="confirmDialogSubmitBtn" style="${submitBtnStyle}">
+                    ${badgeIcon} ${escHtml(confirmText)}
+                </button>
+            </div>
+        </div>
+    `;
+
+    const confirmBtn = document.getElementById('confirmDialogSubmitBtn');
+    confirmBtn.onclick = async () => {
+        if (confirmBtn.disabled) return;
+        confirmBtn.disabled = true;
+        closeConfirmDialog();
+        if (typeof onConfirm === 'function') {
+            await onConfirm();
+        }
+    };
+
+    // Animatsiya bilan ko'rsatish
+    requestAnimationFrame(() => {
+        dialogEl.classList.add('show');
+    });
+}
+
+function closeConfirmDialog() {
+    const dialogEl = document.getElementById('globalConfirmDialog');
+    if (dialogEl) {
+        dialogEl.classList.remove('show');
+    }
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeConfirmDialog();
+        closeBottomSheet();
+    }
+});
+
+// O'ng burchakdagi Logo / Profil tugmasi bosilganda chiquvchi modal
+function showAppProfileModal() {
+    const now = new Date();
+    const dayNames = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
+    const monthNames = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'];
+
+    const dayOfWeek = dayNames[now.getDay()];
+    const dayOfMonth = now.getDate();
+    const monthName = monthNames[now.getMonth()];
+    const year = now.getFullYear();
+    const formattedDate = `${dayOfMonth}-${monthName}, ${year} (${dayOfWeek})`;
+
+    showBottomSheet(`
+        <div style="padding: 4px 0 10px 0;">
+            <!-- Brand & User Header -->
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid var(--color-line);">
+                <div style="width:52px; height:52px; border-radius:16px; background:linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%); display:flex; align-items:center; justify-content:center; color:#FFF; box-shadow:0 8px 22px rgba(37,99,235,0.45); border:1px solid rgba(255,255,255,0.25); flex-shrink:0;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:17.5px; font-weight:700; color:#FFF; display:flex; align-items:center; gap:7px;">
+                        <span>Bozor Distributor</span>
+                        <span style="font-size:10px; background:rgba(16,185,129,0.2); color:#34D399; border:1px solid rgba(16,185,129,0.4); padding:2px 6px; border-radius:6px; font-weight:700; letter-spacing:0.5px;">PRO</span>
+                    </div>
+                    <div style="font-size:12.5px; color:var(--color-ink-dim); margin-top:3px; display:flex; align-items:center; gap:6px;">
+                        <span style="width:7px; height:7px; border-radius:50%; background:#10B981; box-shadow:0 0 6px #10B981; display:inline-block;"></span>
+                        <span>Admin: <strong style="color:#FFF; font-weight:700;">${escHtml(currentLoggedInUser || 'admin')}</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bugungi sana & status kartasi -->
+            <div style="background:var(--color-paper-dim); border:1px solid var(--color-line); border-radius:14px; padding:12px 14px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-size:11px; color:var(--color-ink-dim); text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">Bugungi sana</div>
+                    <div style="font-size:13.5px; font-weight:700; color:#FFF; margin-top:2px;">
+                        ${formattedDate}
+                    </div>
+                </div>
+                <div style="font-size:12px; color:#34D399; font-weight:600; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.25); padding:4px 10px; border-radius:8px; display:flex; align-items:center; gap:5px;">
+                    <span style="width:6px; height:6px; border-radius:50%; background:#34D399;"></span>
+                    Online
+                </div>
+            </div>
+
+            <!-- Tezkor amallar -->
+            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
+                <button class="btn" style="background:rgba(255,255,255,0.06); border:1px solid var(--color-line); color:#FFF; justify-content:flex-start; padding:13px 15px; font-size:14px; border-radius:14px; display:flex; align-items:center; gap:12px;" onclick="location.reload(true)">
+                    <span style="color:#60A5FA; display:flex;">
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    </span>
+                    <div style="text-align:left;">
+                        <div style="font-weight:600; font-size:14px;">Ilovani yangilash (Refresh)</div>
+                        <div style="font-size:12px; color:var(--color-ink-dim);">Keshni tozalab ma'lumotlarni qayta yuklash</div>
+                    </div>
+                </button>
+
+                <button class="btn" style="background:rgba(16,185,129,0.14); border:1px solid rgba(16,185,129,0.35); color:#34D399; justify-content:flex-start; padding:13px 15px; font-size:14px; border-radius:14px; display:flex; align-items:center; gap:12px; width:100%; box-shadow:0 4px 14px rgba(16,185,129,0.15);" onclick="downloadDatabaseExcelBackup()">
+                    <span style="color:#34D399; display:flex;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    </span>
+                    <div style="text-align:left;">
+                        <div style="font-weight:700; font-size:14.5px; color:#FFF; display:flex; align-items:center; gap:6px;">
+                            <span>Bazani Excel'da yuklab olish</span>
+                            <span style="font-size:10px; background:rgba(16,185,129,0.25); color:#34D399; padding:1px 5px; border-radius:4px; font-weight:700;">.XLSX</span>
+                        </div>
+                        <div style="font-size:11.5px; color:#A7F3D0;">Hisobot va ko'rish uchun (qayta tiklanmaydi)</div>
+                    </div>
+                </button>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                    <button class="btn" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:#CBD5E1; justify-content:center; padding:10px; font-size:12.5px; border-radius:12px; display:flex; align-items:center; gap:6px;" onclick="downloadDatabaseBackup()" title="Dastur uchun to'liq texnik zaxira (.json)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span>JSON zaxira</span>
+                    </button>
+                    <button class="btn" style="background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.18); color:#CBD5E1; justify-content:center; padding:10px; font-size:12.5px; border-radius:12px; display:flex; align-items:center; gap:6px;" onclick="triggerRestoreBackup()" title="Faqat JSON zaxira faylidan bazani qayta tiklaydi">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <span>JSON'dan tiklash</span>
+                    </button>
+                </div>
+                <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="onBackupFileSelected(event)">
+
+                <button class="btn" style="background:rgba(244,63,94,0.12); border:1px solid rgba(244,63,94,0.3); color:#FB7185; justify-content:center; padding:13px 16px; font-size:14px; font-weight:700; border-radius:14px; display:flex; align-items:center; gap:8px;" onclick="window.location.href='/logout'">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    Tizimdan chiqish (Logout)
+                </button>
+            </div>
+
+            <button class="btn btn--full" style="background:var(--color-paper-dim); color:var(--color-ink-dim); border:1px solid var(--color-line); padding:11px; border-radius:12px; font-size:13.5px;" onclick="closeBottomSheet()">Yopish</button>
+        </div>
+    `);
+}
+
 // ==========================================
 // 3. TARMOQ VA PWA O'RNATISH (MOBILE)
 // ==========================================
@@ -278,43 +512,73 @@ let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    if (pwaInstallBtn) {
-        pwaInstallBtn.style.display = 'flex';
-        pwaInstallBtn.onclick = async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const choice = await deferredPrompt.userChoice;
-                if (choice.outcome === 'accepted') {
-                    showToast('Ilova ekranga o\'rnatildi', 'success');
-                    pwaInstallBtn.style.display = 'none';
-                }
-                deferredPrompt = null;
-            }
-        };
-    }
 });
 
 // iOS Safari tekshiruvi (Add to Home Screen)
 const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
 const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-if (isIos && !isStandalone && pwaInstallBtn) {
-    pwaInstallBtn.style.display = 'flex';
-    pwaInstallBtn.onclick = () => showIosInstallGuide();
+
+async function handlePwaInstallClick() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+            showToast("Ilova muvaffaqiyatli ekranga o'rnatildi", 'success');
+        }
+        deferredPrompt = null;
+        return;
+    }
+    if (isIos) {
+        showIosInstallGuide();
+        return;
+    }
+    showGeneralInstallGuide();
 }
 
 function showIosInstallGuide() {
     showBottomSheet(`
         <div style="text-align:center;">
-            <div class="sheet-icon-badge">${Icons.phoneApp}</div>
-            <div style="font-size:18px; font-weight:700; color:#FFF; margin-bottom:6px;">Ilovani ekranga chiqarish</div>
+            <div class="sheet-icon-badge" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2.5" ry="2.5"></rect>
+                    <path d="M12 7v6"></path>
+                    <path d="M9 10l3 3 3-3"></path>
+                    <circle cx="12" cy="18" r="0.8" fill="currentColor"></circle>
+                </svg>
+            </div>
+            <div style="font-size:18px; font-weight:800; color:#FFF; margin-bottom:6px; font-family: var(--font-heading);">Ilovani ekranga chiqarish (iOS)</div>
             <div style="font-size:13px; color:var(--color-ink-dim); margin-bottom:18px;">
-                Ilovadan alohida dastur kabi foydalanish uchun uni bosh ekranga qo'shing:
+                Ilovadan alohida dastur kabi tezkor foydalanish uchun uni bosh ekranga qo'shing:
             </div>
             <div style="background:var(--color-paper-dim); border:1px solid var(--color-line); border-radius:var(--radius-sm); padding:14px; text-align:left; font-size:13.5px; line-height:1.6; margin-bottom:18px;">
                 <div style="margin-bottom:8px;">1. Safari brauzeri pastidagi <strong>Ulashish (Share ⎋)</strong> belgisini bosing.</div>
                 <div>2. Chiqqan ro'yxatdan <strong>"Bosh ekranga qo'shish (Add to Home Screen ⊞)"</strong> ni tanlang.</div>
             </div>
-            <button class="btn btn--primary btn--full" onclick="closeBottomSheet()">Tushunarli</button>
+            <button class="btn btn--primary btn--full" onclick="closeBottomSheet()">${Icons.check} Tushunarli</button>
+        </div>
+    `);
+}
+
+function showGeneralInstallGuide() {
+    showBottomSheet(`
+        <div style="text-align:center;">
+            <div class="sheet-icon-badge" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2.5" ry="2.5"></rect>
+                    <path d="M12 7v6"></path>
+                    <path d="M9 10l3 3 3-3"></path>
+                    <circle cx="12" cy="18" r="0.8" fill="currentColor"></circle>
+                </svg>
+            </div>
+            <div style="font-size:18px; font-weight:800; color:#FFF; margin-bottom:6px; font-family: var(--font-heading);">Ilovani ekranga o'rnatish</div>
+            <div style="font-size:13px; color:var(--color-ink-dim); margin-bottom:18px;">
+                Dasturdan doimiy, tez va qulay foydalanish uchun telefoningiz yoki kompyuteringiz bosh ekraniga o'rnating:
+            </div>
+            <div style="background:var(--color-paper-dim); border:1px solid var(--color-line); border-radius:var(--radius-sm); padding:14px; text-align:left; font-size:13.5px; line-height:1.6; margin-bottom:18px;">
+                <div style="margin-bottom:8px;">1. Brauzeringizning <strong>uch nuqta (⋮)</strong> menyusini oching.</div>
+                <div>2. <strong>"Ilovani o'rnatish"</strong> yoki <strong>"Bosh ekranga qo'shish" (Add to Home screen)</strong> tugmasini bosing.</div>
+            </div>
+            <button class="btn btn--primary btn--full" onclick="closeBottomSheet()">${Icons.check} Tushunarli</button>
         </div>
     `);
 }
@@ -324,10 +588,11 @@ async function apiGet(path) {
     const response = await fetch(`${API_BASE}${path}`);
     if (response.status === 401) {
         window.location.href = '/login.html';
-        return;
+        return new Promise(() => {});
     }
     if (!response.ok) {
-        throw new Error('Server xatosi: ' + response.status);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || ('Server xatosi: ' + response.status));
     }
     return response.json();
 }
@@ -340,7 +605,7 @@ async function apiPost(path, body) {
     });
     if (response.status === 401) {
         window.location.href = '/login.html';
-        return;
+        return new Promise(() => {});
     }
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -357,7 +622,7 @@ async function apiPut(path, body) {
     });
     if (response.status === 401) {
         window.location.href = '/login.html';
-        return;
+        return new Promise(() => {});
     }
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -372,7 +637,7 @@ async function apiDelete(path) {
     });
     if (response.status === 401) {
         window.location.href = '/login.html';
-        return;
+        return new Promise(() => {});
     }
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -383,7 +648,7 @@ async function apiDelete(path) {
 
 // Toifalar (Bozorlar) ro'yxatini ko'rsatish
 async function showMarketGroups() {
-    titleEl.textContent = 'Bozorlar & Toifalar';
+    updateHeaderMeta('Bozorlar', "Do'konlar va savdo nuqtalari", 'PRO');
     backBtn.style.visibility = 'hidden';
     fabBtn.style.display = 'flex';
     fabBtn.onclick = showAddMarketGroupForm;
@@ -399,26 +664,26 @@ async function showMarketGroups() {
         }
 
         contentEl.innerHTML = groups.map(group => `
-    <div class="ledger-row" onclick="showShops(${group.id}, '${escAttr(group.name)}')">
+    <div class="ledger-row" onclick="showShops(${group.id}, '${escJs(group.name)}')">
         <div class="ledger-row__main" style="display:flex; flex-direction:row; align-items:center; gap:12px;">
             <div class="ledger-avatar ledger-avatar--market">
                 ${Icons.market}
             </div>
             <div>
-                <div class="ledger-row__title">${group.name}</div>
+                <div class="ledger-row__title">${escHtml(group.name)}</div>
                 <div class="ledger-row__subtitle">Do'konlarni ko'rish</div>
             </div>
         </div>
         <div class="ledger-row__right">
-            <button class="icon-btn" onclick="event.stopPropagation(); showEditMarketGroupForm(${group.id}, '${escAttr(group.name)}')" title="Tahrirlash">${Icons.edit}</button>
-            <button class="icon-btn icon-btn--danger" onclick="event.stopPropagation(); deleteMarketGroup(${group.id})" title="O'chirish">${Icons.trash}</button>
+            <button class="icon-btn" onclick="event.stopPropagation(); showEditMarketGroupForm(${group.id}, '${escJs(group.name)}')" title="Tahrirlash">${Icons.edit}</button>
+            <button class="icon-btn icon-btn--danger" onclick="event.stopPropagation(); deleteMarketGroup(${group.id}, '${escJs(group.name)}')" title="O'chirish">${Icons.trash}</button>
             <span class="chevron">${Icons.chevronRight}</span>
         </div>
     </div>
 `).join('');
 
     } catch (err) {
-        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${err.message}</div>`;
+        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
     }
 }
 
@@ -427,7 +692,7 @@ showMarketGroups();
 
 // Yangi toifa qo'shish formasi
 function showAddMarketGroupForm() {
-    titleEl.textContent = 'Yangi toifa';
+    updateHeaderMeta('Yangi toifa', "Bozor yoki hudud kiritish", "QO'SHISH");
     backBtn.style.visibility = 'visible';
     backBtn.onclick = showMarketGroups;
     fabBtn.style.display = 'none';
@@ -452,7 +717,7 @@ function showAddMarketGroupForm() {
                 <input type="text" class="form-input" id="groupNameInput" placeholder="Masalan: Orzu Bozor" autofocus>
             </div>
             <div class="form-group" style="margin-top: 24px;">
-                <button class="btn btn--primary btn--full" onclick="submitMarketGroup()">
+                <button class="btn btn--primary btn--full" id="submitMarketGroupBtn" onclick="submitMarketGroup()">
                     ${Icons.check} Toifani saqlash
                 </button>
             </div>
@@ -466,18 +731,28 @@ async function submitMarketGroup() {
         showToast('Nomini kiriting', 'error');
         return;
     }
+    const btn = document.getElementById('submitMarketGroupBtn');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Saqlanmoqda...';
+    }
     try {
         await apiPost('/market-groups', { name });
         showToast('Yangi toifa yaratildi', 'success');
         showMarketGroups();
     } catch (err) {
         showToast('Xatolik: ' + err.message, 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} Toifani saqlash`;
+        }
     }
 }
 
 // Do'konlar ro'yxatini ko'rsatish
 async function showShops(groupId, groupName) {
-    titleEl.textContent = groupName;
+    updateHeaderMeta(groupName, "Bozor do'konlari ro'yxati", 'BOZOR');
     currentGroupId = groupId;
     currentGroupName = groupName;
     backBtn.style.visibility = 'visible';
@@ -515,10 +790,21 @@ function setShopSort(mode) {
     document.getElementById('sortNone')?.classList.toggle('active', mode === 'none');
     document.getElementById('sortDebt')?.classList.toggle('active', mode === 'debtDesc');
     document.getElementById('sortName')?.classList.toggle('active', mode === 'nameAsc');
-    filterShops();
+    filterShops(true);
 }
 
-function filterShops() {
+let _shopFilterTimer = null;
+function filterShops(immediate = false) {
+    if (immediate) {
+        clearTimeout(_shopFilterTimer);
+        _executeShopFilter();
+        return;
+    }
+    clearTimeout(_shopFilterTimer);
+    _shopFilterTimer = setTimeout(_executeShopFilter, 100);
+}
+
+function _executeShopFilter() {
     const input = document.getElementById('shopSearchInput');
     const query = input ? input.value.trim().toLowerCase() : '';
     let list = [...allShopsInGroup];
@@ -551,7 +837,14 @@ function renderShopRows(shops) {
 
     container.innerHTML = shops.map(shop => {
         const debt = Number(shop.currentDebt) || 0;
-        const hasDebt = debt > 0;
+        let debtBadgeHtml = '';
+        if (debt > 0) {
+            debtBadgeHtml = `<div class="ledger-row__amount amount--debt">${formatMoney(debt)}</div>`;
+        } else if (debt < 0) {
+            debtBadgeHtml = `<div class="ledger-row__amount amount--credit">Haqdorlik: ${formatMoney(Math.abs(debt))}</div>`;
+        } else {
+            debtBadgeHtml = `<div class="ledger-row__amount amount--paid">Toza ${Icons.check}</div>`;
+        }
 
         let subtitleParts = [];
         if (shop.ownerName && shop.ownerName !== shop.name) {
@@ -569,9 +862,7 @@ function renderShopRows(shops) {
                         ${subtitleParts.length > 0 ? `<div class="shop-card__subtitle">${subtitleParts.join('<span style="opacity:0.4;">·</span>')}</div>` : ''}
                     </div>
                     <div class="shop-card__badge-wrap">
-                        <div class="ledger-row__amount ${hasDebt ? 'amount--debt' : 'amount--paid'}">
-                            ${hasDebt ? formatMoney(debt) : 'Toza ' + Icons.check}
-                        </div>
+                        ${debtBadgeHtml}
                         <span class="chevron">${Icons.chevronRight}</span>
                     </div>
                 </div>
@@ -583,14 +874,14 @@ function renderShopRows(shops) {
                                 <span>Qo'ng'iroq</span>
                             </a>
                         ` : ''}
-                        <button class="action-chip action-chip--telegram" onclick="shareShopDebt('${escAttr(shop.name)}', ${debt}, '${escAttr(shop.phone || '')}')" title="Telegramga hisob yuborish">
+                        <button class="action-chip action-chip--telegram" onclick="shareShopDebt('${escJs(shop.name)}', ${debt}, '${escJs(shop.phone || '')}')" title="Telegramga hisob yuborish">
                             ${Icons.tgAction}
                             <span>Telegram</span>
                         </button>
                     </div>
                     <div class="shop-card__action-group">
-                        <button class="icon-btn" onclick="showEditShopForm(${shop.id}, '${escAttr(shop.name)}', '${escAttr(shop.ownerName || '')}', '${escAttr(shop.phone || '')}')" title="Tahrirlash">${Icons.edit}</button>
-                        <button class="icon-btn icon-btn--danger" onclick="deleteShop(${shop.id})" title="O'chirish">${Icons.trash}</button>
+                        <button class="icon-btn" onclick="showEditShopForm(${shop.id}, '${escJs(shop.name)}', '${escJs(shop.ownerName || '')}', '${escJs(shop.phone || '')}')" title="Tahrirlash">${Icons.edit}</button>
+                        <button class="icon-btn icon-btn--danger" onclick="deleteShop(${shop.id}, '${escJs(shop.name)}', ${debt})" title="O'chirish">${Icons.trash}</button>
                     </div>
                 </div>
             </div>
@@ -598,14 +889,25 @@ function renderShopRows(shops) {
     }).join('');
 }
 
-// Telegram yoki mobil ulashish orqali qarz ma'lumotini yuborish
+// Telegram yoki mobil ulashish orqali qarz/avans ma'lumotini yuborish
 function shareShopDebt(shopName, debt, phone) {
-    const debtStr = formatMoney(debt);
-    const text = `Assalomu alaykum, ${shopName}!\nSizning joriy qarz balansingiz: ${debtStr}.\nHisob-kitob bo'yicha savollar bo'lsa bog'lanishingiz mumkin.`;
+    let title = `${shopName} — Hisob holati`;
+    let text = '';
+
+    if (debt > 0) {
+        title = `${shopName} — Qarz balansi`;
+        text = `Assalomu alaykum, ${shopName}!\nSizning joriy qarz balansingiz: ${formatMoney(debt)}.\nHisob-kitob bo'yicha savollar bo'lsa bog'lanishingiz mumkin.`;
+    } else if (debt < 0) {
+        title = `${shopName} — Avans (Haqdorlik)`;
+        text = `Assalomu alaykum, ${shopName}!\nSizda ${formatMoney(Math.abs(debt))} oldindan to'langan avans (haqdorlik) mavjud.\nHisob-kitob bo'yicha savollar bo'lsa bog'lanishingiz mumkin.`;
+    } else {
+        title = `${shopName} — Hisob holati`;
+        text = `Assalomu alaykum, ${shopName}!\nSizning hisobingiz toza, hech qanday qarzdorlik mavjud emas.\nHaridingiz uchun rahmat!`;
+    }
 
     if (navigator.share) {
         navigator.share({
-            title: `${shopName} — Qarz balansi`,
+            title: title,
             text: text
         }).catch(() => {});
     } else {
@@ -615,7 +917,7 @@ function shareShopDebt(shopName, debt, phone) {
 }
 
 function showAddShopForm(groupId) {
-    titleEl.textContent = 'Yangi do\'kon';
+    updateHeaderMeta('Yangi do\'kon', currentGroupName ? `${currentGroupName} toifasi` : 'Bozor toifasiga qo\'shish', 'QO\'SHISH');
     backBtn.style.visibility = 'visible';
     backBtn.onclick = () => showShops(groupId, currentGroupName);
     fabBtn.style.display = 'none';
@@ -673,14 +975,21 @@ async function submitShop(groupId) {
     }
 
     const btn = document.getElementById('submitShopBtn');
-    btn.disabled = true;
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Saqlanmoqda...';
+    }
 
     try {
         await apiPost('/shops', { name, ownerName, phone, marketGroupId: groupId });
         showToast('Do\'kon muvaffaqiyatli qo\'shildi', 'success');
         showShops(groupId, currentGroupName);
     } catch (err) {
-        btn.disabled = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} Do'konni saqlash`;
+        }
         showToast('Xatolik: ' + err.message, 'error');
     }
 }
@@ -688,7 +997,7 @@ async function submitShop(groupId) {
 // Do'kon ichki kabineti (Tarix va operatsiyalar)
 async function showShopDetail(shopId) {
     currentShopId = shopId;
-    titleEl.textContent = 'Yuklanmoqda...';
+    updateHeaderMeta('Yuklanmoqda...', '', 'DAFTAR');
     backBtn.style.visibility = 'visible';
     backBtn.onclick = () => showShops(currentGroupId, currentGroupName);
     fabBtn.style.display = 'none';
@@ -697,42 +1006,112 @@ async function showShopDetail(shopId) {
 
     try {
         const ledger = await apiGet(`/shops/${shopId}/ledger`);
-        titleEl.textContent = ledger.shopName;
+        updateHeaderMeta(ledger.shopName, "Do'kon qarz daftari va amallar", 'DAFTAR');
 
         const debt = Number(ledger.currentDebt) || 0;
-        const isDebt = debt > 0;
-        const debtStyleColor = isDebt ? 'var(--color-debt)' : 'var(--color-paid)';
+        let debtLabel = 'Joriy qarz balansi';
+        let debtValueText = formatMoney(debt);
+        let debtStyleColor = 'var(--color-paid)';
+        let lineGradient = 'linear-gradient(90deg, #10B981, #34D399)';
+        let tgBtnText = "Telegramga hisob yuborish";
+
+        if (debt > 0) {
+            debtLabel = 'Joriy qarz balansi';
+            debtValueText = formatMoney(debt);
+            debtStyleColor = 'var(--color-debt)';
+            lineGradient = 'linear-gradient(90deg, #F43F5E, #FB7185)';
+            tgBtnText = "Telegramga qarz hisobini yuborish";
+        } else if (debt < 0) {
+            debtLabel = "Do'kon haqi (Ortiqcha to'lov / Avans)";
+            debtValueText = formatMoney(Math.abs(debt));
+            debtStyleColor = '#38BDF8';
+            lineGradient = 'linear-gradient(90deg, #38BDF8, #0284C7)';
+            tgBtnText = "Telegramga avans hisobini yuborish";
+        } else {
+            debtLabel = 'Hisob toza (Qarzdorlik yo\'q)';
+            debtValueText = '0 so\'m';
+            debtStyleColor = 'var(--color-paid)';
+            lineGradient = 'linear-gradient(90deg, #10B981, #34D399)';
+            tgBtnText = "Telegramga hisob yuborish";
+        }
 
         let entriesHtml = '';
         if (!ledger.entries || ledger.entries.length === 0) {
             entriesHtml = '<div class="empty-state">Hali harakatlar tarixi yo\'q.</div>';
         } else {
-            entriesHtml = ledger.entries.slice().reverse().map(entry => `
-                <div class="ledger-row" style="cursor:default; margin-bottom:8px;">
-                    <div class="ledger-row__main">
-                        <div class="ledger-row__title" style="font-size:14.5px; display:flex; align-items:center; gap:6px;">
-                            ${entry.type === 'SOTUV' ? Icons.box : Icons.money}
-                            <span>${escHtml(entry.description)}</span>
+            entriesHtml = ledger.entries.slice().reverse().map(entry => {
+                const isCancelled = Boolean(entry.isCancelled);
+                const isSale = entry.type === 'SOTUV';
+                const rowOpacity = isCancelled ? 'opacity: 0.65; background: rgba(239,68,68,0.04);' : '';
+                const titleStyle = isCancelled ? 'text-decoration: line-through; color: var(--color-ink-dim);' : '';
+                const amountClass = isCancelled 
+                    ? 'amount--muted' 
+                    : (isSale ? 'amount--debt' : 'amount--paid');
+                const amountText = (isSale ? '+' : '−') + formatMoney(entry.amount);
+
+                let cancelBadge = '';
+                if (isCancelled) {
+                    cancelBadge = `
+                        <div style="margin-top:4px; font-size:11px; color:#F87171; display:flex; flex-wrap:wrap; align-items:center; gap:5px;">
+                            <span style="background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); padding:1px 5px; border-radius:4px; font-weight:700; font-size:10px;">BEKOR QILINGAN</span>
+                            <span>${escHtml(entry.cancelReason || '')}</span>
+                            <span style="opacity:0.8;">(${escHtml(entry.cancelledBy || '')})</span>
                         </div>
-                        <div class="ledger-row__subtitle" style="font-size:12px;">${new Date(entry.date).toLocaleDateString('uz-UZ')} · Qoldiq: ${formatMoney(entry.balanceAfter)}</div>
+                    `;
+                }
+
+                let actionBtn = '';
+                if (!isCancelled && entry.id) {
+                    actionBtn = `
+                        <button class="btn" onclick="promptCancelEntry('${entry.type}', ${entry.id}, ${shopId}, '${escJs(entry.description || '')}', ${entry.amount})" 
+                                style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#F87171; padding:3px 7px; border-radius:7px; font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" 
+                                title="Operatsiyani bekor qilish (Storno)">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+                            <span>Bekor qilish</span>
+                        </button>
+                    `;
+                }
+
+                return `
+                <div class="ledger-row" style="cursor:default; margin-bottom:8px; ${rowOpacity}">
+                    <div class="ledger-row__main">
+                        <div class="ledger-row__title" style="font-size:14.5px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                            <div style="display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; ${titleStyle}">
+                                ${isSale ? Icons.box : Icons.money}
+                                <span>${escHtml(entry.description)}</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                                ${formatAdminBadge(entry.createdBy)}
+                                ${actionBtn}
+                            </div>
+                        </div>
+                        <div class="ledger-row__subtitle" style="font-size:12px;">
+                            ${new Date(entry.date).toLocaleDateString('uz-UZ')} · ${Number(entry.balanceAfter) < 0 ? 'Avans: ' + formatMoney(Math.abs(entry.balanceAfter)) : 'Qoldiq: ' + formatMoney(entry.balanceAfter)}
+                        </div>
+                        ${cancelBadge}
                     </div>
-                    <div class="ledger-row__amount ${entry.type === 'SOTUV' ? 'amount--debt' : 'amount--paid'}">
-                        ${entry.type === 'SOTUV' ? '+' : '−'}${formatMoney(entry.amount)}
+                    <div class="ledger-row__amount ${amountClass}" style="${isCancelled ? 'text-decoration: line-through; opacity:0.6;' : ''}">
+                        ${amountText}
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         contentEl.innerHTML = `
             <div class="stat-card" style="margin-bottom:16px; text-align:center; padding: 22px 18px; background: linear-gradient(135deg, #131B2E 0%, #0F172A 100%); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); position: relative; overflow: hidden;">
-                <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: ${isDebt ? 'linear-gradient(90deg, #F43F5E, #FB7185)' : 'linear-gradient(90deg, #10B981, #34D399)'};"></div>
-                <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:var(--color-ink-dim);">Joriy qarz balansi</div>
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: ${lineGradient};"></div>
+                <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:var(--color-ink-dim);">${debtLabel}</div>
                 <div class="stat-card__value" style="color: ${debtStyleColor}; font-size: 28px; font-weight:800; margin-top:6px; font-variant-numeric: tabular-nums;">
-                    ${formatMoney(debt)}
+                    ${debtValueText}
                 </div>
-                <div style="margin-top:14px;">
-                    <button class="action-chip action-chip--telegram" onclick="shareShopDebt('${escAttr(ledger.shopName)}', ${debt})" style="display:inline-flex; align-items:center; gap:8px; padding: 9px 16px; width:auto; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                        ${Icons.tgAction} Telegramga qarz hisobini yuborish
+                <div style="margin-top:14px; display:flex; flex-wrap:wrap; justify-content:center; gap:8px;">
+                    <button class="action-chip action-chip--telegram" onclick="shareShopDebt('${escJs(ledger.shopName)}', ${debt})" style="display:inline-flex; align-items:center; gap:8px; padding: 9px 16px; width:auto; border-radius: 12px; font-size: 13px; font-weight: 600;">
+                        ${Icons.tgAction} ${tgBtnText}
+                    </button>
+                    <button class="action-chip" onclick="directPrintShopStatement(${shopId})" style="display:inline-flex; align-items:center; gap:8px; padding: 9px 16px; width:auto; border-radius: 12px; font-size: 13px; font-weight: 600; background:rgba(37,99,235,0.18); border:1px solid rgba(37,99,235,0.4); color:#60A5FA;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        <span>Chop etish / PDF olish</span>
                     </button>
                 </div>
             </div>
@@ -757,9 +1136,96 @@ async function showShopDetail(shopId) {
     }
 }
 
+// Operatsiyani bekor qilish (Storno) oynasi
+function promptCancelEntry(type, id, shopId, description, amount) {
+    const isSale = type === 'SOTUV';
+    
+    showBottomSheet(`
+        <div style="text-align:left;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                <div style="width:42px; height:42px; border-radius:12px; background:rgba(239,68,68,0.15); color:#F87171; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+                </div>
+                <div>
+                    <div style="font-size:16px; font-weight:800; color:#FFF;">Operatsiyani bekor qilish (Storno)</div>
+                    <div style="font-size:12.5px; color:var(--color-ink-dim);">Ushbu amal ombor va do'kon qarzini avtomatik qaytaradi</div>
+                </div>
+            </div>
+
+            <div style="background:var(--color-paper-dim); border:1px solid var(--color-line); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.6;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span style="color:var(--color-ink-dim);">Amal turi:</span>
+                    <strong style="color:#FFF;">${isSale ? 'Sotuv #' + id : 'To\'lov #' + id}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span style="color:var(--color-ink-dim);">Summa:</span>
+                    <strong style="color:#60A5FA;">${formatMoney(amount)}</strong>
+                </div>
+                ${description ? `
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span style="color:var(--color-ink-dim);">Tavsif:</span>
+                    <span style="color:var(--color-ink);">${escHtml(description)}</span>
+                </div>` : ''}
+                <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--color-line); color:#FCA5A5; font-size:12px;">
+                    ⚠️ ${isSale 
+                        ? 'Sotuv bekor qilinganda sotilgan tovarlar omborga qaytariladi va do\'kon qarzi mos ravishda kamaytiriladi.' 
+                        : 'To\'lov bekor qilinganda do\'konning so\'ndirilgan qarzi qayta tiklanadi.'}
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:18px;">
+                <label class="form-label" for="cancelReasonInput">
+                    <span>Bekor qilish sababi</span>
+                </label>
+                <input type="text" class="form-input" id="cancelReasonInput" placeholder="Masalan: Adashib kiritilgan yoki mijoz rad etdi" value="Xato kiritilgan">
+                <div class="quick-chips-row" style="margin-top:8px;">
+                    <button type="button" class="preset-chip" onclick="document.getElementById('cancelReasonInput').value = 'Adashib kiritilgan'">Adashib kiritilgan</button>
+                    <button type="button" class="preset-chip" onclick="document.getElementById('cancelReasonInput').value = 'Mijoz tovar/to\\'lovni qaytardi'">Mijoz qaytardi</button>
+                    <button type="button" class="preset-chip" onclick="document.getElementById('cancelReasonInput').value = 'Hisob-kitobda xatolik'">Hisobda xatolik</button>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button type="button" class="btn" style="background:rgba(255,255,255,0.06); border:1px solid var(--color-line); color:#FFF;" onclick="closeBottomSheet()">
+                    Ortga
+                </button>
+                <button type="button" class="btn" id="confirmCancelEntryBtn" style="background:#EF4444; border:1px solid #DC2626; color:#FFF; font-weight:700;" onclick="executeCancelEntry('${type}', ${id}, ${shopId})">
+                    Ha, bekor qilinsin
+                </button>
+            </div>
+        </div>
+    `);
+}
+
+async function executeCancelEntry(type, id, shopId) {
+    const reasonInput = document.getElementById('cancelReasonInput');
+    const reason = (reasonInput?.value || '').trim() || 'Sabab ko\'rsatilmadi';
+    const btn = document.getElementById('confirmCancelEntryBtn');
+
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Bekor qilinmoqda...';
+    }
+
+    try {
+        const endpoint = type === 'SOTUV' ? `/sales/${id}/cancel` : `/payments/${id}/cancel`;
+        await apiPost(endpoint, { reason: reason });
+        closeBottomSheet();
+        showToast('Operatsiya muvaffaqiyatli bekor qilindi (Storno)!', 'success');
+        showShopDetail(shopId);
+    } catch (err) {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = 'Ha, bekor qilinsin';
+        }
+        showToast('Xatolik: ' + err.message, 'error');
+    }
+}
+
 // Yangi sotuv formasi
 async function showAddSaleForm(shopId) {
-    titleEl.textContent = 'Yangi sotuv';
+    updateHeaderMeta('Yangi sotuv', "Tovarlarni rasmiylashtirish", 'SOTUV');
     backBtn.style.visibility = 'visible';
     backBtn.onclick = () => showShopDetail(shopId);
     fabBtn.style.display = 'none';
@@ -912,16 +1378,33 @@ function addSaleItem() {
     const product = window.allProducts.find(p => p.id == productId);
     if (!product) return;
 
-    if (product.stockQuantity < packageCount) {
-        showToast(`Omborda faqat ${product.stockQuantity} ta mavjud!`, 'error');
+    const existingInCart = saleItems
+        .filter(item => item.productId == productId)
+        .reduce((sum, item) => sum + item.packageCount, 0);
+
+    const availableStock = (product.stockQuantity != null) ? product.stockQuantity : 0;
+
+    if (availableStock < (existingInCart + packageCount)) {
+        if (existingInCart > 0) {
+            showToast(`Omborda faqat ${availableStock} ta mavjud! (Savatda allaqachon: ${existingInCart} ta bor)`, 'error');
+        } else {
+            showToast(`Omborda faqat ${availableStock} ta mavjud!`, 'error');
+        }
+        return;
     }
 
-    saleItems.push({
-        productId: parseInt(productId),
-        packageCount,
-        productName: product.name,
-        sellPrice: product.sellPrice
-    });
+    const existingIndex = saleItems.findIndex(item => item.productId == productId);
+    if (existingIndex !== -1) {
+        saleItems[existingIndex].packageCount += packageCount;
+    } else {
+        saleItems.push({
+            productId: parseInt(productId),
+            packageCount,
+            productName: product.name,
+            sellPrice: product.sellPrice,
+            price: product.sellPrice
+        });
+    }
 
     if (countInput) countInput.value = '';
     if (select) select.value = '';
@@ -1013,35 +1496,83 @@ async function submitSale(shopId) {
         return;
     }
 
-    const initialPaidAmount = parseMoney(document.getElementById('initialPaidInput').value);
-    const methodSelect = document.getElementById('paymentMethodSelect');
-    const initialPaymentMethod = (initialPaidAmount > 0) ? (methodSelect.value || 'NAQD') : null;
-
-    const payload = {
-        shopId: shopId,
-        items: saleItems.map(item => ({ productId: item.productId, packageCount: item.packageCount })),
-        initialPaidAmount: initialPaidAmount,
-        initialPaymentMethod: initialPaymentMethod
-    };
-
-    const btn = document.getElementById('submitSaleBtn');
-    btn.disabled = true;
-    btn.innerHTML = 'Rasmiylashtirilmoqda...';
-
-    try {
-        await apiPost('/sales', payload);
-        showToast('Sotuv muvaffaqiyatli saqlandi!', 'success');
-        showShopDetail(shopId);
-    } catch (err) {
-        btn.disabled = false;
-        btn.innerHTML = 'Sotuvni rasmiylashtirish';
-        showToast('Xatolik: ' + err.message, 'error');
+    const totalSaleAmount = getSaleTotal();
+    const initialPaidAmount = parseMoney(document.getElementById('initialPaidInput')?.value);
+    
+    if (initialPaidAmount > totalSaleAmount) {
+        showToast("Boshlang'ich to'lov jami savdo summasidan ko'p bo'lishi mumkin emas!", 'error');
+        return;
     }
+
+    const methodSelect = document.getElementById('paymentMethodSelect');
+    const initialPaymentMethod = (initialPaidAmount > 0) ? (methodSelect?.value || 'NAQD') : null;
+    const remainingDebt = Math.max(0, totalSaleAmount - initialPaidAmount);
+    const totalPackages = saleItems.reduce((sum, item) => sum + (item.packageCount || 0), 0);
+
+    const summaryHtml = `
+        <div style="background:var(--color-paper-dim); border:1px solid var(--color-line); border-radius:12px; padding:12px 14px; text-align:left; font-size:13px; line-height:1.7;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span style="color:var(--color-ink-dim);">Tovarlar soni:</span>
+                <strong style="color:#FFF;">${saleItems.length} xil (${totalPackages} paket)</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span style="color:var(--color-ink-dim);">Jami savdo summasi:</span>
+                <strong style="color:#60A5FA; font-size:14.5px;">${formatMoney(totalSaleAmount)}</strong>
+            </div>
+            ${initialPaidAmount > 0 ? `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:#34D399;">
+                <span>Oldindan to'langan:</span>
+                <strong>${formatMoney(initialPaidAmount)} (${initialPaymentMethod})</strong>
+            </div>` : ''}
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--color-line); padding-top:6px; margin-top:4px;">
+                <span style="color:var(--color-ink-dim);">Do'konga yoziladigan qarz:</span>
+                <strong style="color:${remainingDebt > 0 ? '#F87171' : '#34D399'}; font-size:14px;">${formatMoney(remainingDebt)}${remainingDebt === 0 && initialPaidAmount > 0 ? " (To'liq to'landi)" : ""}</strong>
+            </div>
+        </div>
+    `;
+
+    showConfirmDialog({
+        title: "Sotuvni tasdiqlang",
+        itemName: `${saleItems.length} xil mahsulot`,
+        message: "Sotuvni rasmiylashtirishni tasdiqlaysizmi?",
+        htmlContent: summaryHtml,
+        confirmText: "Ha, tasdiqlayman",
+        cancelText: "Bekor qilish",
+        icon: Icons.check,
+        isDanger: false,
+        onConfirm: async () => {
+            const payload = {
+                shopId: shopId,
+                items: saleItems.map(item => ({ productId: item.productId, packageCount: item.packageCount })),
+                initialPaidAmount: initialPaidAmount,
+                initialPaymentMethod: initialPaymentMethod
+            };
+
+            const btn = document.getElementById('submitSaleBtn');
+            if (btn) {
+                if (btn.disabled) return;
+                btn.disabled = true;
+                btn.innerHTML = 'Rasmiylashtirilmoqda...';
+            }
+
+            try {
+                await apiPost('/sales', payload);
+                showToast('Sotuv muvaffaqiyatli saqlandi!', 'success');
+                showShopDetail(shopId);
+            } catch (err) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Sotuvni rasmiylashtirish';
+                }
+                showToast('Xatolik: ' + err.message, 'error');
+            }
+        }
+    });
 }
 
 // Yangi to'lov formasi
 function showAddPaymentForm(shopId, currentDebt = 0) {
-    titleEl.textContent = 'To\'lov qabul qilish';
+    updateHeaderMeta("To'lov qabul qilish", "Qarzni so'ndirish oynasi", "TO'LOV");
     backBtn.style.visibility = 'visible';
     backBtn.onclick = () => showShopDetail(shopId);
     fabBtn.style.display = 'none';
@@ -1054,7 +1585,7 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
                 </div>
                 <div>
                     <div class="form-card__title">To'lov qabul qilish</div>
-                    <div class="form-card__desc">${currentDebt > 0 ? `Joriy qarz: <strong style="color:var(--color-debt); font-variant-numeric:tabular-nums;">${formatMoney(currentDebt)}</strong>` : 'Qarzdorlik yo\'q'}</div>
+                    <div class="form-card__desc">${currentDebt > 0 ? `Joriy qarz: <strong style="color:var(--color-debt); font-variant-numeric:tabular-nums;">${formatMoney(currentDebt)}</strong>` : (currentDebt < 0 ? `Do'kon avansi: <strong style="color:#38BDF8; font-variant-numeric:tabular-nums;">${formatMoney(Math.abs(currentDebt))}</strong>` : 'Qarzdorlik yo\'q')}</div>
                 </div>
             </div>
 
@@ -1101,7 +1632,7 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
             </div>
 
             <div class="form-group" style="margin-top: 22px;">
-                <button class="btn btn--primary btn--full" id="submitPaymentBtn" onclick="submitPayment(${shopId})">
+                <button class="btn btn--primary btn--full" id="submitPaymentBtn" onclick="submitPayment(${shopId}, ${currentDebt})">
                     ${Icons.check} To'lovni saqlash
                 </button>
             </div>
@@ -1113,7 +1644,7 @@ function setPaymentPreset(amount) {
     setMoneyInputValue('paymentAmountInput', amount, 'paymentAmountLive');
 }
 
-async function submitPayment(shopId) {
+async function submitPayment(shopId, currentDebt = 0) {
     const amount = parseMoney(document.getElementById('paymentAmountInput').value);
     const method = document.getElementById('paymentMethodInput').value;
 
@@ -1122,26 +1653,71 @@ async function submitPayment(shopId) {
         return;
     }
 
+    const debtVal = Number(currentDebt) || 0;
+
+    // 1. Agar qarz bo'lsa va to'lov summasi qarzdan ko'p bo'lsa (Avans):
+    if (debtVal > 0 && amount > debtVal) {
+        const overpayment = amount - debtVal;
+        showConfirmDialog({
+            title: "Ortiqcha to'lov (Avans)",
+            message: `Kiritilgan to'lov (${formatMoney(amount)}) joriy qarzdan (${formatMoney(debtVal)}) ortiq. Ortiqcha ${formatMoney(overpayment)} do'kon hisobiga avans (haqqi bor) sifatida yoziladi. Davom etasizmi?`,
+            itemName: `Do'kon avansi: +${formatMoney(overpayment)}`,
+            confirmText: "Ha, avans qabul qilish",
+            cancelText: "Tahrirlash",
+            onConfirm: () => {
+                closeConfirmDialog();
+                executePayment(shopId, amount, method);
+            }
+        });
+        return;
+    }
+
+    // 2. Agar do'konda qarz bo'lmasa (0 yoki manfiy) va yana to'lov kiritilsa:
+    if (debtVal <= 0) {
+        showConfirmDialog({
+            title: "Avans to'lovi",
+            message: `Do'konda hozirda qarzdorlik yo'q. Ushbu ${formatMoney(amount)} do'konning oldindan to'lovi (avansi) sifatida qabul qilinadi. Davom etasizmi?`,
+            itemName: `Yangi avans: ${formatMoney(amount)}`,
+            confirmText: "Ha, avans qabul qilish",
+            cancelText: "Bekor qilish",
+            onConfirm: () => {
+                closeConfirmDialog();
+                executePayment(shopId, amount, method);
+            }
+        });
+        return;
+    }
+
+    executePayment(shopId, amount, method);
+}
+
+async function executePayment(shopId, amount, method) {
     const btn = document.getElementById('submitPaymentBtn');
-    btn.disabled = true;
-    btn.innerHTML = 'Saqlanmoqda...';
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Saqlanmoqda...';
+    }
 
     try {
         await apiPost('/payments', { shopId, amount, method });
         showToast('To\'lov qabul qilindi', 'success');
         showShopDetail(shopId);
     } catch (err) {
-        btn.disabled = false;
-        btn.innerHTML = 'To\'lovni saqlash';
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = 'To\'lovni saqlash';
+        }
         showToast('Xatolik: ' + err.message, 'error');
     }
 }
 
 // Pastki navigatsiya holatini o'zgartirish
 function setActiveNav(tab) {
-    document.getElementById('navBozorlar').classList.toggle('active', tab === 'bozorlar');
-    document.getElementById('navMahsulotlar').classList.toggle('active', tab === 'mahsulotlar');
-    document.getElementById('navDashboard').classList.toggle('active', tab === 'dashboard');
+    document.getElementById('navBozorlar')?.classList.toggle('active', tab === 'bozorlar');
+    document.getElementById('navMahsulotlar')?.classList.toggle('active', tab === 'mahsulotlar');
+    document.getElementById('navDashboard')?.classList.toggle('active', tab === 'dashboard');
+    document.getElementById('navProfil')?.classList.toggle('active', tab === 'profil');
 }
 
 function goToTab(tab) {
@@ -1159,7 +1735,7 @@ function goToTab(tab) {
 
 // Mahsulotlar ro'yxati
 async function showProducts() {
-    titleEl.textContent = 'Ombor & Mahsulotlar';
+    updateHeaderMeta('Mahsulotlar', 'Ombor va tovarlar hisobi', 'OMBOR');
     backBtn.style.visibility = 'hidden';
     fabBtn.style.display = 'flex';
     fabBtn.onclick = showAddProductForm;
@@ -1178,7 +1754,7 @@ async function showProducts() {
         renderProductRows(allProductsList);
 
     } catch (err) {
-        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${err.message}</div>`;
+        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
     }
 }
 
@@ -1194,7 +1770,7 @@ function renderProductRows(products) {
         const isZero = p.stockQuantity === 0;
         const isOil = p.name.toLowerCase().includes('yog');
         return `
-            <div class="ledger-row" onclick="showAddStockInForm(${p.id}, '${escAttr(p.name)}')">
+            <div class="ledger-row" onclick="showAddStockInForm(${p.id}, '${escJs(p.name)}')">
                 <div class="ledger-row__main" style="display:flex; flex-direction:row; align-items:center; gap:12px;">
                     <div class="ledger-avatar ${isOil ? 'ledger-avatar--oil' : 'ledger-avatar--product'}">
                         ${isOil ? Icons.oil : Icons.box}
@@ -1209,7 +1785,7 @@ function renderProductRows(products) {
                         ${isZero ? Icons.alertTriangle + ' ' : ''}${p.stockQuantity} ta
                     </div>
                     <button class="icon-btn" onclick="event.stopPropagation(); showEditProductForm(${p.id})" title="Tahrirlash">${Icons.edit}</button>
-                    <button class="icon-btn icon-btn--danger" onclick="event.stopPropagation(); deleteProduct(${p.id})" title="O'chirish">${Icons.trash}</button>
+                    <button class="icon-btn icon-btn--danger" onclick="event.stopPropagation(); deleteProduct(${p.id}, '${escJs(p.name)}')" title="O'chirish">${Icons.trash}</button>
                     <span class="chevron">${Icons.chevronRight}</span>
                 </div>
             </div>
@@ -1217,8 +1793,20 @@ function renderProductRows(products) {
     }).join('');
 }
 
-function filterProducts() {
-    const query = document.getElementById('productSearchInput').value.trim().toLowerCase();
+let _productFilterTimer = null;
+function filterProducts(immediate = false) {
+    if (immediate) {
+        clearTimeout(_productFilterTimer);
+        _executeProductFilter();
+        return;
+    }
+    clearTimeout(_productFilterTimer);
+    _productFilterTimer = setTimeout(_executeProductFilter, 100);
+}
+
+function _executeProductFilter() {
+    const input = document.getElementById('productSearchInput');
+    const query = input ? input.value.trim().toLowerCase() : '';
     if (!query) {
         renderProductRows(allProductsList);
         return;
@@ -1228,7 +1816,7 @@ function filterProducts() {
 }
 
 function showAddProductForm() {
-    titleEl.textContent = 'Yangi mahsulot';
+    updateHeaderMeta('Yangi mahsulot', 'Katalogga tovar qo\'shish', 'QO\'SHISH');
     backBtn.style.visibility = 'visible';
     backBtn.onclick = showProducts;
     fabBtn.style.display = 'none';
@@ -1344,21 +1932,28 @@ async function submitProduct() {
     }
 
     const btn = document.getElementById('submitProductBtn');
-    btn.disabled = true;
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Saqlanmoqda...';
+    }
 
     try {
         await apiPost('/products', { name, unit, packageName, unitsPerPackage, purchasePrice, sellPrice });
         showToast('Mahsulot muvaffaqiyatli saqlandi', 'success');
         showProducts();
     } catch (err) {
-        btn.disabled = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} Mahsulotni saqlash`;
+        }
         showToast('Xatolik: ' + err.message, 'error');
     }
 }
 
 // Zaxira to'ldirish (Kirim) formasi
 function showAddStockInForm(productId, productName) {
-    titleEl.textContent = `Kirim: ${productName}`;
+    updateHeaderMeta(`Kirim: ${productName}`, 'Omborga yangi tovar kirimi', 'KIRIM');
     backBtn.style.visibility = 'visible';
     backBtn.onclick = showProducts;
     fabBtn.style.display = 'none';
@@ -1437,14 +2032,21 @@ async function submitStockIn(productId) {
     }
 
     const btn = document.getElementById('submitStockInBtn');
-    btn.disabled = true;
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Kirim qilinmoqda...';
+    }
 
     try {
         await apiPost('/stock-in', { productId, packageCount, totalCost });
         showToast('Kirim muvaffaqiyatli saqlandi!', 'success');
         showProducts();
     } catch (err) {
-        btn.disabled = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} Kirimni saqlash`;
+        }
         showToast('Xatolik: ' + err.message, 'error');
     }
 }
@@ -1453,7 +2055,7 @@ async function submitStockIn(productId) {
 let dashboardTab = 'umumiy';
 
 async function showDashboard() {
-    titleEl.textContent = 'Hisobot';
+    updateHeaderMeta('Hisobot', 'Moliyaviy tahlil va ko\'rsatkichlar', 'MOLIYA');
     backBtn.style.visibility = 'hidden';
     fabBtn.style.display = 'none';
     dashboardTab = 'umumiy';
@@ -1495,7 +2097,7 @@ async function loadDashboardTabContent() {
             renderRangePicker(el);
         }
     } catch (err) {
-        el.innerHTML = `<div class="empty-state">Xatolik: ${err.message}</div>`;
+        el.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
     }
 }
 
@@ -1506,7 +2108,7 @@ function renderSummaryHtml(summary, overdueShops) {
       <div class="section-title">${Icons.alertTriangle} Kam qolgan mahsulotlar</div>
       ${summary.lowStockProducts.map(p => `
         <div class="ledger-row" style="cursor:default;">
-          <div class="ledger-row__main"><div class="ledger-row__title">${p.productName}</div></div>
+          <div class="ledger-row__main"><div class="ledger-row__title">${escHtml(p.productName)}</div></div>
           <div class="ledger-row__amount amount--debt">${p.stockQuantity} ta</div>
         </div>
       `).join('')}
@@ -1520,7 +2122,7 @@ function renderSummaryHtml(summary, overdueShops) {
       ${overdueShops.map(s => `
         <div class="ledger-row" onclick="currentGroupId=null; currentGroupName=''; showShopDetail(${s.shopId})">
           <div class="ledger-row__main">
-            <div class="ledger-row__title">${s.shopName}</div>
+            <div class="ledger-row__title">${escHtml(s.shopName)}</div>
             <div class="ledger-row__subtitle">${s.daysSinceLastPayment} kundan beri to'lanmagan</div>
           </div>
           <div class="ledger-row__amount amount--debt">${formatMoney(s.currentDebt)}</div>
@@ -1562,7 +2164,7 @@ async function loadDailyReport() {
         const report = await apiGet(`/reports/daily?date=${date}`);
         resultEl.innerHTML = renderDailyReportHtml(report);
     } catch (err) {
-        resultEl.innerHTML = `<div class="empty-state">Xatolik: ${err.message}</div>`;
+        resultEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
     }
 }
 
@@ -1573,7 +2175,10 @@ function renderDailyReportHtml(report) {
     const salesHtml = report.sales.length ? report.sales.map(s => `
     <div class="ledger-row" style="cursor:default;">
       <div class="ledger-row__main">
-        <div class="ledger-row__title">${s.shopName}</div>
+        <div class="ledger-row__title" style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+          <span>${escHtml(s.shopName)}</span>
+          ${formatAdminBadge(s.createdBy)}
+        </div>
         <div class="ledger-row__subtitle">${s.paymentType}</div>
       </div>
       <div class="ledger-row__amount amount--debt">${formatMoney(s.amount)}</div>
@@ -1582,7 +2187,13 @@ function renderDailyReportHtml(report) {
 
     const paymentsHtml = report.payments.length ? report.payments.map(p => `
     <div class="ledger-row" style="cursor:default;">
-      <div class="ledger-row__main"><div class="ledger-row__title">${p.shopName}</div></div>
+      <div class="ledger-row__main">
+        <div class="ledger-row__title" style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+          <span>${escHtml(p.shopName)}</span>
+          ${formatAdminBadge(p.createdBy)}
+        </div>
+        <div class="ledger-row__subtitle">To'lov qabul qilindi</div>
+      </div>
       <div class="ledger-row__amount amount--paid">${formatMoney(p.amount)}</div>
     </div>
   `).join('') : '<div class="empty-state">Bu kuni to\'lov bo\'lmagan</div>';
@@ -1590,7 +2201,10 @@ function renderDailyReportHtml(report) {
     const stockInHtml = report.stockIns && report.stockIns.length ? report.stockIns.map(s => `
     <div class="ledger-row" style="cursor:default;">
       <div class="ledger-row__main">
-        <div class="ledger-row__title">${s.productName}</div>
+        <div class="ledger-row__title" style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+          <span>${escHtml(s.productName)}</span>
+          ${formatAdminBadge(s.createdBy)}
+        </div>
         <div class="ledger-row__subtitle">${s.packageCount} paket</div>
       </div>
       <div class="ledger-row__amount amount--debt">${formatMoney(s.totalCost)}</div>
@@ -1608,7 +2222,7 @@ function renderDailyReportHtml(report) {
     <div class="stat-card__value" style="font-size:18px;">${formatMoney(totalSalesForDay)}</div>
   </div>
   <div class="stat-card">
-    <div class="stat-card__label">Kunlik sof foyda</div>
+    <div class="stat-card__label">Kunlik yalpi foyda</div>
     <div class="stat-card__value" style="color:var(--color-paid); font-size:18px;">${formatMoney(report.dailyProfit)}</div>
   </div>
 </div>
@@ -1618,15 +2232,22 @@ function renderDailyReportHtml(report) {
 </div>
 
     <div class="stat-card" style="margin-bottom:12px;">
-      <div class="stat-card__label" style="margin-bottom:10px;">Tushum (to'lov turi bo'yicha)</div>
-      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--color-line);">
-        <span>NAQD</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NAQD || 0)}</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div class="stat-card__label" style="font-weight:700; color:var(--color-paid);">Kassaga tushgan to'lovlar</div>
+        <span style="font-size:14px; font-weight:700; color:var(--color-paid);">${formatMoney((Number(revenue.NAQD) || 0) + (Number(revenue.KARTA) || 0))}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--color-line);">
-        <span>KARTA</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.KARTA || 0)}</span>
+      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--color-line); font-size:13px;">
+        <span>Naqd to'lov:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NAQD || 0)}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:6px 0;">
-        <span>NASIYA</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NASIYA || 0)}</span>
+      <div style="display:flex; justify-content:space-between; padding:5px 0; font-size:13px;">
+        <span>Karta orqali:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.KARTA || 0)}</span>
+      </div>
+    </div>
+
+    <div class="stat-card" style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="stat-card__label" style="color:var(--color-debt); font-weight:700;">Nasiyaga berilgan savdo</div>
+        <span style="font-size:14px; font-weight:700; color:var(--color-debt);">${formatMoney(revenue.NASIYA || 0)}</span>
       </div>
     </div>
 
@@ -1661,7 +2282,7 @@ async function loadMonthlyReport() {
         const report = await apiGet(`/reports/monthly?month=${month}`);
         resultEl.innerHTML = renderMonthlyReportHtml(report);
     } catch (err) {
-        resultEl.innerHTML = `<div class="empty-state">Xatolik: ${err.message}</div>`;
+        resultEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
     }
 }
 
@@ -1670,14 +2291,14 @@ function renderMonthlyReportHtml(report) {
 
     const productVolHtml = report.productSalesVolume.length ? report.productSalesVolume.map(p => `
     <div class="ledger-row" style="cursor:default;">
-      <div class="ledger-row__main"><div class="ledger-row__title">${p.productName}</div></div>
+      <div class="ledger-row__main"><div class="ledger-row__title">${escHtml(p.productName)}</div></div>
       <div class="ledger-row__amount amount--neutral">${p.totalPackagesSold} ta</div>
     </div>
   `).join('') : '<div class="empty-state">Ma\'lumot yo\'q</div>';
 
     const stockInVolHtml = report.stockInVolume && report.stockInVolume.length ? report.stockInVolume.map(s => `
   <div class="ledger-row" style="cursor:default;">
-    <div class="ledger-row__main"><div class="ledger-row__title">${s.productName}</div></div>
+    <div class="ledger-row__main"><div class="ledger-row__title">${escHtml(s.productName)}</div></div>
     <div class="ledger-row__amount amount--debt">${s.totalPackagesReceived} ta</div>
   </div>
 `).join('') : '<div class="empty-state">Ma\'lumot yo\'q</div>';
@@ -1692,7 +2313,7 @@ function renderMonthlyReportHtml(report) {
         <div class="stat-card__value" style="font-size:18px;">${formatMoney(report.totalSalesAmount)}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card__label">Oylik sof foyda</div>
+        <div class="stat-card__label">Oylik yalpi foyda</div>
         <div class="stat-card__value" style="color:var(--color-paid); font-size:18px;">${formatMoney(report.totalProfit)}</div>
       </div>
     </div>
@@ -1703,17 +2324,24 @@ function renderMonthlyReportHtml(report) {
 </div>
     
     <div class="stat-card" style="margin-bottom:12px;">
-  <div class="stat-card__label" style="margin-bottom:10px;">Tushum (to'lov turi bo'yicha)</div>
-  <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--color-line);">
-    <span>NAQD</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NAQD || 0)}</span>
-  </div>
-  <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--color-line);">
-    <span>KARTA</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.KARTA || 0)}</span>
-  </div>
-  <div style="display:flex; justify-content:space-between; padding:6px 0;">
-    <span>NASIYA</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NASIYA || 0)}</span>
-  </div>
-</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div class="stat-card__label" style="font-weight:700; color:var(--color-paid);">Kassaga tushgan to'lovlar</div>
+        <span style="font-size:14px; font-weight:700; color:var(--color-paid);">${formatMoney((Number(revenue.NAQD) || 0) + (Number(revenue.KARTA) || 0))}</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--color-line); font-size:13px;">
+        <span>Naqd to'lov:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NAQD || 0)}</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:5px 0; font-size:13px;">
+        <span>Karta orqali:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.KARTA || 0)}</span>
+      </div>
+    </div>
+
+    <div class="stat-card" style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="stat-card__label" style="color:var(--color-debt); font-weight:700;">Nasiyaga berilgan savdo</div>
+        <span style="font-size:14px; font-weight:700; color:var(--color-debt);">${formatMoney(revenue.NASIYA || 0)}</span>
+      </div>
+    </div>
 
 <div class="section-title">${Icons.cart} Bazadan kirim (mahsulot bo'yicha)</div>
 ${stockInVolHtml}
@@ -1729,7 +2357,7 @@ ${stockInVolHtml}
 
 
 function showEditMarketGroupForm(id, currentName) {
-    titleEl.textContent = 'Toifani tahrirlash';
+    updateHeaderMeta('Toifani tahrirlash', currentName || 'Nomini o\'zgartirish', 'TAHRIR');
     backBtn.style.visibility = 'visible';
     backBtn.onclick = showMarketGroups;
     fabBtn.style.display = 'none';
@@ -1754,7 +2382,7 @@ function showEditMarketGroupForm(id, currentName) {
                 <input type="text" class="form-input" id="groupNameInput" value="${escAttr(currentName)}">
             </div>
             <div class="form-group" style="margin-top: 24px;">
-                <button class="btn btn--primary btn--full" onclick="submitEditMarketGroup(${id})">
+                <button class="btn btn--primary btn--full" id="submitEditMarketGroupBtn" onclick="submitEditMarketGroup(${id})">
                     ${Icons.check} O'zgarishlarni saqlash
                 </button>
             </div>
@@ -1768,31 +2396,47 @@ async function submitEditMarketGroup(id) {
         showToast('Nomini kiriting', 'error');
         return;
     }
+    const btn = document.getElementById('submitEditMarketGroupBtn');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Saqlanmoqda...';
+    }
     try {
         await apiPut(`/market-groups/${id}`, { name });
         showToast('Toifa nomi yangilandi', 'success');
         showMarketGroups();
     } catch (err) {
         showToast('Xatolik: ' + err.message, 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} O'zgarishlarni saqlash`;
+        }
     }
 }
 
-async function deleteMarketGroup(id) {
-    if (!confirm('Rostdan ham shu toifani o\'chirmoqchimisiz? Ichidagi do\'konlar ham ta\'sirlanishi mumkin.')) {
-        return;
-    }
-    try {
-        await apiDelete(`/market-groups/${id}`);
-        showToast('Toifa muvaffaqiyatli o\'chirildi', 'success');
-        showMarketGroups();
-    } catch (err) {
-        showToast('Xatolik: ' + err.message, 'error');
-    }
+async function deleteMarketGroup(id, name) {
+    showConfirmDialog({
+        title: "Toifani o'chirish",
+        itemName: name || 'Bozor toifasi',
+        message: "Rostdan ham shu bozor toifasini o'chirmoqchimisiz? Toifani o'chirish uchun uning ichida faol do'konlar bo'lmasligi kerak.",
+        confirmText: "O'chirish",
+        cancelText: "Bekor qilish",
+        onConfirm: async () => {
+            try {
+                await apiDelete(`/market-groups/${id}`);
+                showToast('Toifa muvaffaqiyatli o\'chirildi', 'success');
+                showMarketGroups();
+            } catch (err) {
+                showToast('Xatolik: ' + err.message, 'error');
+            }
+        }
+    });
 }
 
 
 function showEditShopForm(id, name, ownerName, phone) {
-    titleEl.textContent = 'Do\'konni tahrirlash';
+    updateHeaderMeta('Do\'konni tahrirlash', name || 'Ma\'lumotlarni yangilash', 'TAHRIR');
     backBtn.style.visibility = 'visible';
     backBtn.onclick = () => showShops(currentGroupId, currentGroupName);
     fabBtn.style.display = 'none';
@@ -1831,7 +2475,7 @@ function showEditShopForm(id, name, ownerName, phone) {
                 <input type="tel" class="form-input" id="phoneInput" value="${escAttr(phone)}">
             </div>
             <div class="form-group" style="margin-top: 24px;">
-                <button class="btn btn--primary btn--full" onclick="submitEditShop(${id})">
+                <button class="btn btn--primary btn--full" id="submitEditShopBtn" onclick="submitEditShop(${id})">
                     ${Icons.check} O'zgarishlarni saqlash
                 </button>
             </div>
@@ -1849,30 +2493,56 @@ async function submitEditShop(id) {
         return;
     }
 
+    const btn = document.getElementById('submitEditShopBtn');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Saqlanmoqda...';
+    }
+
     try {
         await apiPut(`/shops/${id}`, { name, ownerName, phone, marketGroupId: currentGroupId });
         showToast('Do\'kon ma\'lumotlari yangilandi', 'success');
         showShops(currentGroupId, currentGroupName);
     } catch (err) {
         showToast('Xatolik: ' + err.message, 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} O'zgarishlarni saqlash`;
+        }
     }
 }
 
-async function deleteShop(id) {
-    if (!confirm('Rostdan ham shu do\'konni o\'chirmoqchimisiz? Uning butun tarixi (sotuv/to\'lov) ham ta\'sirlanadi.')) {
+async function deleteShop(id, name, debt = 0) {
+    if (debt > 0) {
+        showToast(`Ushbu do'konda ${formatMoney(debt)} qarz mavjud! Do'konni o'chirishdan oldin qarzni to'liq yoping.`, 'warning');
         return;
     }
-    try {
-        await apiDelete(`/shops/${id}`);
-        showToast('Do\'kon muvaffaqiyatli o\'chirildi', 'success');
-        showShops(currentGroupId, currentGroupName);
-    } catch (err) {
-        showToast('Xatolik: ' + err.message, 'error');
+    if (debt < 0) {
+        showToast(`Ushbu do'konda ${formatMoney(Math.abs(debt))} avans (haqdorlik) mavjud! Avval hisob-kitobni yakunlang.`, 'warning');
+        return;
     }
+
+    showConfirmDialog({
+        title: "Do'konni o'chirish",
+        itemName: name || "Do'kon",
+        message: "Rostdan ham shu do'konni o'chirmoqchimisiz? Uning butun savdo va to'lovlar tarixi butunlay o'chiriladi.",
+        confirmText: "O'chirish",
+        cancelText: "Bekor qilish",
+        onConfirm: async () => {
+            try {
+                await apiDelete(`/shops/${id}`);
+                showToast('Do\'kon muvaffaqiyatli o\'chirildi', 'success');
+                showShops(currentGroupId, currentGroupName);
+            } catch (err) {
+                showToast('Xatolik: ' + err.message, 'error');
+            }
+        }
+    });
 }
 
 async function showEditProductForm(id) {
-    titleEl.textContent = 'Mahsulotni tahrirlash';
+    updateHeaderMeta('Mahsulotni tahrirlash', 'Narx va paket o\'lchamlarini yangilash', 'TAHRIR');
     backBtn.style.visibility = 'visible';
     backBtn.onclick = showProducts;
     fabBtn.style.display = 'none';
@@ -1981,14 +2651,14 @@ async function showEditProductForm(id) {
             </div>
 
             <div class="form-group" style="margin-top: 24px;">
-                <button class="btn btn--primary btn--full" onclick="submitEditProduct(${id})">
+                <button class="btn btn--primary btn--full" id="submitEditProductBtn" onclick="submitEditProduct(${id})">
                     ${Icons.check} O'zgarishlarni saqlash
                 </button>
             </div>
         </div>
     `;
     } catch (err) {
-        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${err.message}</div>`;
+        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
     }
 }
 
@@ -2005,25 +2675,43 @@ async function submitEditProduct(id) {
         return;
     }
 
+    const btn = document.getElementById('submitEditProductBtn');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Saqlanmoqda...';
+    }
+
     try {
         await apiPut(`/products/${id}`, { name, unit, packageName, unitsPerPackage, purchasePrice, sellPrice });
         showToast('Mahsulot muvaffaqiyatli saqlandi', 'success');
         showProducts();
     } catch (err) {
         showToast('Xatolik: ' + err.message, 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} O'zgarishlarni saqlash`;
+        }
     }
 }
 
-async function deleteProduct(id) {
-    if (!confirm('Rostdan ham shu mahsulotni o\'chirmoqchimisiz?')) {
-        return;
-    }
-    try {
-        await apiDelete(`/products/${id}`);
-        showProducts();
-    } catch (err) {
-        alert('Xatolik: ' + err.message);
-    }
+async function deleteProduct(id, name) {
+    showConfirmDialog({
+        title: "Mahsulotni o'chirish",
+        itemName: name || "Mahsulot",
+        message: "Rostdan ham shu mahsulotni katalogdan o'chirmoqchimisiz? Zaxira va kirim hisoblari ta'sirlanishi mumkin.",
+        confirmText: "O'chirish",
+        cancelText: "Bekor qilish",
+        onConfirm: async () => {
+            try {
+                await apiDelete(`/products/${id}`);
+                showToast("Mahsulot muvaffaqiyatli o'chirildi", 'success');
+                showProducts();
+            } catch (err) {
+                showToast('Xatolik: ' + err.message, 'error');
+            }
+        }
+    });
 }
 
 
@@ -2057,7 +2745,7 @@ async function loadRangeReport() {
         const report = await apiGet(`/reports/range?start=${start}&end=${end}`);
         resultEl.innerHTML = renderRangeReportHtml(report);
     } catch (err) {
-        resultEl.innerHTML = `<div class="empty-state">Xatolik: ${err.message}</div>`;
+        resultEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
     }
 }
 
@@ -2067,7 +2755,7 @@ function renderRangeReportHtml(report) {
 
     const stockInVolHtml = report.stockInVolume && report.stockInVolume.length ? report.stockInVolume.map(s => `
   <div class="ledger-row" style="cursor:default;">
-    <div class="ledger-row__main"><div class="ledger-row__title">${s.productName}</div></div>
+    <div class="ledger-row__main"><div class="ledger-row__title">${escHtml(s.productName)}</div></div>
     <div class="ledger-row__amount amount--debt">${s.totalPackagesReceived} ta</div>
   </div>
 `).join('') : '<div class="empty-state">Ma\'lumot yo\'q</div>';
@@ -2076,7 +2764,7 @@ function renderRangeReportHtml(report) {
 
     const productVolHtml = report.productSalesVolume.length ? report.productSalesVolume.map(p => `
     <div class="ledger-row" style="cursor:default;">
-      <div class="ledger-row__main"><div class="ledger-row__title">${p.productName}</div></div>
+      <div class="ledger-row__main"><div class="ledger-row__title">${escHtml(p.productName)}</div></div>
       <div class="ledger-row__amount amount--neutral">${p.totalPackagesSold} ta</div>
     </div>
   `).join('') : '<div class="empty-state">Ma\'lumot yo\'q</div>';
@@ -2091,7 +2779,7 @@ function renderRangeReportHtml(report) {
         <div class="stat-card__value" style="font-size:18px;">${formatMoney(report.totalSalesAmount)}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card__label">Umumiy sof foyda</div>
+        <div class="stat-card__label">Umumiy yalpi foyda</div>
         <div class="stat-card__value" style="color:var(--color-paid); font-size:18px;">${formatMoney(report.totalProfit)}</div>
       </div>
     </div>
@@ -2102,15 +2790,22 @@ function renderRangeReportHtml(report) {
 </div>
 
     <div class="stat-card" style="margin-bottom:12px;">
-      <div class="stat-card__label" style="margin-bottom:10px;">Tushum (to'lov turi bo'yicha)</div>
-      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--color-line);">
-        <span>NAQD</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NAQD || 0)}</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div class="stat-card__label" style="font-weight:700; color:var(--color-paid);">Kassaga tushgan to'lovlar</div>
+        <span style="font-size:14px; font-weight:700; color:var(--color-paid);">${formatMoney((Number(revenue.NAQD) || 0) + (Number(revenue.KARTA) || 0))}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--color-line);">
-        <span>KARTA</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.KARTA || 0)}</span>
+      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--color-line); font-size:13px;">
+        <span>Naqd to'lov:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NAQD || 0)}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:6px 0;">
-        <span>NASIYA</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NASIYA || 0)}</span>
+      <div style="display:flex; justify-content:space-between; padding:5px 0; font-size:13px;">
+        <span>Karta orqali:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.KARTA || 0)}</span>
+      </div>
+    </div>
+
+    <div class="stat-card" style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="stat-card__label" style="color:var(--color-debt); font-weight:700;">Nasiyaga berilgan savdo</div>
+        <span style="font-size:14px; font-weight:700; color:var(--color-debt);">${formatMoney(revenue.NASIYA || 0)}</span>
       </div>
     </div>
     
@@ -2141,7 +2836,7 @@ function downloadRangeExcel() {
     window.location.href = `${API_BASE}/reports/range/export?start=${start}&end=${end}`;
 }
 async function showDebtorShopsList() {
-    titleEl.textContent = 'Qarzdor do\'konlar';
+    updateHeaderMeta('Qarzdor do\'konlar', 'Muddati o\'tgan va joriy qarzlar', 'QARZ');
     backBtn.style.visibility = 'visible';
     backBtn.onclick = () => { dashboardTab = 'umumiy'; showDashboard(); };
     fabBtn.style.display = 'none';
@@ -2161,7 +2856,7 @@ async function showDebtorShopsList() {
         contentEl.innerHTML = debtors.map(shop => {
             const debt = Number(shop.currentDebt) || 0;
             return `
-                <div class="shop-card" onclick="currentGroupId=${shop.marketGroupId}; currentGroupName='${escAttr(shop.marketGroupName)}'; showShopDetail(${shop.id})">
+                <div class="shop-card" onclick="currentGroupId=${shop.marketGroupId}; currentGroupName='${escJs(shop.marketGroupName)}'; showShopDetail(${shop.id})">
                     <div class="shop-card__top">
                         <div class="shop-card__main">
                             <div class="shop-card__title">${escHtml(shop.name)}</div>
@@ -2183,7 +2878,7 @@ async function showDebtorShopsList() {
                                     <span>Qo'ng'iroq</span>
                                 </a>
                             ` : ''}
-                            <button class="action-chip action-chip--telegram" onclick="shareShopDebt('${escAttr(shop.name)}', ${debt}, '${escAttr(shop.phone || '')}')" title="Telegramga hisob yuborish">
+                            <button class="action-chip action-chip--telegram" onclick="shareShopDebt('${escJs(shop.name)}', ${debt}, '${escJs(shop.phone || '')}')" title="Telegramga hisob yuborish">
                                 ${Icons.tgAction}
                                 <span>Telegram</span>
                             </button>
@@ -2205,3 +2900,489 @@ function toggleShopSort() {
         setShopSort('debtAsc');
     }
 }
+
+// ==========================================
+// 8. BAZA ZAXIRA NUSXASI (BACKUP & RESTORE)
+// ==========================================
+
+async function downloadDatabaseExcelBackup() {
+    showToast('Baza Excel (.xlsx) fayli tayyorlanmoqda...', 'info');
+    try {
+        const response = await fetch('/api/backup/download-excel');
+        if (!response.ok) {
+            throw new Error('Excel zaxirasini yuklashda xatolik yuz berdi');
+        }
+        const blob = await response.blob();
+        const contentDisp = response.headers.get('content-disposition');
+        let filename = 'Bozor_Distributor_Baza.xlsx';
+        if (contentDisp && contentDisp.includes('filename=')) {
+            const match = contentDisp.match(/filename="?([^";]+)"?/);
+            if (match && match[1]) filename = match[1];
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        showToast('Excel baza fayli muvaffaqiyatli yuklab olindi!', 'success');
+    } catch (err) {
+        showToast('Xatolik: ' + err.message, 'error');
+    }
+}
+
+async function downloadDatabaseBackup() {
+    showToast('Baza JSON zaxira nusxasi tayyorlanmoqda...', 'info');
+    try {
+        const response = await fetch('/api/backup/download');
+        if (!response.ok) {
+            throw new Error('Zaxira faylini olishda xatolik yuz berdi');
+        }
+        const blob = await response.blob();
+        const contentDisp = response.headers.get('content-disposition');
+        let filename = 'distributor_baza_backup.json';
+        if (contentDisp && contentDisp.includes('filename=')) {
+            const match = contentDisp.match(/filename="?([^";]+)"?/);
+            if (match && match[1]) filename = match[1];
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        showToast('Baza nusxasi muvaffaqiyatli yuklab olindi!', 'success');
+    } catch (err) {
+        showToast('Xatolik: ' + err.message, 'error');
+    }
+}
+
+function triggerRestoreBackup() {
+    const fileInput = document.getElementById('backupFileInput');
+    if (fileInput) {
+        fileInput.value = '';
+        fileInput.click();
+    }
+}
+
+async function onBackupFileSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    showRestorePasswordModal(file);
+}
+
+function showRestorePasswordModal(file) {
+    let dialogEl = document.getElementById('globalConfirmDialog');
+    if (!dialogEl) {
+        dialogEl = document.createElement('div');
+        dialogEl.id = 'globalConfirmDialog';
+        dialogEl.className = 'confirm-overlay';
+        document.body.appendChild(dialogEl);
+    }
+
+    dialogEl.innerHTML = `
+        <div class="confirm-backdrop" onclick="closeConfirmDialog()"></div>
+        <div class="confirm-card">
+            <div class="confirm-icon-wrap">
+                <div class="confirm-icon-badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </div>
+            </div>
+            <div class="confirm-title">Bazani tiklashni tasdiqlang</div>
+            <div class="confirm-item-name" style="word-break: break-all;">${escHtml(file.name)}</div>
+            <div class="confirm-message" style="margin-bottom: 14px;">
+                DIQQAT: Ushbu fayldagi ma'lumotlar qayta tiklanadi. Bu amal mavjud barcha ma'lumotlarni almashtiradi.<br><br>
+                Xavfsizlik yuzasidan <strong>administrator paroli</strong>ni kiriting:
+            </div>
+            <div class="form-group" style="margin-bottom: 18px; text-align: left;">
+                <input type="password" id="restoreAdminPasswordInput" class="form-input" placeholder="Admin parolini kiriting" autofocus style="text-align:center; font-size:15px; letter-spacing:1px;">
+            </div>
+            <div class="confirm-actions">
+                <button type="button" class="confirm-btn-cancel" onclick="closeConfirmDialog()">Bekor qilish</button>
+                <button type="button" class="confirm-btn-danger" id="confirmRestoreBtn">Tasdiqlash va Tiklash</button>
+            </div>
+        </div>
+    `;
+    dialogEl.classList.add('show');
+
+    const input = document.getElementById('restoreAdminPasswordInput');
+    const btn = document.getElementById('confirmRestoreBtn');
+
+    const handleConfirm = async () => {
+        const password = input.value.trim();
+        if (!password) {
+            showToast('Administrator parolini kiritishingiz shart!', 'error');
+            input.focus();
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Tekshirilmoqda...';
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('password', password);
+
+            showToast('Baza tekshirilmoqda va tiklanmoqda...', 'info');
+
+            const response = await fetch('/api/backup/restore', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json().catch(() => ({}));
+            if (response.ok && result.success) {
+                closeConfirmDialog();
+                closeBottomSheet();
+                showToast('Baza muvaffaqiyatli tiklandi! Sahifa yangilanmoqda...', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1600);
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Tasdiqlash va Tiklash';
+                showToast(result.message || 'Parol noto\'g\'ri yoki fayl buzilgan', 'error');
+            }
+        } catch (err) {
+            btn.disabled = false;
+            btn.textContent = 'Tasdiqlash va Tiklash';
+            showToast('Tiklashda xatolik: ' + err.message, 'error');
+        }
+    };
+
+    btn.onclick = handleConfirm;
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleConfirm();
+    });
+}
+
+// ==========================================
+// 9. DO'KON AKT SVERKA VA CHOP ETISH (PDF)
+// ==========================================
+
+function generateStatementPaperHtml(ledger, shopId) {
+    const entries = ledger.entries || [];
+    const debt = Number(ledger.currentDebt) || 0;
+    const totalSales = Number(ledger.totalSalesAmount) || 0;
+    const totalPayments = Number(ledger.totalPaymentsAmount) || 0;
+    const genDate = new Date().toLocaleString('uz-UZ', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    let balanceStyle = '';
+    let balanceText = '';
+    if (debt > 0) {
+        balanceText = formatMoney(debt) + " (Qarz)";
+        balanceStyle = 'color: #DC2626;';
+    } else if (debt < 0) {
+        balanceText = formatMoney(Math.abs(debt)) + " (Avans)";
+        balanceStyle = 'color: #059669;';
+    } else {
+        balanceText = "0 so'm (Qarzsiz)";
+        balanceStyle = 'color: #475569;';
+    }
+
+    let rowsHtml = '';
+    if (entries.length === 0) {
+        rowsHtml = `
+            <tr>
+                <td colspan="6" style="text-align:center; padding:30px; color:#64748B; font-style:italic;">
+                    Ushbu do'kon bo'yicha hali savdo yoki to'lov amaliyotlari mavjud emas.
+                </td>
+            </tr>
+        `;
+    } else {
+        rowsHtml = entries.map((entry, index) => {
+            const isSale = entry.type === 'SOTUV';
+            const entryDate = entry.date ? new Date(entry.date).toLocaleString('uz-UZ', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : '—';
+
+            const isCancelled = Boolean(entry.isCancelled);
+            let typeBadge = '';
+            if (isCancelled) {
+                typeBadge = `<span class="pdf-badge" style="background:#FEE2E2; color:#B91C1C; border:1px solid #FCA5A5;">BEKOR</span>`;
+            } else if (isSale) {
+                typeBadge = `<span class="pdf-badge pdf-badge--sale"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg> SOTUV</span>`;
+            } else {
+                typeBadge = `<span class="pdf-badge pdf-badge--payment"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg> TO'LOV</span>`;
+            }
+
+            let detailHtml = `<div style="font-weight:600; color:#0F172A; ${isCancelled ? 'text-decoration: line-through; opacity:0.7;' : ''}">${escHtml(entry.description || (isSale ? 'Tovarlar yetkazildi' : "To'lov qabul qilindi"))}</div>`;
+
+            if (isCancelled) {
+                detailHtml += `<div style="color:#DC2626; font-size:11px; margin-top:2px;">(Bekor qilingan: ${escHtml(entry.cancelReason || 'Sabab ko\'rsatilmadi')})</div>`;
+            }
+
+            if (isSale && entry.items && entry.items.length > 0) {
+                detailHtml += `
+                    <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px 8px; margin-top:6px; font-size:11.5px; line-height:1.5;">
+                        ${entry.items.map(it => `
+                            <div style="display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed #E2E8F0; padding:2px 0;">
+                                <span>📦 <b>${escHtml(it.productName)}</b> &nbsp;<span style="color:#64748B;">(${it.packageCount} dona × ${formatMoney(it.price)})</span></span>
+                                <span style="font-weight:700; color:#1E293B;">${formatMoney(it.total)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                if (entry.initialPaidAmount && Number(entry.initialPaidAmount) > 0) {
+                    detailHtml += `
+                        <div style="font-size:11px; color:#047857; margin-top:4px; font-weight:600;">
+                            ✓ Yetkazish vaqtida to'langan qism: ${formatMoney(entry.initialPaidAmount)}
+                        </div>
+                    `;
+                }
+            } else if (!isSale) {
+                detailHtml += `
+                    <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
+                        <span class="pdf-badge" style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;">Usul: ${escHtml(entry.paymentMethod || 'Naqd')}</span>
+                    </div>
+                `;
+            }
+
+            let amountText = `${isSale ? '+' : '−'}${formatMoney(entry.amount)}`;
+            let amountColor = isSale ? '#2563EB' : '#059669';
+            if (isCancelled) {
+                amountText = `<del style="color:#94A3B8;">${amountText}</del>`;
+                amountColor = '#94A3B8';
+            }
+
+            const balanceVal = Number(entry.balanceAfter) || 0;
+            let balanceColText = '';
+            let balanceColColor = '';
+            if (balanceVal > 0) {
+                balanceColText = formatMoney(balanceVal);
+                balanceColColor = '#DC2626';
+            } else if (balanceVal < 0) {
+                balanceColText = 'Avans: ' + formatMoney(Math.abs(balanceVal));
+                balanceColColor = '#059669';
+            } else {
+                balanceColText = "0 so'm";
+                balanceColColor = '#64748B';
+            }
+
+            return `
+                <tr>
+                    <td style="color:#64748B; font-weight:600; text-align:center;">${index + 1}</td>
+                    <td style="white-space:nowrap; font-size:12px; color:#334155;">${entryDate}</td>
+                    <td>${typeBadge}</td>
+                    <td>${detailHtml}</td>
+                    <td style="text-align:right; font-weight:800; font-variant-numeric:tabular-nums; color:${amountColor}; white-space:nowrap;">${amountText}</td>
+                    <td style="text-align:right; font-weight:700; font-variant-numeric:tabular-nums; color:${balanceColColor}; white-space:nowrap;">${balanceColText}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    return `
+        <div class="statement-paper">
+            <!-- Hujjat sarlavhasi (Header) -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0F172A; padding-bottom:14px; margin-bottom:18px; gap:16px;">
+                <div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:22px; font-weight:900; letter-spacing:-0.5px; color:#0F172A;">BOZOR DISTRIBUTOR</span>
+                        <span class="pdf-badge" style="background:#0F172A; color:#FFFFFF; font-size:10px;">RASMIY AKT</span>
+                    </div>
+                    <div style="font-size:12px; color:#64748B; margin-top:2px; font-weight:500;">
+                        Tovarlar distribyutsiyasi va o'zaro hisob-kitoblar tizimi
+                    </div>
+                </div>
+                <div style="text-align:right; font-size:12px; color:#475569; line-height:1.5;">
+                    <div>Hujjat №: <b style="color:#0F172A;">AKT-${shopId}</b></div>
+                    <div>Sana: <b>${genDate}</b></div>
+                </div>
+            </div>
+
+            <!-- Hujjat nomi -->
+            <div style="text-align:center; margin-bottom:18px;">
+                <h2 style="margin:0; font-size:18px; font-weight:800; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+                    O'zaro hisob-kitoblar dalolatnomasi (Akt sverka)
+                </h2>
+                <div style="font-size:12px; color:#64748B; margin-top:4px;">
+                    Yetkazib beruvchi va xaridor o'rtasidagi barcha tovar va to'lovlar tarixi
+                </div>
+            </div>
+
+            <!-- Do'kon rekvizitlari -->
+            <div style="background:#F8FAFC; border:1px solid #CBD5E1; border-radius:12px; padding:12px 16px; margin-bottom:18px;">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; font-size:12.5px;">
+                    <div>
+                        <span style="color:#64748B; display:block; font-size:11px; text-transform:uppercase; font-weight:700;">Do'kon nomi:</span>
+                        <span style="font-weight:800; font-size:14px; color:#0F172A;">${escHtml(ledger.shopName)}</span>
+                    </div>
+                    <div>
+                        <span style="color:#64748B; display:block; font-size:11px; text-transform:uppercase; font-weight:700;">Mas'ul shaxs (Egasi):</span>
+                        <span style="font-weight:700; color:#1E293B;">${escHtml(ledger.ownerName || '—')}</span>
+                    </div>
+                    <div>
+                        <span style="color:#64748B; display:block; font-size:11px; text-transform:uppercase; font-weight:700;">Telefon raqami:</span>
+                        <span style="font-weight:700; color:#1E293B;">${escHtml(ledger.phone || '—')}</span>
+                    </div>
+                    <div>
+                        <span style="color:#64748B; display:block; font-size:11px; text-transform:uppercase; font-weight:700;">Bozor / Hudud:</span>
+                        <span style="font-weight:700; color:#1E293B;">${escHtml(ledger.marketGroupName || 'Umumiy')}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Moliyaviy ko'rsatkichlar (KPIs) -->
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:20px;">
+                <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:12px 14px; text-align:center;">
+                    <div style="font-size:11px; font-weight:700; color:#1D4ED8; text-transform:uppercase; letter-spacing:0.4px;">Jami yetkazilgan</div>
+                    <div style="font-size:16px; font-weight:800; color:#1E3A8A; margin-top:4px;">${formatMoney(totalSales)}</div>
+                </div>
+                <div style="background:#ECFDF5; border:1px solid #A7F3D0; border-radius:10px; padding:12px 14px; text-align:center;">
+                    <div style="font-size:11px; font-weight:700; color:#047857; text-transform:uppercase; letter-spacing:0.4px;">Jami to'langan</div>
+                    <div style="font-size:16px; font-weight:800; color:#064E3B; margin-top:4px;">${formatMoney(totalPayments)}</div>
+                </div>
+                <div style="background:#FFF1F2; border:1px solid #FECDD3; border-radius:10px; padding:12px 14px; text-align:center;">
+                    <div style="font-size:11px; font-weight:700; color:#BE123C; text-transform:uppercase; letter-spacing:0.4px;">Joriy qoldiq holati</div>
+                    <div style="font-size:16px; font-weight:800; margin-top:4px; ${balanceStyle}">${balanceText}</div>
+                </div>
+            </div>
+
+            <!-- Amaliyotlar jadvali -->
+            <div class="pdf-table-wrapper">
+                <table class="pdf-table">
+                    <thead>
+                        <tr>
+                            <th style="width:36px; text-align:center;">№</th>
+                            <th style="width:115px;">Sana & Vaqt</th>
+                            <th style="width:90px;">Amal</th>
+                            <th>Tafsilot & Mahsulotlar</th>
+                            <th style="width:130px; text-align:right;">Amal summasi</th>
+                            <th style="width:125px; text-align:right;">Qoldiq</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Imzolar va tasdiqlash bloki -->
+            <div class="pdf-signature-block" style="margin-top:20px; padding-top:14px; border-top:1px dashed #CBD5E1; page-break-inside:avoid; break-inside:avoid;">
+                <div style="font-size:11px; color:#64748B; font-style:italic; text-align:center; margin-bottom:14px;">
+                    Mazkur dalolatnoma tomonlar o'rtasida tovar yetkazib berish va o'zaro hisob-kitoblar to'g'riligini tasdiqlaydi.
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; font-size:12px;">
+                    <div style="border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px; background:#F8FAFC;">
+                        <div style="font-weight:700; color:#0F172A; margin-bottom:4px;">Yetkazib beruvchi:</div>
+                        <div style="color:#475569; font-size:11.5px;">"Bozor Distributor" MChJ</div>
+                        <div style="margin-top:14px; display:flex; justify-content:space-between; align-items:flex-end;">
+                            <span style="color:#64748B;">Imzo: _______________</span>
+                            <span style="color:#64748B;">Sana: ____.____.202__</span>
+                        </div>
+                    </div>
+                    <div style="border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px; background:#F8FAFC;">
+                        <div style="font-weight:700; color:#0F172A; margin-bottom:4px;">Qabul qiluvchi (Do'kon):</div>
+                        <div style="color:#475569; font-size:11.5px;">${escHtml(ledger.shopName)} (${escHtml(ledger.ownerName || "Mas'ul shaxs")})</div>
+                        <div style="margin-top:14px; display:flex; justify-content:space-between; align-items:flex-end;">
+                            <span style="color:#64748B;">Imzo: _______________</span>
+                            <span style="color:#64748B;">Sana: ____.____.202__</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 1 ta bosishda to'g'ridan-to'g'ri chop etish / PDF sifatida saqlash oynasini chaqirish
+async function directPrintShopStatement(shopId) {
+    showToast("Akt-sverka hujjati tayyorlanmoqda...", "info");
+    try {
+        const ledger = await apiGet(`/shops/${shopId}/ledger`);
+        let printContainer = document.getElementById('printStatementContainer');
+        if (!printContainer) {
+            printContainer = document.createElement('div');
+            printContainer.id = 'printStatementContainer';
+            document.body.appendChild(printContainer);
+        }
+
+        printContainer.innerHTML = generateStatementPaperHtml(ledger, shopId);
+
+        // Kichik kechikish bilan brauzer DOM ni to'liq chizib olgach chaqiramiz
+        setTimeout(() => {
+            window.print();
+        }, 250);
+
+    } catch (err) {
+        showToast("Xatolik: " + err.message, "error");
+    }
+}
+
+// Modal ko'rinishida ochish (agar kerak bo'lsa)
+async function openShopPdfStatement(shopId) {
+    const modal = document.getElementById('statementModal');
+    if (!modal) return;
+
+    modal.innerHTML = `
+        <div style="padding:60px 20px; text-align:center; color:#94A3B8;">
+            <div class="spinner" style="margin:0 auto 16px auto;"></div>
+            <div style="font-weight:600; font-size:15px; color:#F1F5F9;">Akt-sverka tayyorlanmoqda...</div>
+        </div>
+    `;
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+
+    try {
+        const ledger = await apiGet(`/shops/${shopId}/ledger`);
+        modal.innerHTML = `
+            <div class="statement-top-bar no-print">
+                <button class="btn" onclick="closeStatementModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#F1F5F9; padding:8px 14px; border-radius:10px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
+                    ✕ Yopish
+                </button>
+                <button class="btn" onclick="window.print()" style="background:linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color:#FFFFFF; border:none; padding:9px 18px; border-radius:10px; font-weight:700; font-size:13.5px; display:inline-flex; align-items:center; gap:8px;">
+                    🖨️ PDF saqlash / Chop etish
+                </button>
+            </div>
+            ${generateStatementPaperHtml(ledger, shopId)}
+        `;
+    } catch (err) {
+        modal.innerHTML = `
+            <div class="statement-top-bar">
+                <button class="btn" onclick="closeStatementModal()">✕ Yopish</button>
+            </div>
+            <div class="statement-paper" style="text-align:center; padding:30px;">
+                <div style="color:#EF4444; font-weight:700;">Xatolik: ${escHtml(err.message)}</div>
+            </div>
+        `;
+    }
+}
+
+function closeStatementModal() {
+    const modal = document.getElementById('statementModal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.innerHTML = '';
+        document.body.style.overflow = '';
+    }
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeStatementModal();
+    }
+});
+

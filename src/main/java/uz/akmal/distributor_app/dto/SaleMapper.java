@@ -20,6 +20,11 @@ public class SaleMapper {
                 .map(SaleMapper::toItemResponse)
                 .toList();
         response.setItems(itemResponses);
+        response.setCreatedBy(sale.getCreatedBy() != null && !sale.getCreatedBy().trim().isEmpty() ? sale.getCreatedBy() : "admin");
+        response.setIsCancelled(Boolean.TRUE.equals(sale.getIsCancelled()));
+        response.setCancelReason(sale.getCancelReason());
+        response.setCancelledAt(sale.getCancelledAt());
+        response.setCancelledBy(sale.getCancelledBy());
 
         return response;
     }
@@ -27,7 +32,7 @@ public class SaleMapper {
     private static SaleItemResponse toItemResponse(SaleItem item) {
         SaleItemResponse response = new SaleItemResponse();
         response.setProductId(item.getProduct().getId());
-        response.setProductName(item.getProduct().getName());
+        response.setProductName(item.getEffectiveProductName());
         response.setPackageCount(item.getPackageCount());
         response.setPriceAtSale(item.getPriceAtSale());
         response.setCostAtSale(item.getCostAtSale());

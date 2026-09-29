@@ -26,6 +26,7 @@ public class DailyReportResponse {
         private String shopName;
         private BigDecimal amount;
         private PaymentType paymentType;
+        private String createdBy;
     }
 
     @Getter
@@ -33,6 +34,7 @@ public class DailyReportResponse {
     public static class PaymentSummary {
         private String shopName;
         private BigDecimal amount;
+        private String createdBy;
     }
 
 
@@ -42,5 +44,6 @@ public class DailyReportResponse {
         private String productName;
         private Integer packageCount;
         private java.math.BigDecimal totalCost;
+        private String createdBy;
     }
 }

@@ -24,6 +24,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Object> handleIllegalState(IllegalStateException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
 
 
 
@@ -35,10 +40,13 @@ public class GlobalExceptionHandler {
             errors.put(error.getField(), error.getDefaultMessage());
         }
 
+        String firstMessage = errors.values().stream().findFirst().orElse("Ma'lumotlar noto'g'ri kiritildi");
+
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("error", "Validation Failed");
+        body.put("message", firstMessage);
         body.put("fields", errors);
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
@@ -54,10 +62,40 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<Object> handleMaxUploadSize(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Yuklangan fayl hajmi juda katta (maksimal ruxsat: 50 MB)");
+    }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Object> handleHttpMessageNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "So'rov formati yoki JSON ma'lumotlari noto'g'ri kiritildi.");
+    }
+
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Object> handleMethodArgumentTypeMismatch(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Noto'g'ri parametr formati kiritildi: " + ex.getName());
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    public ResponseEntity<Object> handleMissingServletRequestParameter(org.springframework.web.bind.MissingServletRequestParameterException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Majburiy parametr yetishmayapti: " + ex.getParameterName());
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Object> handleHttpRequestMethodNotSupported(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, "Ushbu HTTP metod qo'llab-quvvatlanmaydi: " + ex.getMethod());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Object> handleIllegalArgument(IllegalArgumentException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleGeneral(Exception ex) {
-        log.error("Kutilmagan xatolik yuz berdi", ex);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Kutilmagan xatolik: " + ex.getMessage());
+        log.error("Kutilmagan xatolik yuz berdi: ", ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Tizimda kutilmagan xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.");
     }
 
     private ResponseEntity<Object> buildResponse(HttpStatus status, String message) {

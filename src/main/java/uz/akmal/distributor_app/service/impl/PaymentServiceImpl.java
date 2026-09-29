@@ -32,8 +32,9 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponse create(PaymentRequest request) {
-        Shop shop = shopRepository.findById(request.getShopId())
-                .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi"));
+        Shop shop = shopRepository.findByIdWithLock(request.getShopId())
+                .filter(s -> !Boolean.TRUE.equals(s.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi yoki o'chirilgan"));
 
         BigDecimal currentDebt = (shop.getCurrentDebt() != null) ? shop.getCurrentDebt() : BigDecimal.ZERO;
         shop.setCurrentDebt(currentDebt.subtract(request.getAmount()));
@@ -41,6 +42,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment payment = PaymentMapper.toEntity(request, shop);
         payment.setDate(LocalDateTime.now());
+        payment.setCreatedBy(uz.akmal.distributor_app.util.SecurityUtils.getCurrentUsername());
 
         Payment saved = paymentRepository.save(payment);
 
@@ -62,5 +64,46 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRepository.findByShopId(shopId).stream()
                 .map(PaymentMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse cancelPayment(Long id, String reason) {
+        Payment payment = paymentRepository.findByIdWithLock(id)
+                .orElseThrow(() -> new ResourceNotFoundException("To'lov topilmadi, id: " + id));
+
+        if (Boolean.TRUE.equals(payment.getIsCancelled())) {
+            throw new IllegalStateException("Ushbu to'lov allaqachon bekor qilingan (ID: " + id + ")");
+        }
+
+        if (payment.getSale() != null) {
+            throw new IllegalArgumentException("Ushbu to'lov #" + payment.getSale().getId() +
+                    "-sonli sotuv boshlang'ich to'lovi hisoblanadi. Uni bekor qilish uchun sotuvning o'zini bekor qiling.");
+        }
+
+        Shop shop = shopRepository.findByIdForUpdate(payment.getShop().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi: id=" + payment.getShop().getId()));
+
+        String currentUser = uz.akmal.distributor_app.util.SecurityUtils.getCurrentUsername();
+        String cancelReason = (reason != null && !reason.trim().isEmpty()) ? reason.trim() : "To'lov bekor qilindi";
+        LocalDateTime now = LocalDateTime.now();
+
+        log.info("To'lovni bekor qilish (Storno) boshlandi: paymentId={}, shopId={}, amount={}",
+                id, shop.getId(), payment.getAmount());
+
+        BigDecimal currentDebt = (shop.getCurrentDebt() != null) ? shop.getCurrentDebt() : BigDecimal.ZERO;
+        shop.setCurrentDebt(currentDebt.add(payment.getAmount()));
+        shopRepository.save(shop);
+
+        payment.setIsCancelled(true);
+        payment.setCancelReason(cancelReason);
+        payment.setCancelledAt(now);
+        payment.setCancelledBy(currentUser);
+        Payment saved = paymentRepository.save(payment);
+
+        log.info("To'lov muvaffaqiyatli bekor qilindi (Storno): paymentId={}, yangiQarz={}, bekorQildi={}",
+                id, shop.getCurrentDebt(), currentUser);
+
+        return PaymentMapper.toResponse(saved);
     }
 }

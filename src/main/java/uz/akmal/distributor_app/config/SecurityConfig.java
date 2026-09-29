@@ -15,11 +15,23 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-    @Value("${app.security.username}")
-    private String appUsername;
+    @Value("${app.security.user1.username:admin}")
+    private String user1Username;
 
-    @Value("${app.security.password}")
-    private String appPassword;
+    @Value("${app.security.user1.password:admin123}")
+    private String user1Password;
+
+    @Value("${app.security.user2.username:}")
+    private String user2Username;
+
+    @Value("${app.security.user2.password:}")
+    private String user2Password;
+
+    @Value("${app.security.remember-me.key:distributor-app-secure-salt-key-928374}")
+    private String rememberMeKey;
+
+    @Value("${server.servlet.session.cookie.secure:false}")
+    private boolean cookieSecure;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -28,11 +40,21 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-        UserDetails user = User.withUsername(appUsername)
-                .password(encoder.encode(appPassword))
+        UserDetails user1 = User.withUsername(user1Username)
+                .password(encoder.encode(user1Password))
                 .roles("ADMIN")
                 .build();
-        return new InMemoryUserDetailsManager(user);
+
+        if (user2Username != null && !user2Username.trim().isEmpty() &&
+            user2Password != null && !user2Password.trim().isEmpty()) {
+            UserDetails user2 = User.withUsername(user2Username.trim())
+                    .password(encoder.encode(user2Password.trim()))
+                    .roles("ADMIN")
+                    .build();
+            return new InMemoryUserDetailsManager(user1, user2);
+        }
+
+        return new InMemoryUserDetailsManager(user1);
     }
 
     @Bean
@@ -40,7 +62,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login.html", "/css/**", "/js/**", "/manifest.json", "/icons/**", "/service-worker.js", "/favicon.ico", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/login.html", "/css/**", "/js/**", "/manifest.json", "/icons/**", "/service-worker.js", "/favicon.ico").permitAll()
                         .anyRequest().authenticated()
                 )
 
@@ -52,8 +74,9 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/login.html"))
                 )
                 .rememberMe(remember -> remember
-                        .key("distributor-app-remember-key")
+                        .key(rememberMeKey)
                         .tokenValiditySeconds(60 * 60 * 24 * 30) // 30 kun
+                        .useSecureCookie(cookieSecure)
                 )
                 .formLogin(form -> form
                         .loginPage("/login.html")

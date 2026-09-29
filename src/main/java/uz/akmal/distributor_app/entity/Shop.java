@@ -10,7 +10,13 @@ import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "shops")
+@Table(
+    name = "shops",
+    indexes = {
+        @Index(name = "idx_shops_market_group_id", columnList = "market_group_id"),
+        @Index(name = "idx_shops_is_deleted", columnList = "is_deleted")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor

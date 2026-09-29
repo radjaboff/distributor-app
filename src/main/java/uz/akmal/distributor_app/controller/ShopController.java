@@ -64,6 +64,6 @@ public class ShopController {
 
     @GetMapping("/overdue")
     public List<OverdueShopResponse> getOverdue(@RequestParam(defaultValue = "14") int days) {
-        return shopService.getOverdueShops(days);
+        return shopService.getOverdueShops(Math.max(0, days));
     }
 }

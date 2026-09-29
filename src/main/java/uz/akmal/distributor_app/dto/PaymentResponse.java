@@ -15,4 +15,10 @@ public class PaymentResponse {
     private BigDecimal amount;
     private PaymentMethod method;
     private LocalDateTime date;
+    private String createdBy;
+    private Long saleId;
+    private Boolean isCancelled;
+    private String cancelReason;
+    private LocalDateTime cancelledAt;
+    private String cancelledBy;
 }

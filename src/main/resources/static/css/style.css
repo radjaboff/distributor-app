@@ -23,9 +23,9 @@
     /* Nozik chiziqlar va hoshiyalar */
     --color-line: rgba(255, 255, 255, 0.08);
 
-    /* Shriftlar */
-    --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    /* Shriftlar: Plus Jakarta Sans va Outfit (Zamonaviy Fintech) */
+    --font-heading: 'Plus Jakarta Sans', 'Outfit', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    --font-body: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
     --radius: 18px;
     --radius-sm: 12px;
@@ -82,26 +82,240 @@ body {
     box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
 }
 
-/* Sarlavha paneli (Header) */
+/* Sarlavha paneli (Header - 3 hududli zamonaviy Fintech panel) */
 .app-bar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px 16px;
-    color: #FFFFFF;
+    justify-content: space-between;
+    gap: 8px;
+    padding: calc(9px + env(safe-area-inset-top, 0px)) 16px 10px 16px;
     position: sticky;
     top: 0;
-    z-index: 20;
-    background: rgba(9, 13, 22, 0.9);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 25;
+    background: rgba(9, 13, 22, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
 }
 
-.app-bar__actions {
+/* Pastki nozik neon nur effekti */
+.app-bar::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 4%;
+    right: 4%;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.7), rgba(16, 185, 129, 0.7), transparent);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+    pointer-events: none;
+}
+
+/* Chap tomon: Qizil doira (Logo va Orqaga tugmasi) */
+.app-bar__left {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex: 0 0 auto;
+    min-width: 44px;
+}
+
+.app-bar__back {
+    background: var(--color-paper-dim);
+    border: 1px solid var(--color-line);
+    color: #FFFFFF;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.app-bar__back[style*="hidden"] {
+    display: none !important;
+}
+
+.app-bar__back:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.app-bar__back:active {
+    background: rgba(255, 255, 255, 0.18);
+    transform: scale(0.92);
+}
+
+/* Chap burchakdagi Premium Brand Logo tugmasi (Qizil doira) */
+.brand-avatar-btn {
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+}
+
+.brand-avatar-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.28) 0%, rgba(16, 185, 129, 0.22) 100%);
+    border: 1px solid rgba(96, 165, 250, 0.45);
+    color: #60A5FA;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 4px 18px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.brand-avatar-badge svg {
+    filter: drop-shadow(0 2px 6px rgba(59, 130, 246, 0.5));
+}
+
+.brand-avatar-badge:hover {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.45) 0%, rgba(16, 185, 129, 0.35) 100%);
+    border-color: rgba(147, 197, 253, 0.7);
+    box-shadow: 0 6px 24px rgba(37, 99, 235, 0.5);
+    transform: translateY(-1px) scale(1.03);
+}
+
+.brand-avatar-badge:active {
+    transform: scale(0.92);
+}
+
+.online-indicator {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    width: 10px;
+    height: 10px;
+    background: #10B981;
+    border: 2px solid #090D16;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #10B981;
+    animation: pulseIndicator 2.5s infinite;
+}
+
+@keyframes pulseIndicator {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8); }
+    70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* O'rta tomon: Yashil doira (Sarlavha va ost-sarlavha - Markazlashgan) */
+.app-bar__center,
+.app-bar__title-box {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 4px;
+}
+
+.app-bar__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    max-width: 100%;
+}
+
+.app-bar__title {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    
+    /* Neon Gradient & Yorqin Shaffof Effekt */
+    background: linear-gradient(135deg, #FFFFFF 15%, #E2E8F0 50%, #7DD3FC 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 12px rgba(56, 189, 248, 0.4));
+}
+
+.app-bar__glow-pill {
+    font-family: var(--font-heading);
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.14);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+    flex-shrink: 0;
+}
+
+.app-bar__subtitle {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    color: var(--color-ink-dim);
+    margin-top: 2px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.15px;
+    text-align: center;
+}
+
+/* O'ng tomon: Ko'k doira (Ekranga chiqarish / Install) */
+.app-bar__right,
+.app-bar__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex: 0 0 auto;
+    min-width: 44px;
+}
+
+.pwa-install-btn {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 10px rgba(56, 189, 248, 0.2);
+    flex-shrink: 0;
+}
+
+.pwa-install-btn:hover {
+    background: rgba(56, 189, 248, 0.24);
+    border-color: rgba(56, 189, 248, 0.65);
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.45);
+    transform: translateY(-1px) scale(1.04);
+}
+
+.pwa-install-btn:active {
+    transform: scale(0.92);
 }
 
 .header-icon-btn {
@@ -128,53 +342,11 @@ body {
     background: rgba(255, 255, 255, 0.2);
 }
 
-.app-bar__back {
-    background: var(--color-paper-dim);
-    border: 1px solid var(--color-line);
-    color: #FFFFFF;
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    flex-shrink: 0;
-}
-
-.app-bar__back:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.16);
-}
-
-.app-bar__back:active {
-    background: rgba(255, 255, 255, 0.18);
-    transform: scale(0.92);
-}
-
-.app-bar__title {
-    font-family: var(--font-heading);
-    font-size: 19px;
-    font-weight: 700;
-    margin: 0;
-    flex: 1;
-    letter-spacing: -0.3px;
-    color: #FFFFFF;
-}
-
-.app-bar__subtitle {
-    font-size: 12px;
-    color: var(--color-ink-dim);
-    margin-top: 2px;
-    font-weight: 400;
-}
-
 /* Asosiy kontent maydoni */
 .content {
     flex: 1;
     background: transparent;
-    padding: 14px 16px 96px 16px;
+    padding: 14px 16px calc(92px + env(safe-area-inset-bottom, 0px)) 16px;
     overflow-y: auto;
     position: relative;
 }
@@ -315,6 +487,13 @@ body {
     background: var(--color-paid-bg);
     border: 1px solid rgba(16, 185, 129, 0.28);
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08);
+}
+
+.amount--credit {
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.08);
 }
 
 .amount--neutral {
@@ -512,35 +691,49 @@ body {
     margin-top: 14px;
 }
 
-/* Suzuvchi qo'shish tugmasi (FAB) */
+.btn:disabled,
+button:disabled {
+    opacity: 0.55 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Suzuvchi dumaloq harakat tugmasi (Floating Circular FAB) */
 .fab {
     position: fixed;
-    bottom: 82px;
-    right: calc(50% - 240px + 20px);
-    width: 54px;
-    height: 54px;
-    border-radius: 18px;
-    background: var(--color-accent);
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    right: calc(50% - 220px + 14px);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%);
     color: #FFFFFF;
-    border: none;
-    font-size: 26px;
-    font-weight: 400;
-    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 10px 26px rgba(14, 165, 233, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
-    z-index: 15;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 25;
+}
+
+.fab:hover {
+    transform: translateY(-2px) scale(1.06);
+    box-shadow: 0 14px 32px rgba(14, 165, 233, 0.6);
 }
 
 .fab:active {
     transform: scale(0.92);
-    background: var(--color-accent-dark);
+    background: linear-gradient(135deg, #0284C7 0%, #1D4ED8 100%);
 }
 
 @media (max-width: 480px) {
-    .fab { right: 20px; }
+    .fab { 
+        right: 18px; 
+    }
 }
 
 /* Forma elementlari */
@@ -653,60 +846,80 @@ body {
     margin-bottom: 0;
 }
 
-/* Pastki navigatsiya (Bottom Nav) */
+/* Suzuvchi zamonaviy shaffof navigatsiya doki (Floating Glass Capsule Dock) */
 .bottom-nav {
     position: fixed;
-    bottom: 0;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
-    width: 100%;
-    max-width: 480px;
+    width: calc(100% - 24px);
+    max-width: 440px;
+    height: 64px;
     display: flex;
-    background: rgba(9, 13, 22, 0.92);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 6px 12px calc(8px + env(safe-area-inset-bottom, 0px)) 12px;
+    align-items: center;
+    justify-content: space-around;
+    padding: 5px 6px;
+    background: rgba(11, 17, 32, 0.78);
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 36px;
+    box-shadow: 
+        0 16px 38px -6px rgba(0, 0, 0, 0.65), 
+        0 0 0 1px rgba(255, 255, 255, 0.05), 
+        inset 0 1px 1px rgba(255, 255, 255, 0.22);
     z-index: 30;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .bottom-nav__item {
     flex: 1;
+    height: 52px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    background: none;
-    border: none;
-    color: #64748B;
+    justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 26px;
+    color: #94A3B8;
     font-size: 11px;
     font-family: var(--font-body);
     font-weight: 600;
-    padding: 6px 4px;
-    border-radius: 12px;
+    letter-spacing: -0.1px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav__item:hover {
+    color: #F1F5F9;
 }
 
 .bottom-nav__icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    transition: all 0.2s ease;
+    width: 26px;
+    height: 26px;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Faol tugma - Soft Glass Pill Capsule taassuroti */
 .bottom-nav__item.active {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    box-shadow: 0 2px 14px rgba(56, 189, 248, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.15);
     color: #38BDF8;
 }
 
 .bottom-nav__item.active .bottom-nav__icon {
-    background: rgba(56, 189, 248, 0.14);
+    transform: translateY(-1px) scale(1.06);
     color: #38BDF8;
-    transform: translateY(-1px);
+    filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.45));
 }
 
 .bottom-nav__item:active {
@@ -1007,6 +1220,188 @@ body {
     margin: 0 auto 16px auto;
 }
 
+/* Maxsus Tasdiqlash Modali (Custom Confirm Dialog) */
+.confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.confirm-overlay.show {
+    visibility: visible;
+    opacity: 1;
+}
+
+.confirm-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.confirm-card {
+    position: relative;
+    width: 100%;
+    max-width: 360px;
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 22px;
+    padding: 26px 20px 22px 20px;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 30px rgba(244, 63, 94, 0.16);
+    transform: scale(0.92) translateY(12px);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+.confirm-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #F43F5E, #FB7185, transparent);
+    box-shadow: 0 0 14px rgba(244, 63, 94, 0.6);
+}
+
+.confirm-overlay.show .confirm-card {
+    transform: scale(1) translateY(0);
+}
+
+.confirm-icon-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.confirm-icon-badge {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    background: rgba(244, 63, 94, 0.14);
+    border: 1px solid rgba(244, 63, 94, 0.35);
+    color: #FB7185;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 24px rgba(244, 63, 94, 0.25);
+    animation: pulseDanger 2.5s infinite;
+}
+
+.confirm-icon-badge svg {
+    width: 26px;
+    height: 26px;
+}
+
+@keyframes pulseDanger {
+    0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+
+.confirm-title {
+    font-family: var(--font-heading);
+    font-size: 18.5px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
+}
+
+.confirm-item-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 8px;
+    padding: 3px 10px;
+    display: inline-block;
+    margin-bottom: 10px;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.confirm-message {
+    font-size: 13px;
+    color: #94A3B8;
+    line-height: 1.5;
+    margin-bottom: 22px;
+}
+
+.confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.confirm-btn-cancel {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #E2E8F0;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: var(--font-body);
+}
+
+.confirm-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.confirm-btn-cancel:active {
+    transform: scale(0.96);
+}
+
+.confirm-btn-submit {
+    background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%);
+    border: 1px solid rgba(244, 63, 94, 0.4);
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 4px 16px rgba(225, 29, 72, 0.4);
+    transition: all 0.15s ease;
+    font-family: var(--font-body);
+}
+
+.confirm-btn-submit:hover {
+    background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+    box-shadow: 0 6px 20px rgba(225, 29, 72, 0.55);
+    transform: translateY(-1px);
+}
+
+.confirm-btn-submit:active {
+    transform: scale(0.96);
+}
+
 /* Bo'lim sarlavhalari (Section Titles) */
 .section-title {
     display: flex;
@@ -1255,4 +1650,222 @@ body {
     font-size: 18px;
     font-weight: 600;
     color: #FFFFFF;
-}
+}
+
+/* ==========================================
+   AKT SVERKA VA PDF MODAL (PRINT READY)
+   ========================================== */
+
+#printStatementContainer {
+    display: none;
+}
+
+#statementModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 15, 29, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    z-index: 100000;
+    overflow-y: auto;
+    display: none;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+#statementModal.show {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.statement-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 820px;
+    margin: 10px auto 14px auto;
+    gap: 12px;
+}
+
+.statement-paper {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    width: 100%;
+    max-width: 820px;
+    border-radius: 18px;
+    padding: 30px 26px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.55);
+    margin: 0 auto 30px auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    box-sizing: border-box;
+}
+
+.pdf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.pdf-badge--sale {
+    background: #EFF6FF !important;
+    color: #1D4ED8 !important;
+    border: 1px solid #BFDBFE !important;
+}
+
+.pdf-badge--payment {
+    background: #ECFDF5 !important;
+    color: #047857 !important;
+    border: 1px solid #A7F3D0 !important;
+}
+
+.pdf-badge--admin {
+    background: #F1F5F9 !important;
+    color: #475569 !important;
+    border: 1px solid #E2E8F0 !important;
+    text-transform: none;
+    font-weight: 600;
+}
+
+.pdf-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+    font-size: 13px;
+}
+
+.pdf-table th {
+    background: #F8FAFC !important;
+    color: #475569 !important;
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 700;
+    font-size: 11.5px;
+    border-bottom: 2px solid #CBD5E1 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.pdf-table td {
+    padding: 11px 12px;
+    border-bottom: 1px solid #E2E8F0 !important;
+    vertical-align: middle;
+    color: #1E293B !important;
+}
+
+.pdf-table tr:last-child td {
+    border-bottom: 2px solid #CBD5E1 !important;
+}
+
+.pdf-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@page {
+    size: A4 portrait;
+    margin: 8mm;
+}
+
+@media print {
+    html {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #FFFFFF !important;
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    body {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        background: #FFFFFF !important;
+        color: #0F172A !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        overflow: visible !important;
+    }
+
+    /* Barcha boshqa elementlar 0px joy egallaydi, 1-bet mutlaqo bo'sh qolmaydi */
+    body > *:not(#printStatementContainer) {
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* Print konteyneri 1-betning eng yuqorisidan to'liq boshlanadi */
+    #printStatementContainer {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #FFFFFF !important;
+        color: #0F172A !important;
+        overflow: visible !important;
+    }
+
+    #printStatementContainer * {
+        visibility: visible !important;
+    }
+
+    .statement-paper {
+        display: block !important;
+        background: #FFFFFF !important;
+        color: #0F172A !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .pdf-table-wrapper {
+        overflow: visible !important;
+        width: 100% !important;
+    }
+
+    .pdf-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: auto;
+    }
+
+    .pdf-table tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+    }
+
+    .pdf-table thead {
+        display: table-header-group !important;
+    }
+
+    .pdf-signature-block {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+}
+

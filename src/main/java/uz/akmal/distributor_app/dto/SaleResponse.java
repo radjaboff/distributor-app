@@ -17,4 +17,9 @@ public class SaleResponse {
     private PaymentType paymentType;
     private BigDecimal totalAmount;
     private List<SaleItemResponse> items;
+    private String createdBy;
+    private Boolean isCancelled;
+    private String cancelReason;
+    private LocalDateTime cancelledAt;
+    private String cancelledBy;
 }

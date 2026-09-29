@@ -13,11 +13,11 @@
     <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-    <!-- Zamonaviy va o'qilishi oson shrift -->
+    <!-- Zamonaviy va o'qilishi oson shriftlar: Plus Jakarta Sans, Outfit, Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
 <div id="networkStatus" class="network-badge" style="display:none;">
@@ -26,13 +26,41 @@
 </div>
 
 <header class="app-bar">
-    <button class="app-bar__back" id="backBtn" style="visibility:hidden;" aria-label="Orqaga">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-    </button>
-    <h1 class="app-bar__title" id="pageTitle">Bozorlar</h1>
-    <div class="app-bar__actions">
-        <button id="pwaInstallBtn" class="header-icon-btn" style="display:none;" title="Ekranga o'rnatish" aria-label="Ekranga o'rnatish">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><path d="M12 7v6m-3-3l3 3 3-3"/></svg>
+    <!-- Chap tomon: Logo va Orqaga (Qizil doira) -->
+    <div class="app-bar__left">
+        <button class="app-bar__back" id="backBtn" style="visibility:hidden;" aria-label="Orqaga">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button id="appProfileBtn" class="brand-avatar-btn" onclick="showAppProfileModal()" title="Profil va Tizim" aria-label="Profil va Tizim">
+            <div class="brand-avatar-badge">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <span class="online-indicator"></span>
+            </div>
+        </button>
+    </div>
+
+    <!-- O'rta tomon: Bo'lim nomi (Yashil doira) -->
+    <div class="app-bar__center">
+        <div class="app-bar__title-row">
+            <h1 class="app-bar__title" id="pageTitle">Bozorlar</h1>
+            <span class="app-bar__glow-pill" id="pageTitleBadge">PRO</span>
+        </div>
+        <div class="app-bar__subtitle" id="pageSubtitle">Savdo nuqtalari va do'konlar</div>
+    </div>
+
+    <!-- O'ng tomon: Ekranga chiqarish (Ko'k doira) -->
+    <div class="app-bar__right">
+        <button id="pwaInstallBtn" class="header-icon-btn pwa-install-btn" onclick="handlePwaInstallClick()" title="Ekranga o'rnatish" aria-label="Ekranga o'rnatish">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2.5" ry="2.5"></rect>
+                <path d="M12 7v6"></path>
+                <path d="M9 10l3 3 3-3"></path>
+                <circle cx="12" cy="18" r="0.8" fill="currentColor"></circle>
+            </svg>
         </button>
     </div>
 </header>
@@ -66,22 +94,32 @@
         </span>
         <span>Hisobot</span>
     </button>
+    <button class="bottom-nav__item" id="navProfil" onclick="showAppProfileModal()">
+        <span class="bottom-nav__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </span>
+        <span>Profil</span>
+    </button>
 </nav>
 
-<script src="js/app.js"></script>
-
+<script src="js/app.js?v=22"></script>
 
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/service-worker.js')
-                .then(() => console.log('Service Worker ro\'yxatdan o\'tdi'))
+                .then((registration) => {
+                    registration.update();
+                    console.log('Service Worker ro\'yxatdan o\'tdi va yangilanishlar tekshirildi');
+                })
                 .catch((err) => console.error('Service Worker xatosi:', err));
         });
     }
 </script>
 
-
+<!-- PDF Chop etish va Akt Sverka konteyneri (Faqat chop etilganda ko'rinadi) -->
+<div id="printStatementContainer"></div>
+<div id="statementModal"></div>
 
 </body>
 </html>

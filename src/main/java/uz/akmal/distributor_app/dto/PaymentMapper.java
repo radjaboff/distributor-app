@@ -21,6 +21,12 @@ public class PaymentMapper {
         response.setAmount(payment.getAmount());
         response.setMethod(payment.getMethod());
         response.setDate(payment.getDate());
+        response.setCreatedBy(payment.getCreatedBy() != null && !payment.getCreatedBy().trim().isEmpty() ? payment.getCreatedBy() : "admin");
+        response.setSaleId(payment.getSale() != null ? payment.getSale().getId() : null);
+        response.setIsCancelled(Boolean.TRUE.equals(payment.getIsCancelled()));
+        response.setCancelReason(payment.getCancelReason());
+        response.setCancelledAt(payment.getCancelledAt());
+        response.setCancelledBy(payment.getCancelledBy());
         return response;
     }
 }

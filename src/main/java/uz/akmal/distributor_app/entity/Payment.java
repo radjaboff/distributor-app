@@ -12,11 +12,20 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payments")
+@Table(
+    name = "payments",
+    indexes = {
+        @Index(name = "idx_payments_shop_id", columnList = "shop_id"),
+        @Index(name = "idx_payments_date", columnList = "date"),
+        @Index(name = "idx_payments_sale_id", columnList = "sale_id"),
+        @Index(name = "idx_payments_is_cancelled", columnList = "is_cancelled")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 public class Payment extends BaseEntity{
 
     @Id
@@ -29,6 +38,10 @@ public class Payment extends BaseEntity{
     private Shop shop;
 
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sale_id")
+    private Sale sale;
+
     @Column(precision = 15, scale = 2, nullable = false)
     private BigDecimal amount;
 
@@ -39,4 +52,16 @@ public class Payment extends BaseEntity{
 
     @Column(nullable = false)
     private LocalDateTime date = LocalDateTime.now();
+
+    @Column(name = "is_cancelled", nullable = false, columnDefinition = "boolean default false")
+    private Boolean isCancelled = false;
+
+    @Column(name = "cancel_reason", length = 500)
+    private String cancelReason;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
+    @Column(name = "cancelled_by", length = 100)
+    private String cancelledBy;
 }

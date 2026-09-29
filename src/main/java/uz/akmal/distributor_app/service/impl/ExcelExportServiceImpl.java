@@ -74,13 +74,36 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             Sheet summarySheet = workbook.createSheet("Umumiy");
             String dateStr = date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
             summarySheet.createRow(0).createCell(0).setCellValue("Sana: " + dateStr);
-            summarySheet.createRow(1).createCell(0).setCellValue("Kunlik foyda: " + report.getDailyProfit());
-            summarySheet.createRow(2).createCell(0).setCellValue("Umumiy qarz (barcha): " + report.getTotalDebtAllShops());
-            Row revRow = summarySheet.createRow(3);
-            revRow.createCell(0).setCellValue("NAQD: " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NAQD, java.math.BigDecimal.ZERO));
-            summarySheet.createRow(4).createCell(0).setCellValue("KARTA: " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.KARTA, java.math.BigDecimal.ZERO));
-            summarySheet.createRow(5).createCell(0).setCellValue("NASIYA: " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NASIYA, java.math.BigDecimal.ZERO));
+            summarySheet.createRow(1).createCell(0).setCellValue("Kunlik yalpi foyda: " + report.getDailyProfit());
+            summarySheet.createRow(2).createCell(0).setCellValue("Bugungi kirim xarajati: " + (report.getTotalStockInCost() != null ? report.getTotalStockInCost() : java.math.BigDecimal.ZERO));
+            summarySheet.createRow(3).createCell(0).setCellValue("Umumiy qarz (barcha): " + report.getTotalDebtAllShops());
+            if (report.getRevenueByType() != null) {
+                summarySheet.createRow(4).createCell(0).setCellValue("Undirilgan to'lov (NAQD): " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NAQD, java.math.BigDecimal.ZERO));
+                summarySheet.createRow(5).createCell(0).setCellValue("Undirilgan to'lov (KARTA): " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.KARTA, java.math.BigDecimal.ZERO));
+                summarySheet.createRow(6).createCell(0).setCellValue("Nasiyaga berilgan savdo (NASIYA): " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NASIYA, java.math.BigDecimal.ZERO));
+            }
             summarySheet.autoSizeColumn(0);
+
+            // 4-varaq: Ombor kirimlari
+            if (report.getStockIns() != null && !report.getStockIns().isEmpty()) {
+                Sheet stockSheet = workbook.createSheet("Ombor kirimlari");
+                Row stockHeader = stockSheet.createRow(0);
+                String[] stockCols = {"Mahsulot", "Paket soni", "Jami tannarx", "Kiritgan admin"};
+                for (int i = 0; i < stockCols.length; i++) {
+                    Cell cell = stockHeader.createCell(i);
+                    cell.setCellValue(stockCols[i]);
+                    cell.setCellStyle(headerStyle);
+                }
+                int sRowNum = 1;
+                for (var si : report.getStockIns()) {
+                    Row row = stockSheet.createRow(sRowNum++);
+                    row.createCell(0).setCellValue(si.getProductName());
+                    row.createCell(1).setCellValue(si.getPackageCount());
+                    row.createCell(2).setCellValue(si.getTotalCost() != null ? si.getTotalCost().doubleValue() : 0);
+                    row.createCell(3).setCellValue(si.getCreatedBy() != null ? si.getCreatedBy() : "admin");
+                }
+                for (int i = 0; i < stockCols.length; i++) stockSheet.autoSizeColumn(i);
+            }
 
             workbook.write(out);
             return new ByteArrayInputStream(out.toByteArray());
@@ -98,9 +121,11 @@ public class ExcelExportServiceImpl implements ExcelExportService {
                 "Oylik hisobot: " + month,
                 report.getTotalSalesAmount(),
                 report.getTotalProfit(),
-                null,
+                report.getTotalStockInCost(),
+                report.getRevenueByType(),
                 report.getTopDebtorShops(),
-                report.getProductSalesVolume()
+                report.getProductSalesVolume(),
+                report.getStockInVolume()
         );
     }
 
@@ -111,9 +136,11 @@ public class ExcelExportServiceImpl implements ExcelExportService {
                 "Oraliq hisobot: " + start + " — " + end,
                 report.getTotalSalesAmount(),
                 report.getTotalProfit(),
+                report.getTotalStockInCost(),
                 report.getRevenueByType(),
                 report.getTopDebtorShops(),
-                report.getProductSalesVolume()
+                report.getProductSalesVolume(),
+                report.getStockInVolume()
         );
     }
 
@@ -121,9 +148,11 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             String title,
             java.math.BigDecimal totalSales,
             java.math.BigDecimal totalProfit,
+            java.math.BigDecimal totalStockInCost,
             java.util.Map<uz.akmal.distributor_app.enums.PaymentType, java.math.BigDecimal> revenueByType,
             java.util.List<MonthlyReportResponse.TopShop> topShops,
-            java.util.List<MonthlyReportResponse.ProductVolume> productVolumes
+            java.util.List<MonthlyReportResponse.ProductVolume> productVolumes,
+            java.util.List<MonthlyReportResponse.StockInVolume> stockInVolumes
     ) {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
@@ -136,11 +165,12 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             Sheet summarySheet = workbook.createSheet("Umumiy");
             summarySheet.createRow(0).createCell(0).setCellValue(title);
             summarySheet.createRow(1).createCell(0).setCellValue("Umumiy sotuv: " + totalSales);
-            summarySheet.createRow(2).createCell(0).setCellValue("Umumiy sof foyda: " + totalProfit);
+            summarySheet.createRow(2).createCell(0).setCellValue("Umumiy yalpi foyda: " + totalProfit);
+            summarySheet.createRow(3).createCell(0).setCellValue("Jami kirim xarajati: " + (totalStockInCost != null ? totalStockInCost : java.math.BigDecimal.ZERO));
             if (revenueByType != null) {
-                summarySheet.createRow(3).createCell(0).setCellValue("NAQD: " + revenueByType.getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NAQD, java.math.BigDecimal.ZERO));
-                summarySheet.createRow(4).createCell(0).setCellValue("KARTA: " + revenueByType.getOrDefault(uz.akmal.distributor_app.enums.PaymentType.KARTA, java.math.BigDecimal.ZERO));
-                summarySheet.createRow(5).createCell(0).setCellValue("NASIYA: " + revenueByType.getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NASIYA, java.math.BigDecimal.ZERO));
+                summarySheet.createRow(4).createCell(0).setCellValue("Undirilgan to'lov (NAQD): " + revenueByType.getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NAQD, java.math.BigDecimal.ZERO));
+                summarySheet.createRow(5).createCell(0).setCellValue("Undirilgan to'lov (KARTA): " + revenueByType.getOrDefault(uz.akmal.distributor_app.enums.PaymentType.KARTA, java.math.BigDecimal.ZERO));
+                summarySheet.createRow(6).createCell(0).setCellValue("Nasiyaga berilgan savdo (NASIYA): " + revenueByType.getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NASIYA, java.math.BigDecimal.ZERO));
             }
             summarySheet.autoSizeColumn(0);
 
@@ -152,10 +182,12 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             topHeader.getCell(0).setCellStyle(headerStyle);
             topHeader.getCell(1).setCellStyle(headerStyle);
             int r = 1;
-            for (var shop : topShops) {
-                Row row = topSheet.createRow(r++);
-                row.createCell(0).setCellValue(shop.getShopName());
-                row.createCell(1).setCellValue(shop.getCurrentDebt().doubleValue());
+            if (topShops != null) {
+                for (var shop : topShops) {
+                    Row row = topSheet.createRow(r++);
+                    row.createCell(0).setCellValue(shop.getShopName());
+                    row.createCell(1).setCellValue(shop.getCurrentDebt() != null ? shop.getCurrentDebt().doubleValue() : 0);
+                }
             }
             topSheet.autoSizeColumn(0);
             topSheet.autoSizeColumn(1);
@@ -168,13 +200,33 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             prodHeader.getCell(0).setCellStyle(headerStyle);
             prodHeader.getCell(1).setCellStyle(headerStyle);
             r = 1;
-            for (var pv : productVolumes) {
-                Row row = productSheet.createRow(r++);
-                row.createCell(0).setCellValue(pv.getProductName());
-                row.createCell(1).setCellValue(pv.getTotalPackagesSold());
+            if (productVolumes != null) {
+                for (var pv : productVolumes) {
+                    Row row = productSheet.createRow(r++);
+                    row.createCell(0).setCellValue(pv.getProductName());
+                    row.createCell(1).setCellValue(pv.getTotalPackagesSold());
+                }
             }
             productSheet.autoSizeColumn(0);
             productSheet.autoSizeColumn(1);
+
+            // 4-varaq: Ombor kirimlari (hajm)
+            if (stockInVolumes != null && !stockInVolumes.isEmpty()) {
+                Sheet stockVolSheet = workbook.createSheet("Ombor kirimlari (hajm)");
+                Row stockVolHeader = stockVolSheet.createRow(0);
+                stockVolHeader.createCell(0).setCellValue("Mahsulot");
+                stockVolHeader.createCell(1).setCellValue("Kirim qilingan paket");
+                stockVolHeader.getCell(0).setCellStyle(headerStyle);
+                stockVolHeader.getCell(1).setCellStyle(headerStyle);
+                int sr = 1;
+                for (var sv : stockInVolumes) {
+                    Row row = stockVolSheet.createRow(sr++);
+                    row.createCell(0).setCellValue(sv.getProductName());
+                    row.createCell(1).setCellValue(sv.getTotalPackagesReceived());
+                }
+                stockVolSheet.autoSizeColumn(0);
+                stockVolSheet.autoSizeColumn(1);
+            }
 
             workbook.write(out);
             return new ByteArrayInputStream(out.toByteArray());

@@ -34,4 +34,10 @@ public class SaleController {
     public SaleResponse getById(@PathVariable Long id) {
         return saleService.getById(id);
     }
+
+    @PostMapping("/{id}/cancel")
+    public SaleResponse cancel(@PathVariable Long id, @RequestBody(required = false) uz.akmal.distributor_app.dto.CancelRequest request) {
+        String reason = (request != null) ? request.getReason() : null;
+        return saleService.cancelSale(id, reason);
+    }
 }

@@ -8,6 +8,7 @@ import uz.akmal.distributor_app.exception.ResourceNotFoundException;
 import uz.akmal.distributor_app.repository.ProductRepository;
 import uz.akmal.distributor_app.service.ProductService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
@@ -20,6 +21,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public ProductResponse create(ProductRequest request) {
         Product product = ProductMapper.toEntity(request);
         Product saved = productRepository.save(product);
@@ -40,8 +42,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public ProductResponse update(Long id, ProductRequest request) {
-        Product existing = findEntityById(id);
+        Product existing = productRepository.findByIdWithLock(id)
+                .filter(p -> !Boolean.TRUE.equals(p.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi yoki o'chirilgan, id: " + id));
         existing.setName(request.getName());
         existing.setUnit(request.getUnit());
         existing.setPackageName(request.getPackageName());
@@ -52,14 +57,23 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        Product existing = findEntityById(id);
+        Product existing = productRepository.findByIdWithLock(id)
+                .filter(p -> !Boolean.TRUE.equals(p.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi yoki o'chirilgan, id: " + id));
+
+        if (existing.getStockQuantity() != null && existing.getStockQuantity() > 0) {
+            throw new IllegalStateException("Omborda ushbu mahsulotdan hali " + existing.getStockQuantity() + " ta qoldiq mavjud! Qoldig'i bor mahsulotni o'chirib bo'lmaydi.");
+        }
+
         existing.setIsDeleted(true);
         productRepository.save(existing);
     }
 
     private Product findEntityById(Long id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi, id: " + id));
+                .filter(p -> !Boolean.TRUE.equals(p.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi yoki o'chirilgan, id: " + id));
     }
 }

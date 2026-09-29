@@ -29,4 +29,10 @@ public class PaymentController {
         }
         return paymentService.getAll();
     }
+
+    @PostMapping("/{id}/cancel")
+    public PaymentResponse cancel(@PathVariable Long id, @RequestBody(required = false) uz.akmal.distributor_app.dto.CancelRequest request) {
+        String reason = (request != null) ? request.getReason() : null;
+        return paymentService.cancelPayment(id, reason);
+    }
 }

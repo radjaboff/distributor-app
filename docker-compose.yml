@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: distributor_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: distributor_db
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Xavfsizlik xatosi: .env faylida DB_PASSWORD kiritilishi shart!}
+      TZ: Asia/Tashkent
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d distributor_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: distributor_app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: distributor_db
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:?Xavfsizlik xatosi: .env faylida DB_PASSWORD kiritilishi shart!}
+      APP_USERNAME: ${APP_USERNAME:-admin}
+      APP_PASSWORD: ${APP_PASSWORD:?Xavfsizlik xatosi: .env faylida APP_PASSWORD kiritilishi shart!}
+      APP_USER2_USERNAME: ${APP_USER2_USERNAME:-}
+      APP_USER2_PASSWORD: ${APP_USER2_PASSWORD:-}
+      REMEMBER_ME_KEY: ${REMEMBER_ME_KEY:?Xavfsizlik xatosi: .env faylida REMEMBER_ME_KEY kiritilishi shart!}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      PORT: 8080
+      TZ: Asia/Tashkent
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  postgres_data:

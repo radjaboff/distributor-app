@@ -11,7 +11,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "sale_items")
+@Table(
+    name = "sale_items",
+    indexes = {
+        @Index(name = "idx_sale_items_sale_id", columnList = "sale_id"),
+        @Index(name = "idx_sale_items_product_id", columnList = "product_id")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -41,4 +47,14 @@ public class SaleItem extends BaseEntity{
 
     @Column(name = "cost_at_sale", precision = 15, scale = 2, nullable = false)
     private BigDecimal costAtSale;
+
+    @Column(name = "product_name")
+    private String productName;
+
+    public String getEffectiveProductName() {
+        if (productName != null && !productName.trim().isEmpty()) {
+            return productName;
+        }
+        return product != null ? product.getName() : "";
+    }
 }

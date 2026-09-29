@@ -10,6 +10,11 @@ import java.util.List;
 public class ShopLedgerResponse {
     private Long shopId;
     private String shopName;
+    private String ownerName;
+    private String phone;
+    private String marketGroupName;
     private BigDecimal currentDebt;
+    private BigDecimal totalSalesAmount;
+    private BigDecimal totalPaymentsAmount;
     private List<LedgerEntryResponse> entries;
 }

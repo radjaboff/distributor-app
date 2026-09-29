@@ -8,4 +8,5 @@ public interface PaymentService {
     PaymentResponse create(PaymentRequest request);
     List<PaymentResponse> getAll();
     List<PaymentResponse> getByShop(Long shopId);
+    PaymentResponse cancelPayment(Long id, String reason);
 }

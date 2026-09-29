@@ -10,6 +10,7 @@ import uz.akmal.distributor_app.repository.MarketGroupRepository;
 import uz.akmal.distributor_app.repository.ShopRepository;
 import uz.akmal.distributor_app.service.ShopService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import uz.akmal.distributor_app.dto.LedgerEntryResponse;
 import uz.akmal.distributor_app.dto.ShopLedgerResponse;
 import uz.akmal.distributor_app.entity.Sale;
@@ -22,11 +23,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 import uz.akmal.distributor_app.dto.OverdueShopResponse;
-import uz.akmal.distributor_app.entity.Payment;
-import uz.akmal.distributor_app.repository.PaymentRepository;
 import java.time.Duration;
-import java.util.ArrayList;
-
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -49,49 +46,85 @@ public class ShopServiceImpl implements ShopService {
         this.paymentRepository = paymentRepository;
     }
 
-
-
     @Override
+    @Transactional(readOnly = true)
     public ShopLedgerResponse getLedger(Long shopId) {
         Shop shop = findEntityById(shopId);
 
         List<LedgerEntryResponse> entries = new ArrayList<>();
+        BigDecimal totalSales = BigDecimal.ZERO;
+        BigDecimal totalPayments = BigDecimal.ZERO;
 
-        // Sotuvlarni qo'shamiz
+        // Sotuvlarni qo'shamiz (JOIN FETCH orqali bitta tezkor so'rovda)
         for (Sale sale : saleRepository.findByShopId(shopId)) {
             LedgerEntryResponse entry = new LedgerEntryResponse();
+            entry.setId(sale.getId());
             entry.setDate(sale.getDate());
             entry.setType("SOTUV");
+            entry.setIsCancelled(Boolean.TRUE.equals(sale.getIsCancelled()));
+            entry.setCancelReason(sale.getCancelReason());
+            entry.setCancelledAt(sale.getCancelledAt());
+            entry.setCancelledBy(sale.getCancelledBy());
 
             String description = sale.getItems().stream()
-                    .map(item -> item.getPackageCount() + "x " + item.getProduct().getName())
+                    .map(item -> item.getPackageCount() + "x " + item.getEffectiveProductName())
                     .collect(Collectors.joining(", "));
             entry.setDescription(description);
 
             entry.setAmount(sale.getTotalAmount());
+            entry.setInitialPaidAmount(sale.getInitialPaidAmount());
+            entry.setPaymentMethod(sale.getPaymentType() != null ? sale.getPaymentType().toString() : "");
+            entry.setCreatedBy(sale.getCreatedBy() != null && !sale.getCreatedBy().trim().isEmpty() ? sale.getCreatedBy() : "admin");
+
+            List<LedgerEntryResponse.SaleItemDetailDto> itemDetails = sale.getItems().stream().map(item -> {
+                LedgerEntryResponse.SaleItemDetailDto d = new LedgerEntryResponse.SaleItemDetailDto();
+                d.setProductName(item.getEffectiveProductName());
+                d.setPackageCount(item.getPackageCount());
+                d.setPrice(item.getPriceAtSale());
+                d.setTotal(item.getPriceAtSale() != null ? item.getPriceAtSale().multiply(BigDecimal.valueOf(item.getPackageCount())) : BigDecimal.ZERO);
+                return d;
+            }).toList();
+            entry.setItems(itemDetails);
+
+            if (!Boolean.TRUE.equals(sale.getIsCancelled())) {
+                totalSales = totalSales.add(sale.getTotalAmount());
+            }
             entries.add(entry);
         }
 
         // To'lovlarni qo'shamiz
         for (Payment payment : paymentRepository.findByShopId(shopId)) {
             LedgerEntryResponse entry = new LedgerEntryResponse();
+            entry.setId(payment.getId());
             entry.setDate(payment.getDate());
             entry.setType("TOLOV");
+            entry.setIsCancelled(Boolean.TRUE.equals(payment.getIsCancelled()));
+            entry.setCancelReason(payment.getCancelReason());
+            entry.setCancelledAt(payment.getCancelledAt());
+            entry.setCancelledBy(payment.getCancelledBy());
             entry.setDescription(payment.getMethod().toString());
             entry.setAmount(payment.getAmount());
+            entry.setPaymentMethod(payment.getMethod().toString());
+            entry.setCreatedBy(payment.getCreatedBy() != null && !payment.getCreatedBy().trim().isEmpty() ? payment.getCreatedBy() : "admin");
+
+            if (!Boolean.TRUE.equals(payment.getIsCancelled())) {
+                totalPayments = totalPayments.add(payment.getAmount());
+            }
             entries.add(entry);
         }
 
         // Sana bo'yicha tartiblaymiz (eskisidan yangisiga)
         entries.sort(Comparator.comparing(LedgerEntryResponse::getDate));
 
-        // Har bir amaldan keyingi qoldiq qarzni hisoblaymiz
+        // Har bir amaldan keyingi qoldiq qarzni hisoblaymiz (bekor qilinganlar balansga ta'sir qilmaydi)
         BigDecimal runningBalance = BigDecimal.ZERO;
         for (LedgerEntryResponse entry : entries) {
-            if (entry.getType().equals("SOTUV")) {
-                runningBalance = runningBalance.add(entry.getAmount());
-            } else {
-                runningBalance = runningBalance.subtract(entry.getAmount());
+            if (!Boolean.TRUE.equals(entry.getIsCancelled())) {
+                if (entry.getType().equals("SOTUV")) {
+                    runningBalance = runningBalance.add(entry.getAmount());
+                } else {
+                    runningBalance = runningBalance.subtract(entry.getAmount());
+                }
             }
             entry.setBalanceAfter(runningBalance);
         }
@@ -99,7 +132,12 @@ public class ShopServiceImpl implements ShopService {
         ShopLedgerResponse response = new ShopLedgerResponse();
         response.setShopId(shop.getId());
         response.setShopName(shop.getName());
+        response.setOwnerName(shop.getOwnerName());
+        response.setPhone(shop.getPhone());
+        response.setMarketGroupName(shop.getMarketGroup() != null ? shop.getMarketGroup().getName() : "");
         response.setCurrentDebt(shop.getCurrentDebt());
+        response.setTotalSalesAmount(totalSales);
+        response.setTotalPaymentsAmount(totalPayments);
         response.setEntries(entries);
 
         return response;
@@ -107,6 +145,7 @@ public class ShopServiceImpl implements ShopService {
 
 
     @Override
+    @Transactional
     public ShopResponse create(ShopRequest request) {
         MarketGroup marketGroup = findMarketGroup(request.getMarketGroupId());
         Shop shop = ShopMapper.toEntity(request, marketGroup);
@@ -133,8 +172,11 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
+    @Transactional
     public ShopResponse update(Long id, ShopRequest request) {
-        Shop existing = findEntityById(id);
+        Shop existing = shopRepository.findByIdWithLock(id)
+                .filter(s -> !Boolean.TRUE.equals(s.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi yoki o'chirilgan, id: " + id));
         existing.setName(request.getName());
         existing.setOwnerName(request.getOwnerName());
         existing.setPhone(request.getPhone());
@@ -143,8 +185,22 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        Shop existing = findEntityById(id);
+        Shop existing = shopRepository.findByIdWithLock(id)
+                .filter(s -> !Boolean.TRUE.equals(s.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi yoki o'chirilgan, id: " + id));
+
+        if (existing.getCurrentDebt() != null && existing.getCurrentDebt().compareTo(BigDecimal.ZERO) > 0) {
+            String debtStr = String.format("%,.0f", existing.getCurrentDebt().doubleValue()).replace(',', ' ');
+            throw new IllegalStateException("Ushbu do'konda " + debtStr + " so'm qarz mavjud! Do'konni o'chirishdan oldin qarzni to'liq yopish kerak.");
+        }
+
+        if (existing.getCurrentDebt() != null && existing.getCurrentDebt().compareTo(BigDecimal.ZERO) < 0) {
+            String avansStr = String.format("%,.0f", existing.getCurrentDebt().abs().doubleValue()).replace(',', ' ');
+            throw new IllegalStateException("Ushbu do'konda " + avansStr + " so'm ortiqcha to'lov (avans) mavjud! Avval hisob-kitobni yakunlang.");
+        }
+
         existing.setIsDeleted(true);
         shopRepository.save(existing);
     }
@@ -156,18 +212,21 @@ public class ShopServiceImpl implements ShopService {
 
     private Shop findEntityById(Long id) {
         return shopRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi, id: " + id));
+                .filter(s -> !Boolean.TRUE.equals(s.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi yoki o'chirilgan, id: " + id));
     }
 
     private MarketGroup findMarketGroup(Long id) {
-        return marketGroupRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Toifa topilmadi, id: " + id));
+        return marketGroupRepository.findByIdWithLock(id)
+                .filter(mg -> !Boolean.TRUE.equals(mg.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Toifa topilmadi yoki o'chirilgan, id: " + id));
     }
 
 
     @Override
     public List<OverdueShopResponse> getOverdueShops(int thresholdDays) {
-        List<Shop> debtorShops = shopRepository.findAll().stream()
+        final int effectiveThreshold = Math.max(0, thresholdDays);
+        List<Shop> debtorShops = shopRepository.findByIsDeletedFalse().stream()
                 .filter(s -> s.getCurrentDebt() != null && s.getCurrentDebt().compareTo(BigDecimal.ZERO) > 0)
                 .toList();
 
@@ -175,26 +234,17 @@ public class ShopServiceImpl implements ShopService {
         List<OverdueShopResponse> result = new ArrayList<>();
 
         for (Shop shop : debtorShops) {
-            List<Payment> payments = paymentRepository.findByShopId(shop.getId());
-
-            LocalDateTime lastPaymentDate = payments.stream()
-                    .map(Payment::getDate)
-                    .max(LocalDateTime::compareTo)
-                    .orElse(null);
-
-            LocalDateTime lastSaleDate = saleRepository.findByShopId(shop.getId()).stream()
-                    .map(Sale::getDate)
-                    .max(LocalDateTime::compareTo)
-                    .orElse(null);
+            LocalDateTime lastPaymentDate = paymentRepository.findLastActivePaymentDateByShopId(shop.getId());
+            LocalDateTime lastSaleDate = saleRepository.findLastActiveSaleDateByShopId(shop.getId());
 
             LocalDateTime referenceDate = (lastPaymentDate != null) ? lastPaymentDate : lastSaleDate;
             if (referenceDate == null) {
-                continue; // sotuv ham, to'lov ham yo'q — o'tkazib yuboramiz
+                continue; // faol sotuv ham, to'lov ham yo'q — o'tkazib yuboramiz
             }
 
             long daysSince = Duration.between(referenceDate, now).toDays();
 
-            if (daysSince >= thresholdDays) {
+            if (daysSince >= effectiveThreshold) {
                 OverdueShopResponse r = new OverdueShopResponse();
                 r.setShopId(shop.getId());
                 r.setShopName(shop.getName());

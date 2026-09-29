@@ -9,4 +9,5 @@ public interface SaleService {
     List<SaleResponse> getAll();
     List<SaleResponse> getByShop(Long shopId);
     SaleResponse getById(Long id);
+    SaleResponse cancelSale(Long id, String reason);
 }
