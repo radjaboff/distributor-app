@@ -56,9 +56,9 @@ fi
 
 # 4. UFW Xavfsizlik Devorini (Firewall) sozlash
 echo "[4/8] Xavfsizlik devori (UFW) sozlanmoqda..."
-ufw allow 22/tcp comment 'SSH Port'
-ufw allow 80/tcp comment "HTTP Port (Let's Encrypt)"
-ufw allow 443/tcp comment 'HTTPS Port'
+ufw allow 22/tcp comment 'SSH'
+ufw allow 80/tcp comment 'HTTP'
+ufw allow 443/tcp comment 'HTTPS'
 ufw --force enable
 
 # 5. .env Faylini tekshirish
