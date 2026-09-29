@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: distributor_db
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?Xavfsizlik xatosi: .env faylida DB_PASSWORD kiritilishi shart!}
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
       TZ: Asia/Tashkent
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -30,13 +30,14 @@ services:
       DB_PORT: 5432
       DB_NAME: distributor_db
       DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:?Xavfsizlik xatosi: .env faylida DB_PASSWORD kiritilishi shart!}
+      DB_PASSWORD: "${DB_PASSWORD}"
       APP_USERNAME: ${APP_USERNAME:-admin}
-      APP_PASSWORD: ${APP_PASSWORD:?Xavfsizlik xatosi: .env faylida APP_PASSWORD kiritilishi shart!}
+      APP_PASSWORD: "${APP_PASSWORD}"
       APP_USER2_USERNAME: ${APP_USER2_USERNAME:-}
       APP_USER2_PASSWORD: ${APP_USER2_PASSWORD:-}
-      REMEMBER_ME_KEY: ${REMEMBER_ME_KEY:?Xavfsizlik xatosi: .env faylida REMEMBER_ME_KEY kiritilishi shart!}
+      REMEMBER_ME_KEY: "${REMEMBER_ME_KEY}"
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -XX:+UseG1GC"
       PORT: 8080
       TZ: Asia/Tashkent
     ports:
