@@ -104,7 +104,8 @@ systemctl reload nginx
 echo "[7/8] Baza zaxiralash (Kunlik soat 03:00 da) sozlanmoqda..."
 chmod +x "${APP_DIR}/deploy/backup/backup.sh"
 CRON_JOB="0 3 * * * ${APP_DIR}/deploy/backup/backup.sh > /dev/null 2>&1"
-(crontab -l 2>/dev/null | grep -Fv "${APP_DIR}/deploy/backup/backup.sh" ; echo "${CRON_JOB}") | crontab -
+EXISTING_CRON=$(crontab -l 2>/dev/null | grep -Fv "${APP_DIR}/deploy/backup/backup.sh" || true)
+printf "%s\n%s\n" "${EXISTING_CRON}" "${CRON_JOB}" | sed '/^$/d' | crontab -
 
 # 9. Docker konteynerlarini ishga tushirish
 echo "[8/8] Docker konteynerlari ishga tushirilmoqda..."
