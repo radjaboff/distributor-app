@@ -73,14 +73,22 @@ if [ ! -f "${APP_DIR}/.env" ]; then
     fi
 fi
 
-# 6. Let's Encrypt SSL Sertifikat olish
-echo "[5/8] Let's Encrypt SSL sertifikat tekshirilmoqda..."
-if [ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
-    echo "SSL sertifikati olinmoqda: ${DOMAIN}..."
-    systemctl stop nginx || true
-    certbot certonly --standalone -d "${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email || true
-    systemctl start nginx || true
+# 6. Let's Encrypt SSL Sertifikat olish yoki vaqtinchalik sertifikat
+echo "[5/8] SSL sertifikat tekshirilmoqda..."
+mkdir -p "/etc/letsencrypt/live/${DOMAIN}"
+if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+    echo "Nginx ishga tushishi uchun boshlang'ich SSL yaratilmoqda..."
+    openssl req -x509 -nodes -days 30 -newkey rsa:2048 \
+        -keyout "/etc/letsencrypt/live/${DOMAIN}/privkey.pem" \
+        -out "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" \
+        -subj "/CN=${DOMAIN}"
 fi
+
+# Rasmiy Let's Encrypt sertifikat olishga urinish
+echo "Rasmiy Let's Encrypt sertifikati olinmoqda: ${DOMAIN}..."
+systemctl stop nginx || true
+certbot certonly --standalone -d "${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email || true
+systemctl start nginx || true
 
 # 7. Nginx konfiguratsiyasini o'rnatish
 echo "[6/8] Nginx sozlanmoqda..."
