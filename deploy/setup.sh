@@ -76,6 +76,7 @@ fi
 # 6. Let's Encrypt SSL Sertifikat olish yoki vaqtinchalik sertifikat
 echo "[5/8] SSL sertifikat tekshirilmoqda..."
 mkdir -p "/etc/letsencrypt/live/${DOMAIN}"
+mkdir -p "/var/www/certbot"
 if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
     echo "Nginx ishga tushishi uchun boshlang'ich SSL yaratilmoqda..."
     openssl req -x509 -nodes -days 30 -newkey rsa:2048 \
@@ -84,10 +85,16 @@ if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
         -subj "/CN=${DOMAIN}"
 fi
 
-# Rasmiy Let's Encrypt sertifikat olishga urinish
-echo "Rasmiy Let's Encrypt sertifikati olinmoqda: ${DOMAIN}..."
+# Avtomatik yangilanganda Nginx'ni avtomatik reload qiluvchi hook
+mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+echo '#!/bin/sh' > /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+echo 'systemctl reload nginx' >> /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+
+# Rasmiy Let's Encrypt sertifikat olishga urinish (asosiy va www domenlari bilan)
+echo "Rasmiy Let's Encrypt sertifikati olinmoqda: ${DOMAIN} va www.${DOMAIN}..."
 systemctl stop nginx || true
-certbot certonly --standalone -d "${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email || true
+certbot certonly --standalone -d "${DOMAIN}" -d "www.${DOMAIN}" --non-interactive --agree-tos -m akmalrajabov017@gmail.com || true
 systemctl start nginx || true
 
 # 7. Nginx konfiguratsiyasini o'rnatish

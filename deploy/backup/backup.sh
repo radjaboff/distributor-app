@@ -13,15 +13,22 @@ DATE_STR=$(date +"%Y-%m-%d_%H%M%S")
 BACKUP_FILE="${BACKUP_DIR}/distributor_backup_${DATE_STR}.sql.gz"
 CONTAINER_NAME="distributor_postgres"
 DB_NAME="distributor_db"
+ENV_FILE="/opt/distributor-app/.env"
 DB_USER="postgres"
+if [ -f "${ENV_FILE}" ]; then
+    PARSED_USER=$(grep -E '^DB_USER=' "${ENV_FILE}" | cut -d '=' -f2- | tr -d ' "\r' || true)
+    if [ -n "${PARSED_USER}" ]; then
+        DB_USER="${PARSED_USER}"
+    fi
+fi
 
 mkdir -p "${BACKUP_DIR}"
 touch "${LOG_FILE}"
 
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] Baza zaxira nusxasi boshlanmoqda..." >> "${LOG_FILE}"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] Baza zaxira nusxasi boshlanmoqda (Foydalanuvchi: ${DB_USER})..." >> "${LOG_FILE}"
 
-# 1. PostgreSQL konteyneridan pg_dump olib, gzip bilan siqamiz
-if docker exec -t "${CONTAINER_NAME}" pg_dump -U "${DB_USER}" -d "${DB_NAME}" | gzip > "${BACKUP_FILE}"; then
+# 1. PostgreSQL konteyneridan pg_dump olib, gzip bilan siqamiz (-i toza oqim, TTY siz)
+if docker exec -i "${CONTAINER_NAME}" pg_dump -U "${DB_USER}" -d "${DB_NAME}" | gzip > "${BACKUP_FILE}"; then
     FILE_SIZE=$(du -h "${BACKUP_FILE}" | cut -f1)
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS] Baza muvaffaqiyatli saqlandi: ${BACKUP_FILE} (Hajmi: ${FILE_SIZE})" >> "${LOG_FILE}"
 else
