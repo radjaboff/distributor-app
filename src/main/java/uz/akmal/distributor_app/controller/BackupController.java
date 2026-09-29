@@ -137,7 +137,7 @@ public class BackupController {
             log.error("Backup tiklashda xatolik:", e);
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "Zaxira faylini o'qishda xatolik: " + e.getMessage()
+                    "message", "Zaxira fayli noto'g'ri formatda yoki fayl shikastlangan. Iltimos to'g'ri zaxira faylini yuklang."
             ));
         }
     }

@@ -94,7 +94,11 @@ chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
 # Rasmiy Let's Encrypt sertifikat olishga urinish (asosiy va www domenlari bilan)
 echo "Rasmiy Let's Encrypt sertifikati olinmoqda: ${DOMAIN} va www.${DOMAIN}..."
 systemctl stop nginx || true
-certbot certonly --standalone -d "${DOMAIN}" -d "www.${DOMAIN}" --non-interactive --agree-tos -m akmalrajabov017@gmail.com || true
+if certbot certonly --standalone -d "${DOMAIN}" -d "www.${DOMAIN}" --non-interactive --agree-tos -m akmalrajabov017@gmail.com; then
+    echo "[MUVAFFAQIYAT] Let's Encrypt SSL sertifikati muvaffaqiyatli o'rnatildi!"
+else
+    echo "[OGOHLANTIRISH] Let's Encrypt sertifikati olinmadi (Domen DNS hali ulanmagan bo'lishi mumkin). Boshlang'ich SSL ishlatilmoqda."
+fi
 systemctl start nginx || true
 
 # 7. Nginx konfiguratsiyasini o'rnatish

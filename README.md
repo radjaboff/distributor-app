@@ -111,12 +111,14 @@ GET    /api/reports/daily?date=2026-09-13
 GET    /api/reports/monthly?month=2026-09
 ```
 
-## 🗺 Kelajakdagi rejalar
+## ✅ Amalga oshirilgan barcha imkoniyatlar
 
-- Frontend (PWA — mobil qurilmada ilova sifatida o'rnatiladigan veb-ilova)
-- Login (Spring Security)
-- PDF/Excel hisobot eksporti
-- Qidiruv, filtrlash va pagination
+- **PWA Mobil Veb-Ilova:** Telefon va kompyuterlarda xuddi mahalliy ilovadek to'liq ishlaydi va o'rnatiladi.
+- **Autentifikatsiya va Xavfsizlik:** Spring Security, seans boshqaruvi, Remember-Me (30 kun), `SameSite=Strict` cookie va Brute-Force himoyasi.
+- **Hisobotlar va Excel Eksport:** Kunlik, oylik savdolar, muddatidan o'tgan qarzlar va do'kon balansi bo'yicha to'liq Excel (.xlsx) eksport.
+- **Baza Zaxirasi (Backup / Restore):** Bir tugma bilan JSON formatida butun bazani yuklash va parolli tiklash.
+- **Storno (Sotuv va To'lovni bekor qilish):** Baza butunligi, ombor qoldig'i va mijoz qarzini avtomatik qayta hisoblash bilan bekor qilish va audit tarixi.
+- **Ishlab Chiqarish Muhiti:** Docker, Docker Compose, PostgreSQL 16 Alpine, Nginx Reverse Proxy, Let's Encrypt SSL va kunlik avtomatik zaxira skripti.
 
 ## 👤 Muallif
 
