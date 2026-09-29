@@ -1967,6 +1967,10 @@ function showAddStockInForm(productId, productName) {
     backBtn.onclick = showProducts;
     fabBtn.style.display = 'none';
 
+    const prod = allProductsList.find(p => p.id === productId) || {};
+    const pkgName = prod.packageName || 'paket';
+    const defaultUnitPrice = prod.purchasePrice || 0;
+
     contentEl.innerHTML = `
         <div class="form-card">
             <div class="form-card__header">
@@ -1982,24 +1986,44 @@ function showAddStockInForm(productId, productName) {
             <div class="form-group">
                 <label class="form-label" for="stockPackageCountInput">
                     <span class="label-icon">${Icons.box}</span>
-                    <span>Necha paket olindi</span>
+                    <span>Necha ${escHtml(pkgName)} olindi</span>
                 </label>
                 <div class="quantity-input-box">
-                    <input type="number" inputmode="numeric" class="form-input" id="stockPackageCountInput" placeholder="Masalan: 40" autofocus min="1">
+                    <input type="number" inputmode="numeric" class="form-input" id="stockPackageCountInput" placeholder="Masalan: 40" autofocus min="1" oninput="onStockInInputChange('qty')">
                 </div>
                 <div class="quick-chips-row">
-                    <button type="button" class="preset-chip" onclick="addQtyToInput('stockPackageCountInput', 5)">+5</button>
-                    <button type="button" class="preset-chip" onclick="addQtyToInput('stockPackageCountInput', 10)">+10</button>
-                    <button type="button" class="preset-chip" onclick="addQtyToInput('stockPackageCountInput', 20)">+20</button>
-                    <button type="button" class="preset-chip" onclick="addQtyToInput('stockPackageCountInput', 50)">+50</button>
-                    <button type="button" class="preset-chip" onclick="addQtyToInput('stockPackageCountInput', 100)">+100</button>
+                    <button type="button" class="preset-chip" onclick="addQtyToStockInInput(5)">+5</button>
+                    <button type="button" class="preset-chip" onclick="addQtyToStockInInput(10)">+10</button>
+                    <button type="button" class="preset-chip" onclick="addQtyToStockInInput(20)">+20</button>
+                    <button type="button" class="preset-chip" onclick="addQtyToStockInInput(50)">+50</button>
+                    <button type="button" class="preset-chip" onclick="addQtyToStockInInput(100)">+100</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="stockUnitPriceInput">
+                    <span class="label-icon">${Icons.money}</span>
+                    <span>1 ${escHtml(pkgName)} tannarxi (olingan narxi)</span>
+                </label>
+                <div class="money-field-wrap">
+                    <div class="money-input-box">
+                        <input type="text" 
+                               inputmode="numeric" 
+                               class="form-input money-input" 
+                               id="stockUnitPriceInput" 
+                               value="${defaultUnitPrice ? formatNumberWithSpaces(defaultUnitPrice) : ''}" 
+                               placeholder="${defaultUnitPrice ? formatMoney(defaultUnitPrice) : '0'}" 
+                               oninput="onMoneyInputChange(this, 'stockUnitPriceLive'); onStockInInputChange('unit')">
+                        <span class="money-suffix">so'm</span>
+                    </div>
+                    <div class="money-live-container" id="stockUnitPriceLive" style="display:none;"></div>
                 </div>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="stockTotalCostInput">
-                    <span class="label-icon">${Icons.money}</span>
-                    <span>Umumiy to'langan summa</span>
+                    <span class="label-icon">${Icons.wallet}</span>
+                    <span>Jami to'langan summa</span>
                 </label>
                 <div class="money-field-wrap">
                     <div class="money-input-box">
@@ -2008,18 +2032,12 @@ function showAddStockInForm(productId, productName) {
                                class="form-input money-input" 
                                id="stockTotalCostInput" 
                                placeholder="0" 
-                               oninput="onMoneyInputChange(this, 'stockTotalCostLive')">
+                               oninput="onMoneyInputChange(this, 'stockTotalCostLive'); onStockInInputChange('total')">
                         <span class="money-suffix">so'm</span>
                     </div>
                     <div class="money-live-container" id="stockTotalCostLive" style="display:none;"></div>
                 </div>
-                <div class="quick-chips-row">
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('stockTotalCostInput', 100000, 'stockTotalCostLive')">+100 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('stockTotalCostInput', 500000, 'stockTotalCostLive')">+500 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('stockTotalCostInput', 1000000, 'stockTotalCostLive')">+1 mln</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('stockTotalCostInput', 5000000, 'stockTotalCostLive')">+5 mln</button>
-                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('stockTotalCostInput', 'stockTotalCostLive')">Tozalash</button>
-                </div>
+                <div id="stockInLiveSummary" style="font-size:13px; font-weight:600; color:#38BDF8; margin-top:8px; display:none; background:rgba(56,189,248,0.1); padding:8px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.2);"></div>
             </div>
 
             <div class="form-group" style="margin-top: 22px;">
@@ -2029,6 +2047,58 @@ function showAddStockInForm(productId, productName) {
             </div>
         </div>
     `;
+
+    if (defaultUnitPrice) {
+        updateMoneyLivePreview('stockUnitPriceLive', defaultUnitPrice);
+    }
+}
+
+function addQtyToStockInInput(delta) {
+    const input = document.getElementById('stockPackageCountInput');
+    if (!input) return;
+    const current = parseInt(input.value) || 0;
+    input.value = current + delta;
+    onStockInInputChange('qty');
+}
+
+function onStockInInputChange(source) {
+    const qtyInput = document.getElementById('stockPackageCountInput');
+    const unitInput = document.getElementById('stockUnitPriceInput');
+    const totalInput = document.getElementById('stockTotalCostInput');
+    const summaryEl = document.getElementById('stockInLiveSummary');
+
+    if (!qtyInput || !unitInput || !totalInput) return;
+
+    const qty = parseInt(qtyInput.value) || 0;
+    const unitPrice = parseMoney(unitInput.value) || 0;
+    const totalCost = parseMoney(totalInput.value) || 0;
+
+    if (source === 'qty' || source === 'unit') {
+        if (qty > 0 && unitPrice > 0) {
+            const calculatedTotal = qty * unitPrice;
+            totalInput.value = formatNumberWithSpaces(calculatedTotal);
+            updateMoneyLivePreview('stockTotalCostLive', calculatedTotal);
+        }
+    } else if (source === 'total') {
+        if (qty > 0 && totalCost > 0) {
+            const calculatedUnit = Math.round(totalCost / qty);
+            unitInput.value = formatNumberWithSpaces(calculatedUnit);
+            updateMoneyLivePreview('stockUnitPriceLive', calculatedUnit);
+        }
+    }
+
+    const finalQty = parseInt(qtyInput.value) || 0;
+    const finalUnit = parseMoney(unitInput.value) || 0;
+    const finalTotal = parseMoney(totalInput.value) || 0;
+
+    if (summaryEl) {
+        if (finalQty > 0 && finalTotal > 0 && finalUnit > 0) {
+            summaryEl.style.display = 'block';
+            summaryEl.innerHTML = `💡 Hisob: <b>${finalQty}</b> dona × <b>${formatMoney(finalUnit)}</b> = <b>${formatMoney(finalTotal)}</b>`;
+        } else {
+            summaryEl.style.display = 'none';
+        }
+    }
 }
 
 async function submitStockIn(productId) {
