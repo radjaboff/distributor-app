@@ -68,7 +68,7 @@ public class SecurityConfig {
 
                 .exceptionHandling(ex -> ex
                         .defaultAuthenticationEntryPointFor(
-                                (request, response, authException) -> response.sendError(401, "Login talab qilinadi"),
+                                new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED),
                                 request -> request.getRequestURI() != null && request.getRequestURI().startsWith("/api/")
                         )
                         .authenticationEntryPoint(new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/login.html"))

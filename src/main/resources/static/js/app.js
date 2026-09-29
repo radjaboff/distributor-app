@@ -583,11 +583,23 @@ function showGeneralInstallGuide() {
     `);
 }
 
+function handleAuthRedirect(response) {
+    if (response.status === 401 || response.redirected || (response.url && response.url.includes('/login.html'))) {
+        window.location.href = '/login.html';
+        return true;
+    }
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+        window.location.href = '/login.html';
+        return true;
+    }
+    return false;
+}
+
 // Backend'ga so'rov yuborish yordamchilari
 async function apiGet(path) {
     const response = await fetch(`${API_BASE}${path}`);
-    if (response.status === 401) {
-        window.location.href = '/login.html';
+    if (handleAuthRedirect(response)) {
         return new Promise(() => {});
     }
     if (!response.ok) {
@@ -603,8 +615,7 @@ async function apiPost(path, body) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
-    if (response.status === 401) {
-        window.location.href = '/login.html';
+    if (handleAuthRedirect(response)) {
         return new Promise(() => {});
     }
     if (!response.ok) {
@@ -620,8 +631,7 @@ async function apiPut(path, body) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
-    if (response.status === 401) {
-        window.location.href = '/login.html';
+    if (handleAuthRedirect(response)) {
         return new Promise(() => {});
     }
     if (!response.ok) {
@@ -635,8 +645,7 @@ async function apiDelete(path) {
     const response = await fetch(`${API_BASE}${path}`, {
         method: 'DELETE'
     });
-    if (response.status === 401) {
-        window.location.href = '/login.html';
+    if (handleAuthRedirect(response)) {
         return new Promise(() => {});
     }
     if (!response.ok) {
@@ -2909,6 +2918,7 @@ async function downloadDatabaseExcelBackup() {
     showToast('Baza Excel (.xlsx) fayli tayyorlanmoqda...', 'info');
     try {
         const response = await fetch('/api/backup/download-excel');
+        if (handleAuthRedirect(response)) return;
         if (!response.ok) {
             throw new Error('Excel zaxirasini yuklashda xatolik yuz berdi');
         }
@@ -2940,6 +2950,7 @@ async function downloadDatabaseBackup() {
     showToast('Baza JSON zaxira nusxasi tayyorlanmoqda...', 'info');
     try {
         const response = await fetch('/api/backup/download');
+        if (handleAuthRedirect(response)) return;
         if (!response.ok) {
             throw new Error('Zaxira faylini olishda xatolik yuz berdi');
         }
@@ -3041,6 +3052,8 @@ function showRestorePasswordModal(file) {
                 method: 'POST',
                 body: formData
             });
+
+            if (handleAuthRedirect(response)) return;
 
             const result = await response.json().catch(() => ({}));
             if (response.ok && result.success) {
