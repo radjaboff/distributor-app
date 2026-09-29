@@ -2231,7 +2231,7 @@ function renderDailyReportHtml(report) {
     <div class="stat-card__value" style="font-size:18px;">${formatMoney(totalSalesForDay)}</div>
   </div>
   <div class="stat-card">
-    <div class="stat-card__label">Kunlik yalpi foyda</div>
+    <div class="stat-card__label">Kunlik sof foyda</div>
     <div class="stat-card__value" style="color:var(--color-paid); font-size:18px;">${formatMoney(report.dailyProfit)}</div>
   </div>
 </div>
@@ -2322,7 +2322,7 @@ function renderMonthlyReportHtml(report) {
         <div class="stat-card__value" style="font-size:18px;">${formatMoney(report.totalSalesAmount)}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card__label">Oylik yalpi foyda</div>
+        <div class="stat-card__label">Oylik sof foyda</div>
         <div class="stat-card__value" style="color:var(--color-paid); font-size:18px;">${formatMoney(report.totalProfit)}</div>
       </div>
     </div>
@@ -2788,7 +2788,7 @@ function renderRangeReportHtml(report) {
         <div class="stat-card__value" style="font-size:18px;">${formatMoney(report.totalSalesAmount)}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card__label">Umumiy yalpi foyda</div>
+        <div class="stat-card__label">Umumiy sof foyda</div>
         <div class="stat-card__value" style="color:var(--color-paid); font-size:18px;">${formatMoney(report.totalProfit)}</div>
       </div>
     </div>

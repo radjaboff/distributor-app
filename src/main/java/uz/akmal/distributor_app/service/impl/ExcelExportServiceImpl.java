@@ -74,7 +74,7 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             Sheet summarySheet = workbook.createSheet("Umumiy");
             String dateStr = date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
             summarySheet.createRow(0).createCell(0).setCellValue("Sana: " + dateStr);
-            summarySheet.createRow(1).createCell(0).setCellValue("Kunlik yalpi foyda: " + report.getDailyProfit());
+            summarySheet.createRow(1).createCell(0).setCellValue("Kunlik sof foyda: " + report.getDailyProfit());
             summarySheet.createRow(2).createCell(0).setCellValue("Bugungi kirim xarajati: " + (report.getTotalStockInCost() != null ? report.getTotalStockInCost() : java.math.BigDecimal.ZERO));
             summarySheet.createRow(3).createCell(0).setCellValue("Umumiy qarz (barcha): " + report.getTotalDebtAllShops());
             if (report.getRevenueByType() != null) {
@@ -165,7 +165,7 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             Sheet summarySheet = workbook.createSheet("Umumiy");
             summarySheet.createRow(0).createCell(0).setCellValue(title);
             summarySheet.createRow(1).createCell(0).setCellValue("Umumiy sotuv: " + totalSales);
-            summarySheet.createRow(2).createCell(0).setCellValue("Umumiy yalpi foyda: " + totalProfit);
+            summarySheet.createRow(2).createCell(0).setCellValue("Umumiy sof foyda: " + totalProfit);
             summarySheet.createRow(3).createCell(0).setCellValue("Jami kirim xarajati: " + (totalStockInCost != null ? totalStockInCost : java.math.BigDecimal.ZERO));
             if (revenueByType != null) {
                 summarySheet.createRow(4).createCell(0).setCellValue("Undirilgan to'lov (NAQD): " + revenueByType.getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NAQD, java.math.BigDecimal.ZERO));
