@@ -1061,8 +1061,8 @@ async function showShopDetail(shopId) {
                 let cancelBadge = '';
                 if (isCancelled) {
                     cancelBadge = `
-                        <div style="margin-top:4px; font-size:11px; color:#F87171; display:flex; flex-wrap:wrap; align-items:center; gap:5px;">
-                            <span style="background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); padding:1px 5px; border-radius:4px; font-weight:700; font-size:10px;">BEKOR QILINGAN</span>
+                        <div style="font-size:11.5px; color:#F87171; display:flex; flex-wrap:wrap; align-items:center; gap:6px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); padding:6px 10px; border-radius:8px;">
+                            <span style="background:rgba(239,68,68,0.25); border:1px solid rgba(239,68,68,0.4); padding:1px 5px; border-radius:4px; font-weight:700; font-size:10px;">BEKOR QILINGAN</span>
                             <span>${escHtml(entry.cancelReason || '')}</span>
                             <span style="opacity:0.8;">(${escHtml(entry.cancelledBy || '')})</span>
                         </div>
@@ -1073,34 +1073,67 @@ async function showShopDetail(shopId) {
                 if (!isCancelled && entry.id) {
                     actionBtn = `
                         <button class="btn" onclick="promptCancelEntry('${entry.type}', ${entry.id}, ${shopId}, '${escJs(entry.description || '')}', ${entry.amount})" 
-                                style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#F87171; padding:3px 7px; border-radius:7px; font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" 
+                                style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#F87171; padding:4px 8px; border-radius:8px; font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; gap:5px; cursor:pointer;" 
                                 title="Operatsiyani bekor qilish (Storno)">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
                             <span>Bekor qilish</span>
                         </button>
                     `;
                 }
 
+                const typeTitle = isSale 
+                    ? 'Sotuv' 
+                    : ('To\'lov (' + escHtml(entry.paymentMethod || 'NAQD') + ')');
+                const typeIcon = isSale ? Icons.box : Icons.wallet;
+                const iconColor = isSale ? '#60A5FA' : '#34D399';
+                const iconBg = isSale ? 'rgba(59,130,246,0.14)' : 'rgba(16,185,129,0.14)';
+
                 return `
-                <div class="ledger-row" style="cursor:default; margin-bottom:8px; ${rowOpacity}">
-                    <div class="ledger-row__main">
-                        <div class="ledger-row__title" style="font-size:14.5px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
-                            <div style="display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; ${titleStyle}">
-                                ${isSale ? Icons.box : Icons.money}
-                                <span>${escHtml(entry.description)}</span>
+                <div class="ledger-row" style="cursor:default; margin-bottom:10px; display:flex; flex-direction:column; align-items:stretch; gap:10px; padding:14px 15px; ${rowOpacity}">
+                    <!-- 1-qator: Turi va Summa -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:${iconBg}; color:${iconColor}; flex-shrink:0;">
+                                ${typeIcon}
                             </div>
-                            <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                                ${formatAdminBadge(entry.createdBy)}
-                                ${actionBtn}
-                            </div>
+                            <span style="font-weight:700; font-size:14.5px; color:#FFFFFF; letter-spacing:-0.2px;">
+                                ${typeTitle}
+                            </span>
                         </div>
-                        <div class="ledger-row__subtitle" style="font-size:12px;">
-                            ${new Date(entry.date).toLocaleDateString('uz-UZ')} · ${Number(entry.balanceAfter) < 0 ? 'Avans: ' + formatMoney(Math.abs(entry.balanceAfter)) : 'Qoldiq: ' + formatMoney(entry.balanceAfter)}
+                        <div class="ledger-row__amount ${amountClass}" style="font-size:14px; font-weight:800; padding:4px 12px; border-radius:999px; ${isCancelled ? 'text-decoration: line-through; opacity:0.6;' : ''}">
+                            ${amountText}
                         </div>
-                        ${cancelBadge}
                     </div>
-                    <div class="ledger-row__amount ${amountClass}" style="${isCancelled ? 'text-decoration: line-through; opacity:0.6;' : ''}">
-                        ${amountText}
+
+                    <!-- 2-qator: Mahsulotlar tarkibi (faqat sotuv uchun) -->
+                    ${isSale && entry.description ? `
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:13px; font-weight:500; color:#F1F5F9; line-height:1.45; word-break:break-word; ${titleStyle}">
+                            <span style="color:var(--color-ink-dim); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:2px;">Tovar tarkibi:</span>
+                            ${escHtml(entry.description)}
+                        </div>
+                    ` : ''}
+
+                    <!-- 3-qator: Sana & Qoldiq -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--color-ink-dim); flex-wrap:wrap; gap:6px;">
+                        <span style="display:inline-flex; align-items:center; gap:4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            ${new Date(entry.date).toLocaleDateString('uz-UZ')}, ${new Date(entry.date).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}
+                        </span>
+                        <span style="font-weight:600; color:#94A3B8;">
+                            ${Number(entry.balanceAfter) < 0 ? 'Avans: ' + formatMoney(Math.abs(entry.balanceAfter)) : 'Qoldiq: ' + formatMoney(entry.balanceAfter)}
+                        </span>
+                    </div>
+
+                    ${cancelBadge}
+
+                    <!-- 4-qator: Mas'ul xodim & Bekor qilish tugmasi -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.08); margin-top:2px;">
+                        <div>
+                            ${formatAdminBadge(entry.createdBy)}
+                        </div>
+                        <div>
+                            ${actionBtn}
+                        </div>
                     </div>
                 </div>
                 `;
