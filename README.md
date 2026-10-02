@@ -1,125 +1,194 @@
-# Bozor Distributor Boshqaruv Tizimi
+<div align="center">
 
-Bozorlarga yog', shakar va shunga o'xshash mahsulotlarni tarqatuvchi distributor biznes uchun
-mahsulot, mijoz (do'kon) va qarz-nasiya hisobini yurituvchi backend REST API.
+# 📦 Distributor Management System
 
-## 📌 Muammo va yechim
+**A full-stack system for wholesale distributors: stock, sales, shop debts and financial reports in one place.**
 
-Distributor biznesda hisob-kitob odatda qo'lda yoki daftarda yuritiladi — qaysi do'kon qancha
-qarzdor, qachon qancha to'lagani, ombordagi mahsulot qoldig'ini kuzatish qiyin va xatoga moyil.
+![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-REST_API-6DB33F?logo=springboot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
 
-Bu loyiha shu jarayonni raqamlashtiradi:
-- Bazadan mahsulot kirimi va ombor qoldig'ini avtomatik hisoblash
-- Do'konlarga sotuv (naqd / karta / nasiya) va qarzni avtomatik hisoblash
-- To'lovlarni qayd qilish va qarzni avtomatik kamaytirish
-- Kunlik va oylik moliyaviy hisobotlar (foyda, tushum, TOP qarzdorlar)
+🇺🇿 [O'zbekcha versiya](README.uz.md)
 
-## 🛠 Texnologiyalar
+</div>
 
-| Texnologiya | Vazifasi |
+---
+
+## 📌 Problem & Solution
+
+A distributor who buys goods (sugar, cooking oil, etc.) from a wholesale base and sells them to market shops, sometimes for cash and sometimes on credit, usually keeps records in a notebook. It is hard to know which shop owes how much, when they last paid, and what is left in the warehouse, and mistakes are easy to make.
+
+This project **digitalizes the whole process** and is **deployed to production for a real distribution business**:
+
+- Stock-in from the wholesale base, with the warehouse balance updated automatically
+- Sales to shops (**cash / card / credit**) with automatic debt calculation
+- Payments recorded against a shop, reducing its debt automatically
+- Daily, monthly and custom-range financial reports (profit, revenue, top debtors)
+
+---
+
+## 🛠 Tech Stack
+
+| Technology | Purpose |
 |---|---|
-| **Java 17** | Asosiy dasturlash tili |
-| **Spring Boot** | Backend freymvork |
-| **Spring Data JPA** | Ma'lumotlar bazasi bilan ishlash (ORM) |
-| **PostgreSQL** | Ma'lumotlar bazasi |
-| **Maven** | Build tool va bog'liqliklarni boshqarish |
-| **Lombok** | Boilerplate kodni kamaytirish (getter/setter) |
-| **Jakarta Validation** | Kiruvchi ma'lumotlarni tekshirish |
+| **Java 17** | Main programming language |
+| **Spring Boot** | Backend framework (REST API) |
+| **Spring Data JPA / Hibernate** | ORM and database access |
+| **Spring Security** | Authentication, session management, Remember-Me |
+| **PostgreSQL 16** | Relational database |
+| **Jakarta Validation** | Request validation |
+| **Swagger / OpenAPI** | API documentation |
+| **Apache POI** | Excel (.xlsx) report export |
+| **Lombok** | Boilerplate reduction |
+| **Maven** | Build and dependency management |
+| **HTML / CSS / JavaScript** | Mobile-first PWA frontend (no framework) |
+| **Docker, Docker Compose, Nginx** | Containerized production deployment |
 
-## 🏗 Arxitektura
+---
 
-Loyiha **SOLID** tamoyillariga asoslangan, qatlamli (layered) arxitekturada qurilgan:
+## 🏗 Architecture
+
+The project follows **SOLID** principles and a classic **layered architecture**:
 
 ```
-Controller → Service (interfeys + impl) → Repository → Database
-                ↕
-              DTO + Mapper
+Controller → Service (interface + impl) → Repository → Database
+                 ↕
+            DTO + Mapper
 ```
 
-| Paket | Vazifasi |
+| Package | Responsibility |
 |---|---|
-| `entity/` | Database jadvallariga mos classlar |
-| `repository/` | Spring Data JPA repositorylari |
-| `service/`, `service/impl/` | Biznes-mantiq — interfeys + implementatsiya (Dependency Inversion) |
-| `controller/` | REST API endpoint'lar |
-| `dto/` | Request/Response classlari va Entity ↔ DTO Mapper'lar |
-| `exception/` | Maxsus xato classlari va markazlashgan xato boshqaruvi (`@ControllerAdvice`) |
-| `enums/` | `PaymentType` (NAQD/KARTA/NASIYA), `PaymentMethod` (NAQD/KARTA) |
+| `entity/` | Database-mapped classes |
+| `repository/` | Spring Data JPA repositories |
+| `service/`, `service/impl/` | Business logic, interface + implementation (Dependency Inversion) |
+| `controller/` | REST API endpoints |
+| `dto/` | Request / Response classes and Entity ↔ DTO mappers |
+| `exception/` | Custom exceptions and centralized handling via `@ControllerAdvice` |
+| `enums/` | `PaymentType` (CASH / CARD / CREDIT), `PaymentMethod` (CASH / CARD) |
 
-**Nega DTO?** Entity'lar to'g'ridan-to'g'ri API orqali qaytarilmaydi — bu ichki ma'lumotlar
-tuzilmasini tashqi dunyodan ajratadi va foydalanuvchi tizim boshqaradigan maydonlarga
-(masalan sotuv narxi) tashqaridan aralashib qo'ya olmasligini ta'minlaydi.
+**Why DTOs?** Entities are never returned directly from the API. This separates the internal data model from the outside world and guarantees that clients cannot tamper with fields managed by the system, such as the sale price or cost.
 
-## ⚙️ Asosiy funksionallik
+---
 
-- **Paket-asosli hisob** — mahsulotlar butun paket (xalta/karopka) bilan hisoblanadi, kg/litr emas
-- **Ombor boshqaruvi** — bazadan kirim qilinganda qoldiq avtomatik oshadi, sotuvda avtomatik kamayadi
-- **Toifalar** — do'konlar bozorlarga/toifalarga guruhlanadi
-- **Ko'p turdagi sotuv** — bitta sotuvda bir nechta mahsulot turi, 3 xil to'lov (naqd/karta/nasiya)
-- **Qisman to'lov** — mijoz sotuv summasining bir qismini darhol, qolganini keyin to'lashi qo'llab-quvvatlanadi
-- **Narx muzlatish** — sotuv vaqtidagi narx va tannarx saqlanadi, keyingi narx o'zgarishi eski sotuvlarga ta'sir qilmaydi
-- **Avtomatik qarz hisobi** — sotuv qarzni oshiradi, to'lov kamaytiradi
-- **Hisobotlar** — kunlik/oylik foyda, tushum (to'lov turi bo'yicha), TOP qarzdor do'konlar, mahsulot bo'yicha sotuv hajmi
+## ⚙️ Key Features
 
-## 🚀 Ishga tushirish
+- **Package-based accounting:** goods are counted in whole packages (a sack of sugar, a box of oil), not in kg or liters
+- **Stock management:** stock-in increases the balance, a sale decreases it, all inside transactions
+- **Shop categories:** shops are grouped by market or category, with search and sort by debt
+- **Multi-item sales:** one sale can contain several products and be paid in cash, by card, on credit, or partly upfront
+- **Partial payments:** a shop can pay part of a sale immediately and the rest later; debt is recalculated automatically
+- **Price & cost locking:** the selling price and cost at the time of sale are stored, so later price changes never affect old sales or historical profit
+- **Shop ledger:** a chronological history of sales and payments with a running balance that always matches the shop's current debt
+- **Overdue debtors & low-stock alerts:** shown on the dashboard
+- **Reports:** daily, monthly and custom date-range reports with profit, revenue by payment type, stock-in costs, product sales volume and top debtors
 
-1. PostgreSQL'da baza yarating:
+---
+
+## ✅ Production-Grade Details
+
+- **Concurrency safety:** pessimistic locking on sale, payment and stock-in creation prevents race conditions
+- **Storno:** cancel a sale or a payment, with stock and debt recalculated automatically and an audit history kept
+- **Soft delete:** deleting a shop, category or product never destroys financial history
+- **Security:** Spring Security login, Remember-Me (30 days), `SameSite=Strict` cookies, brute-force protection, HTML escaping on the frontend, protected Swagger UI
+- **Centralized error handling:** clean JSON errors; internal exception details are never leaked to the client
+- **Validation & logging:** request validation in DTOs and SLF4J logging on business operations
+- **Excel export:** daily, monthly and range reports as `.xlsx`
+- **Backup & restore:** one-click JSON backup and password-protected restore with structure validation
+- **PWA:** installable on phones and desktops, works like a native app
+- **Deployment:** Docker, Docker Compose, PostgreSQL 16 Alpine, Nginx reverse proxy, Let's Encrypt SSL and a daily automatic backup script
+
+---
+
+<!--
+## 📸 Screenshots
+
+Add 3–4 screenshots (use test data only, never real customer data), for example:
+
+| Dashboard | Shop ledger | Sale form |
+|---|---|---|
+| ![Dashboard](docs/dashboard.png) | ![Ledger](docs/ledger.png) | ![Sale](docs/sale.png) |
+
+To show them, delete the opening and closing comment markers around this block.
+-->
+
+## 🚀 Getting Started
+
+### Option 1: Docker (recommended)
+
+```bash
+git clone https://github.com/radjaboff/distributor-app.git
+cd distributor-app
+cp .env.example .env     # then fill in your own passwords
+docker compose up -d --build
+```
+
+### Option 2: Run locally
+
+1. Create the database:
    ```sql
    CREATE DATABASE distributor_db;
    ```
-2. `DB_PASSWORD` environment variable'ni bazangiz parolига mos o'rnating
-3. Loyihani ishga tushiring:
+2. Set the `DB_PASSWORD` environment variable (and the admin credentials listed in `.env.example`)
+3. Start the application:
    ```bash
    ./mvnw spring-boot:run
    ```
-4. API `http://localhost:8080` manzilida ishga tushadi
+4. Open `http://localhost:8080`
 
-## 📡 API endpoint'lar
+---
+
+## 📡 API Endpoints
 
 ```
-# Mahsulotlar
+# Products
 GET    /api/products
 POST   /api/products
 GET    /api/products/{id}
 PUT    /api/products/{id}
 DELETE /api/products/{id}
 
-# Bazadan kirim
+# Stock-in
 POST   /api/stock-in
 GET    /api/stock-in?productId=
 
-# Toifalar
+# Market groups (categories)
 GET    /api/market-groups
 POST   /api/market-groups
 
-# Do'konlar
+# Shops
 GET    /api/shops
 GET    /api/shops?groupId=
 POST   /api/shops
 PUT    /api/shops/{id}
+GET    /api/shops/{id}/debt
+GET    /api/shops/{id}/ledger
+GET    /api/shops/overdue?days=
 
-# Sotuv
+# Sales
 POST   /api/sales
 GET    /api/sales?shopId=
 
-# To'lovlar
+# Payments
 POST   /api/payments
 GET    /api/payments?shopId=
 
-# Hisobotlar
+# Reports (+ /export for Excel)
 GET    /api/reports/daily?date=2026-09-13
 GET    /api/reports/monthly?month=2026-09
+GET    /api/reports/range
+
+# Dashboard
+GET    /api/dashboard/summary
 ```
 
-## ✅ Amalga oshirilgan barcha imkoniyatlar
+> Full interactive documentation is available through Swagger UI after logging in.
 
-- **PWA Mobil Veb-Ilova:** Telefon va kompyuterlarda xuddi mahalliy ilovadek to'liq ishlaydi va o'rnatiladi.
-- **Autentifikatsiya va Xavfsizlik:** Spring Security, seans boshqaruvi, Remember-Me (30 kun), `SameSite=Strict` cookie va Brute-Force himoyasi.
-- **Hisobotlar va Excel Eksport:** Kunlik, oylik savdolar, muddatidan o'tgan qarzlar va do'kon balansi bo'yicha to'liq Excel (.xlsx) eksport.
-- **Baza Zaxirasi (Backup / Restore):** Bir tugma bilan JSON formatida butun bazani yuklash va parolli tiklash.
-- **Storno (Sotuv va To'lovni bekor qilish):** Baza butunligi, ombor qoldig'i va mijoz qarzini avtomatik qayta hisoblash bilan bekor qilish va audit tarixi.
-- **Ishlab Chiqarish Muhiti:** Docker, Docker Compose, PostgreSQL 16 Alpine, Nginx Reverse Proxy, Let's Encrypt SSL va kunlik avtomatik zaxira skripti.
+---
 
-## 👤 Muallif
+## 👤 Author
 
-**Akmal Rajabov** — [GitHub](https://github.com/radjaboff) | [LinkedIn](https://www.linkedin.com/in/akmal-rajabov)
+**Akmal Rajabov**, Java Backend Developer
+
+[GitHub](https://github.com/radjaboff) · [LinkedIn](https://www.linkedin.com/in/akmal-rajabov)
