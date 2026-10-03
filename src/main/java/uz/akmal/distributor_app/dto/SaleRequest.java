@@ -27,4 +27,6 @@ public class SaleRequest {
     private BigDecimal initialPaidAmount;
 
     private PaymentMethod initialPaymentMethod;
+
+    private String saleDate;
 }

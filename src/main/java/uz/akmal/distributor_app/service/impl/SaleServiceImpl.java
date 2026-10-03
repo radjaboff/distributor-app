@@ -63,7 +63,20 @@ public class SaleServiceImpl implements SaleService {
 
         Sale sale = new Sale();
         sale.setShop(shop);
-        sale.setDate(LocalDateTime.now());
+        LocalDateTime saleDateTime = LocalDateTime.now();
+        if (request.getSaleDate() != null && !request.getSaleDate().trim().isEmpty()) {
+            String dateStr = request.getSaleDate().trim();
+            if (dateStr.length() == 10) {
+                saleDateTime = java.time.LocalDate.parse(dateStr).atTime(java.time.LocalTime.now());
+            } else {
+                try {
+                    saleDateTime = LocalDateTime.parse(dateStr);
+                } catch (Exception e) {
+                    saleDateTime = java.time.LocalDate.parse(dateStr.substring(0, 10)).atTime(java.time.LocalTime.now());
+                }
+            }
+        }
+        sale.setDate(saleDateTime);
         sale.setCreatedBy(uz.akmal.distributor_app.util.SecurityUtils.getCurrentUsername());
 
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -71,27 +84,21 @@ public class SaleServiceImpl implements SaleService {
         for (SaleItemRequest itemRequest : request.getItems()) {
             Product product = lockedProducts.get(itemRequest.getProductId());
 
-            int currentStock = (product.getStockQuantity() != null) ? product.getStockQuantity() : 0;
-            if (currentStock < itemRequest.getPackageCount()) {
-                log.warn("Omborda yetarli mahsulot yo'q: productId={}, so'ralgan={}, mavjud={}",
-                        product.getId(), itemRequest.getPackageCount(), currentStock);
-                throw new InsufficientStockException("Omborda yetarli mahsulot yo'q: " + product.getName());
-            }
+            BigDecimal unitPrice = (itemRequest.getPrice() != null && itemRequest.getPrice().compareTo(BigDecimal.ZERO) > 0)
+                    ? itemRequest.getPrice()
+                    : ((product.getSellPrice() != null) ? product.getSellPrice() : BigDecimal.ZERO);
 
             SaleItem item = new SaleItem();
             item.setProduct(product);
             item.setProductName(product.getName());
             item.setSale(sale);
             item.setPackageCount(itemRequest.getPackageCount());
-            item.setPriceAtSale(product.getSellPrice());
-            item.setCostAtSale(product.getPurchasePrice());
-
-            product.setStockQuantity(currentStock - itemRequest.getPackageCount());
-            productRepository.save(product);
+            item.setPriceAtSale(unitPrice);
+            item.setCostAtSale(BigDecimal.ZERO);
 
             sale.getItems().add(item);
 
-            BigDecimal lineTotal = item.getPriceAtSale().multiply(BigDecimal.valueOf(item.getPackageCount()));
+            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(item.getPackageCount()));
             totalAmount = totalAmount.add(lineTotal);
         }
 
@@ -165,33 +172,7 @@ public class SaleServiceImpl implements SaleService {
 
         log.info("Sotuvni bekor qilish (Storno) boshlandi: saleId={}, shopId={}, reason={}", id, shop.getId(), cancelReason);
 
-        // 1. Ombordagi mahsulot qoldiqlarini qaytarish
-        List<SaleItem> items = sale.getItems();
-        if (items != null && !items.isEmpty()) {
-            List<Long> productIds = items.stream()
-                    .map(item -> item.getProduct().getId())
-                    .distinct()
-                    .sorted()
-                    .toList();
-
-            java.util.Map<Long, Product> lockedProducts = new java.util.HashMap<>();
-            for (Long pId : productIds) {
-                Product product = productRepository.findByIdForUpdate(pId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi: ID=" + pId));
-                lockedProducts.put(pId, product);
-            }
-
-            for (SaleItem item : items) {
-                Product product = lockedProducts.get(item.getProduct().getId());
-                int currentStock = (product.getStockQuantity() != null) ? product.getStockQuantity() : 0;
-                product.setStockQuantity(currentStock + item.getPackageCount());
-                productRepository.save(product);
-                log.info("Mahsulot omborga qaytarildi: productId={}, qaytarilgan={}, yangiQoldiq={}",
-                        product.getId(), item.getPackageCount(), product.getStockQuantity());
-            }
-        }
-
-        // 2. Do'kon qarzini kamaytirish (totalAmount - initialPaidAmount)
+        // 1. Do'kon qarzini kamaytirish (totalAmount - initialPaidAmount)
         BigDecimal initialPaid = (sale.getInitialPaidAmount() != null) ? sale.getInitialPaidAmount() : BigDecimal.ZERO;
         BigDecimal debtIncreaseFromSale = sale.getTotalAmount().subtract(initialPaid);
         BigDecimal currentDebt = (shop.getCurrentDebt() != null) ? shop.getCurrentDebt() : BigDecimal.ZERO;

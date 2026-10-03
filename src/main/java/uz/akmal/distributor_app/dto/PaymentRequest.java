@@ -22,4 +22,6 @@ public class PaymentRequest {
 
     @NotNull(message = "To'lov usuli ko'rsatilishi shart")
     private PaymentMethod method;
+
+    private String paymentDate;
 }

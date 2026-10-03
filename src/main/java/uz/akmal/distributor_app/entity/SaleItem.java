@@ -45,8 +45,8 @@ public class SaleItem extends BaseEntity{
     @Column(name = "price_at_sale", precision = 15, scale = 2, nullable = false)
     private BigDecimal priceAtSale;
 
-    @Column(name = "cost_at_sale", precision = 15, scale = 2, nullable = false)
-    private BigDecimal costAtSale;
+    @Column(name = "cost_at_sale", precision = 15, scale = 2)
+    private BigDecimal costAtSale = BigDecimal.ZERO;
 
     @Column(name = "product_name")
     private String productName;

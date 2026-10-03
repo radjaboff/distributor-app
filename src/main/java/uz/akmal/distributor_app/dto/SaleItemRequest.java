@@ -15,4 +15,7 @@ public class SaleItemRequest {
     @NotNull(message = "Paket soni ko'rsatilishi shart")
     @Positive(message = "Paket soni musbat son bo'lishi kerak")
     private Integer packageCount;
+
+    @Positive(message = "Narx musbat son bo'lishi kerak")
+    private java.math.BigDecimal price;
 }

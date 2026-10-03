@@ -41,7 +41,20 @@ public class PaymentServiceImpl implements PaymentService {
         shopRepository.save(shop);
 
         Payment payment = PaymentMapper.toEntity(request, shop);
-        payment.setDate(LocalDateTime.now());
+        LocalDateTime paymentDateTime = LocalDateTime.now();
+        if (request.getPaymentDate() != null && !request.getPaymentDate().trim().isEmpty()) {
+            String dateStr = request.getPaymentDate().trim();
+            if (dateStr.length() == 10) {
+                paymentDateTime = java.time.LocalDate.parse(dateStr).atTime(java.time.LocalTime.now());
+            } else {
+                try {
+                    paymentDateTime = LocalDateTime.parse(dateStr);
+                } catch (Exception e) {
+                    paymentDateTime = java.time.LocalDate.parse(dateStr.substring(0, 10)).atTime(java.time.LocalTime.now());
+                }
+            }
+        }
+        payment.setDate(paymentDateTime);
         payment.setCreatedBy(uz.akmal.distributor_app.util.SecurityUtils.getCurrentUsername());
 
         Payment saved = paymentRepository.save(payment);

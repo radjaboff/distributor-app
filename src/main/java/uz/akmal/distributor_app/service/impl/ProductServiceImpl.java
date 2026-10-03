@@ -48,11 +48,11 @@ public class ProductServiceImpl implements ProductService {
                 .filter(p -> !Boolean.TRUE.equals(p.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi yoki o'chirilgan, id: " + id));
         existing.setName(request.getName());
-        existing.setUnit(request.getUnit());
-        existing.setPackageName(request.getPackageName());
-        existing.setUnitsPerPackage(request.getUnitsPerPackage());
-        existing.setPurchasePrice(request.getPurchasePrice());
-        existing.setSellPrice(request.getSellPrice());
+        if (request.getUnit() != null) existing.setUnit(request.getUnit());
+        if (request.getPackageName() != null) existing.setPackageName(request.getPackageName());
+        if (request.getUnitsPerPackage() != null) existing.setUnitsPerPackage(request.getUnitsPerPackage());
+        if (request.getPurchasePrice() != null) existing.setPurchasePrice(request.getPurchasePrice());
+        if (request.getSellPrice() != null) existing.setSellPrice(request.getSellPrice());
         return ProductMapper.toResponse(productRepository.save(existing));
     }
 
@@ -62,10 +62,6 @@ public class ProductServiceImpl implements ProductService {
         Product existing = productRepository.findByIdWithLock(id)
                 .filter(p -> !Boolean.TRUE.equals(p.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi yoki o'chirilgan, id: " + id));
-
-        if (existing.getStockQuantity() != null && existing.getStockQuantity() > 0) {
-            throw new IllegalStateException("Omborda ushbu mahsulotdan hali " + existing.getStockQuantity() + " ta qoldiq mavjud! Qoldig'i bor mahsulotni o'chirib bo'lmaydi.");
-        }
 
         existing.setIsDeleted(true);
         productRepository.save(existing);

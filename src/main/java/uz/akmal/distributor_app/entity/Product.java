@@ -33,22 +33,17 @@ public class Product extends BaseEntity {
 
     private String unit;
 
-
-    @Column(name = "package_name", nullable = false)
-    private String packageName;
+    @Column(name = "package_name")
+    private String packageName = "";
 
     @Column(name = "units_per_package", precision = 15, scale = 3)
-    private BigDecimal unitsPerPackage;
+    private BigDecimal unitsPerPackage = BigDecimal.ONE;
 
+    @Column(name = "purchase_price", precision = 15, scale = 2)
+    private BigDecimal purchasePrice = BigDecimal.ZERO;
 
-    @Positive(message = "Tannarx musbat son bo'lishi kerak")
-    @Column(name = "purchase_price", precision = 15, scale = 2, nullable = false)
-    private BigDecimal purchasePrice;
-
-
-
-    @Column(name = "sell_price", precision = 15, scale = 2, nullable = false)
-    private BigDecimal sellPrice;
+    @Column(name = "sell_price", precision = 15, scale = 2)
+    private BigDecimal sellPrice = BigDecimal.ZERO;
 
     @Column(name = "stock_quantity")
     private Integer stockQuantity = 0;

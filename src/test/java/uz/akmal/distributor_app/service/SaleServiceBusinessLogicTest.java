@@ -48,7 +48,7 @@ class SaleServiceBusinessLogicTest {
     }
 
     @Test
-    void testCreateSale_Success_CalculatesTotalsAndStock() {
+    void testCreateSale_Success_CalculatesTotalsAndDebt() {
         Shop shop = new Shop();
         shop.setId(1L);
         shop.setName("Test Shop");
@@ -74,6 +74,7 @@ class SaleServiceBusinessLogicTest {
         SaleItemRequest itemReq = new SaleItemRequest();
         itemReq.setProductId(5L);
         itemReq.setPackageCount(5);
+        itemReq.setPrice(BigDecimal.valueOf(12_000));
         request.setItems(List.of(itemReq));
         request.setInitialPaidAmount(BigDecimal.valueOf(20_000));
         request.setInitialPaymentMethod(PaymentMethod.NAQD);
@@ -85,38 +86,47 @@ class SaleServiceBusinessLogicTest {
         assertEquals(BigDecimal.valueOf(60_000), response.getTotalAmount());
         assertEquals(PaymentType.NASIYA, response.getPaymentType());
 
-        // Ombordagi qoldiq: 20 - 5 = 15
-        assertEquals(15, product.getStockQuantity());
+        // Ombordagi qoldiq tekshirilmaydi va o'zgarmaydi
+        assertEquals(20, product.getStockQuantity());
 
         // Do'kon qarzi: 100,000 + (60,000 - 20,000) = 140,000
         assertEquals(BigDecimal.valueOf(140_000), shop.getCurrentDebt());
 
         verify(shopRepository).save(shop);
-        verify(productRepository).save(product);
         verify(paymentRepository).save(any());
     }
 
     @Test
-    void testCreateSale_InsufficientStock_ThrowsException() {
+    void testCreateSale_AllowsSaleWithoutStockCheck() {
         Shop shop = new Shop();
         shop.setId(1L);
+        shop.setCurrentDebt(BigDecimal.ZERO);
 
         Product product = new Product();
         product.setId(5L);
         product.setName("Fanta");
-        product.setStockQuantity(3);
+        product.setStockQuantity(0); // Omborda 0 bo'lsa ham sotuv amalga oshadi
 
         when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
         when(productRepository.findByIdWithLock(5L)).thenReturn(Optional.of(product));
+        when(saleRepository.save(any(Sale.class))).thenAnswer(invocation -> {
+            Sale s = invocation.getArgument(0);
+            s.setId(102L);
+            return s;
+        });
 
         SaleRequest request = new SaleRequest();
         request.setShopId(1L);
         SaleItemRequest itemReq = new SaleItemRequest();
         itemReq.setProductId(5L);
-        itemReq.setPackageCount(10); // So'ralgan 10 ta, mavjud 3 ta
+        itemReq.setPackageCount(10);
+        itemReq.setPrice(BigDecimal.valueOf(15_000));
         request.setItems(List.of(itemReq));
 
-        assertThrows(InsufficientStockException.class, () -> saleService.createSale(request));
+        SaleResponse response = saleService.createSale(request);
+        assertNotNull(response);
+        assertEquals(BigDecimal.valueOf(150_000), response.getTotalAmount());
+        assertEquals(BigDecimal.valueOf(150_000), shop.getCurrentDebt());
     }
 
     @Test
@@ -137,6 +147,7 @@ class SaleServiceBusinessLogicTest {
         SaleItemRequest itemReq = new SaleItemRequest();
         itemReq.setProductId(5L);
         itemReq.setPackageCount(2); // total 20,000
+        itemReq.setPrice(BigDecimal.valueOf(10_000));
         request.setItems(List.of(itemReq));
         request.setInitialPaidAmount(BigDecimal.valueOf(25_000)); // 25,000 > 20,000
 
@@ -144,7 +155,7 @@ class SaleServiceBusinessLogicTest {
     }
 
     @Test
-    void testCancelSale_Success_RestoresStockAndDebtAndCancelsPayment() {
+    void testCancelSale_Success_RestoresDebtAndCancelsPayment() {
         Shop shop = new Shop();
         shop.setId(1L);
         shop.setCurrentDebt(BigDecimal.valueOf(140_000));
@@ -176,7 +187,6 @@ class SaleServiceBusinessLogicTest {
 
         when(saleRepository.findByIdWithLock(101L)).thenReturn(Optional.of(sale));
         when(shopRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(shop));
-        when(productRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(product));
         when(paymentRepository.findBySaleId(101L)).thenReturn(List.of(linkedPayment));
         when(saleRepository.save(any(Sale.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -185,10 +195,6 @@ class SaleServiceBusinessLogicTest {
         assertNotNull(response);
         assertTrue(response.getIsCancelled());
         assertEquals("Mijoz rad etdi", response.getCancelReason());
-
-        // Ombordagi qoldiq tiklanishi kerak: 15 + 5 = 20
-        assertEquals(20, product.getStockQuantity());
-        verify(productRepository).save(product);
 
         // Do'kon qarzi kamayishi kerak: 140,000 - (60,000 - 20,000) = 100,000
         assertEquals(BigDecimal.valueOf(100_000), shop.getCurrentDebt());
@@ -227,7 +233,6 @@ class SaleServiceBusinessLogicTest {
 
         when(saleRepository.findByIdWithLock(102L)).thenReturn(Optional.of(sale));
         when(shopRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(shop));
-        when(productRepository.findByIdForUpdate(6L)).thenReturn(Optional.of(product));
         when(paymentRepository.findBySaleId(102L)).thenReturn(List.of());
         when(saleRepository.save(any(Sale.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -235,7 +240,6 @@ class SaleServiceBusinessLogicTest {
 
         assertNotNull(response);
         assertTrue(response.getIsCancelled());
-        assertEquals(3, product.getStockQuantity());
         assertEquals(BigDecimal.valueOf(20_000), shop.getCurrentDebt());
     }
 

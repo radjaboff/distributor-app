@@ -282,18 +282,8 @@ public class ReportServiceImpl implements ReportService {
         response.setTodaysSalesTotal(salesTotal);
         response.setTodaysProfit(profit);
 
-        // 3) Kam qolgan mahsulotlar (5 tadan kam paket qolganlar)
-        final int LOW_STOCK_THRESHOLD = 5;
-        List<DashboardSummaryResponse.LowStockProduct> lowStock = productRepository.findByIsDeletedFalse().stream()
-                .filter(p -> p.getStockQuantity() != null && p.getStockQuantity() < LOW_STOCK_THRESHOLD)
-                .map(p -> {
-                    DashboardSummaryResponse.LowStockProduct lp = new DashboardSummaryResponse.LowStockProduct();
-                    lp.setProductName(p.getName());
-                    lp.setStockQuantity(p.getStockQuantity());
-                    return lp;
-                })
-                .toList();
-        response.setLowStockProducts(lowStock);
+        // 3) Ombor qoldig'i nazorati olib tashlanganligi sababli bo'sh ro'yxat qaytariladi
+        response.setLowStockProducts(java.util.Collections.emptyList());
 
         return response;
     }

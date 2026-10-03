@@ -17,19 +17,16 @@ public class ProductRequest {
 
     private String unit;
 
-    @NotBlank(message = "Qadoq turi ko'rsatilishi shart")
     private String packageName;
 
     @Positive(message = "Birliklar soni musbat son bo'lishi kerak")
     @Digits(integer = 12, fraction = 3, message = "Birliklar soni noto'g'ri (maksimal 12 butun va 3 kasr xona)")
     private BigDecimal unitsPerPackage;
 
-    @NotNull(message = "Tannarx ko'rsatilishi shart")
     @Positive(message = "Tannarx musbat son bo'lishi kerak")
     @Digits(integer = 13, fraction = 2, message = "Tannarx formati noto'g'ri (maksimal 13 butun va 2 kasr xona)")
     private BigDecimal purchasePrice;
 
-    @NotNull(message = "Sotish narxi ko'rsatilishi shart")
     @Positive(message = "Sotish narxi musbat son bo'lishi kerak")
     @Digits(integer = 13, fraction = 2, message = "Sotish narxi formati noto'g'ri (maksimal 13 butun va 2 kasr xona)")
     private BigDecimal sellPrice;

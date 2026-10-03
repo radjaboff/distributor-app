@@ -8,11 +8,11 @@ public class ProductMapper {
         Product product = new Product();
         product.setName(request.getName());
         product.setUnit(request.getUnit());
-        product.setPackageName(request.getPackageName());
-        product.setUnitsPerPackage(request.getUnitsPerPackage());
-        product.setPurchasePrice(request.getPurchasePrice());
-        product.setSellPrice(request.getSellPrice());
-        product.setStockQuantity(0);   // <-- QO'SHILDI: yangi mahsulot doim 0 qoldiqdan boshlanadi
+        product.setPackageName(request.getPackageName() != null ? request.getPackageName() : "");
+        product.setUnitsPerPackage(request.getUnitsPerPackage() != null ? request.getUnitsPerPackage() : java.math.BigDecimal.ONE);
+        product.setPurchasePrice(request.getPurchasePrice() != null ? request.getPurchasePrice() : java.math.BigDecimal.ZERO);
+        product.setSellPrice(request.getSellPrice() != null ? request.getSellPrice() : java.math.BigDecimal.ZERO);
+        product.setStockQuantity(0);
         return product;
     }
 

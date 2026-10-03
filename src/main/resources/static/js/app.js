@@ -1287,8 +1287,18 @@ async function showAddSaleForm(shopId) {
                     </div>
                     <div>
                         <div class="form-card__title">Sotuvga mahsulot qo'shish</div>
-                        <div class="form-card__desc">Mahsulot va miqdorini belgilang</div>
+                        <div class="form-card__desc">Sana, tovar, soni va narxini belgilang</div>
                     </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="form-label" for="saleDateInput">
+                        <span class="label-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        </span>
+                        <span>Sotuv sanasi</span>
+                    </label>
+                    <input type="date" class="form-input" id="saleDateInput" value="${getLocalDateString()}">
                 </div>
 
                 <div class="form-group">
@@ -1296,32 +1306,62 @@ async function showAddSaleForm(shopId) {
                         <span class="label-icon">${Icons.box}</span>
                         <span>Mahsulotni tanlang</span>
                     </label>
-                    <select class="form-select" id="productSelect" onchange="onProductSelectChanged()">
+                    <select class="form-select" id="productSelect">
                         <option value="">— Mahsulot tanlang —</option>
                         ${products.map(p => `
-                            <option value="${p.id}" data-price="${p.sellPrice}" data-stock="${p.stockQuantity}">
-                                ${escHtml(p.name)} (${escHtml(p.packageName)}, omborda: ${p.stockQuantity} ta)
+                            <option value="${p.id}">
+                                ${escHtml(p.name)}${p.unit ? ` (${escHtml(p.unit)})` : ''}
                             </option>
                         `).join('')}
                     </select>
-                    <div id="productPriceHint" style="display:none; margin-top: 8px; padding: 8px 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 10px; font-size: 13px; color: #93C5FD;"></div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="packageCountInput">
                         <span class="label-icon">${Icons.box}</span>
-                        <span>Miqdori (paket)</span>
+                        <span>Miqdori (soni / qop / karobka)</span>
                     </label>
                     <div class="quantity-input-box">
-                        <input type="number" inputmode="numeric" class="form-input" id="packageCountInput" placeholder="Masalan: 5" min="1">
+                        <input type="number" inputmode="numeric" class="form-input" id="packageCountInput" placeholder="Masalan: 10" min="1" oninput="updateItemLineTotalPreview()">
                     </div>
                     <div class="quick-chips-row">
-                        <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 1)">+1</button>
-                        <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 2)">+2</button>
-                        <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 5)">+5</button>
-                        <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 10)">+10</button>
-                        <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 20)">+20</button>
+                        <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 1); updateItemLineTotalPreview()">+1</button>
+                        <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 2); updateItemLineTotalPreview()">+2</button>
+                        <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 5); updateItemLineTotalPreview()">+5</button>
+                        <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 10); updateItemLineTotalPreview()">+10</button>
+                        <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 20); updateItemLineTotalPreview()">+20</button>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="itemPriceInput">
+                        <span class="label-icon">${Icons.money}</span>
+                        <span>1 tasi narxi (dona / qop / karobka)</span>
+                    </label>
+                    <div class="money-field-wrap">
+                        <div class="money-input-box">
+                            <input type="text" 
+                                   inputmode="numeric" 
+                                   class="form-input money-input" 
+                                   id="itemPriceInput" 
+                                   placeholder="Masalan: 620 000" 
+                                   oninput="onMoneyInputChange(this, 'itemPriceLive'); updateItemLineTotalPreview()">
+                            <span class="money-suffix">so'm</span>
+                        </div>
+                        <div class="money-live-container" id="itemPriceLive" style="display:none;"></div>
+                    </div>
+                    <div class="quick-chips-row">
+                        <button type="button" class="preset-chip" onclick="addMoneyToInput('itemPriceInput', 10000, 'itemPriceLive'); updateItemLineTotalPreview()">+10 ming</button>
+                        <button type="button" class="preset-chip" onclick="addMoneyToInput('itemPriceInput', 50000, 'itemPriceLive'); updateItemLineTotalPreview()">+50 ming</button>
+                        <button type="button" class="preset-chip" onclick="addMoneyToInput('itemPriceInput', 100000, 'itemPriceLive'); updateItemLineTotalPreview()">+100 ming</button>
+                        <button type="button" class="preset-chip" onclick="addMoneyToInput('itemPriceInput', 500000, 'itemPriceLive'); updateItemLineTotalPreview()">+500 ming</button>
+                        <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('itemPriceInput', 'itemPriceLive'); updateItemLineTotalPreview()">Tozalash</button>
+                    </div>
+                </div>
+
+                <div id="itemLineTotalBox" style="display:none; margin: 12px 0 16px 0; padding: 12px 14px; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13px; color: #93C5FD; font-weight: 600;">Jami tovar summasi:</span>
+                    <span id="itemLineTotalVal" style="font-size: 16px; color: #60A5FA; font-weight: 800; font-variant-numeric: tabular-nums;">0 so'm</span>
                 </div>
 
                 <div class="form-group" style="margin-top: 14px;">
@@ -1392,16 +1432,18 @@ async function showAddSaleForm(shopId) {
     }
 }
 
-function onProductSelectChanged() {
-    const select = document.getElementById('productSelect');
-    const selectedOption = select?.options[select.selectedIndex];
-    const hintEl = document.getElementById('productPriceHint');
-    if (selectedOption && selectedOption.dataset.price && hintEl) {
-        hintEl.style.display = 'block';
-        hintEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;">${Icons.money} Belgilangan sotish narxi: <b style="color:#FFF; font-variant-numeric:tabular-nums;">${formatMoney(selectedOption.dataset.price)}</b> / paket</span>`;
-    } else if (hintEl) {
-        hintEl.style.display = 'none';
-        hintEl.innerHTML = '';
+function updateItemLineTotalPreview() {
+    const count = parseInt(document.getElementById('packageCountInput')?.value) || 0;
+    const price = parseMoney(document.getElementById('itemPriceInput')?.value) || 0;
+    const box = document.getElementById('itemLineTotalBox');
+    const val = document.getElementById('itemLineTotalVal');
+    if (!box || !val) return;
+    const lineTotal = count * price;
+    if (lineTotal > 0) {
+        box.style.display = 'flex';
+        val.textContent = formatMoney(lineTotal);
+    } else {
+        box.style.display = 'none';
     }
 }
 
@@ -1409,54 +1451,45 @@ function addSaleItem() {
     const select = document.getElementById('productSelect');
     const productId = select?.value;
     const countInput = document.getElementById('packageCountInput');
+    const priceInput = document.getElementById('itemPriceInput');
 
     const packageCount = parseInt(countInput?.value);
+    const price = parseMoney(priceInput?.value);
 
-    if (!productId || isNaN(packageCount) || packageCount < 1) {
-        showToast('Mahsulot va miqdorni to\'g\'ri kiriting', 'error');
+    if (!productId) {
+        showToast('Mahsulotni tanlang', 'error');
+        return;
+    }
+    if (isNaN(packageCount) || packageCount < 1) {
+        showToast('Miqdorni (sonini) to\'g\'ri kiriting', 'error');
+        return;
+    }
+    if (!price || price <= 0) {
+        showToast('1 tasi narxini to\'g\'ri kiriting', 'error');
         return;
     }
 
     const product = window.allProducts.find(p => p.id == productId);
     if (!product) return;
 
-    const existingInCart = saleItems
-        .filter(item => item.productId == productId)
-        .reduce((sum, item) => sum + item.packageCount, 0);
-
-    const availableStock = (product.stockQuantity != null) ? product.stockQuantity : 0;
-
-    if (availableStock < (existingInCart + packageCount)) {
-        if (existingInCart > 0) {
-            showToast(`Omborda faqat ${availableStock} ta mavjud! (Savatda allaqachon: ${existingInCart} ta bor)`, 'error');
-        } else {
-            showToast(`Omborda faqat ${availableStock} ta mavjud!`, 'error');
-        }
-        return;
-    }
-
-    const existingIndex = saleItems.findIndex(item => item.productId == productId);
-    if (existingIndex !== -1) {
-        saleItems[existingIndex].packageCount += packageCount;
-    } else {
-        saleItems.push({
-            productId: parseInt(productId),
-            packageCount,
-            productName: product.name,
-            sellPrice: product.sellPrice,
-            price: product.sellPrice
-        });
-    }
+    saleItems.push({
+        productId: parseInt(productId),
+        packageCount: packageCount,
+        productName: product.name,
+        price: price
+    });
 
     if (countInput) countInput.value = '';
+    if (priceInput) priceInput.value = '';
+    clearMoneyInput('itemPriceInput', 'itemPriceLive');
     if (select) select.value = '';
-    onProductSelectChanged();
+    updateItemLineTotalPreview();
 
     renderSaleItemsList();
 }
 
 function getSaleTotal() {
-    return saleItems.reduce((sum, item) => sum + (item.packageCount * item.sellPrice), 0);
+    return saleItems.reduce((sum, item) => sum + (item.packageCount * item.price), 0);
 }
 
 function renderSaleItemsList() {
@@ -1476,17 +1509,17 @@ function renderSaleItemsList() {
         <div style="background:var(--color-paper); border:1px solid var(--color-line); border-radius:var(--radius); padding:14px; margin-bottom:12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <span style="font-size:12px; color:var(--color-ink-dim); font-weight:600; text-transform:uppercase;">Tanlangan mahsulotlar:</span>
-                <span style="font-size:14px; font-weight:700; color:var(--color-accent); font-variant-numeric:tabular-nums;">${formatMoney(total)}</span>
+                <span style="font-size:15px; font-weight:800; color:var(--color-accent); font-variant-numeric:tabular-nums;">${formatMoney(total)}</span>
             </div>
             ${saleItems.map((item, index) => `
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--color-line);">
                     <div>
-                        <div style="font-weight:600; color:#FFF; font-size:14.5px;">${escHtml(item.productName)}</div>
-                        <div style="font-size:12.5px; color:var(--color-ink-dim);">${item.packageCount} paket × ${formatMoney(item.sellPrice)}</div>
+                        <div style="font-weight:700; color:#FFF; font-size:14.5px;">${escHtml(item.productName)}</div>
+                        <div style="font-size:12.5px; color:var(--color-ink-dim);">${item.packageCount} ta × ${formatMoney(item.price)}</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="font-variant-numeric: tabular-nums; font-weight:700; color:var(--color-ink); font-size:14px;">${formatMoney(item.packageCount * item.sellPrice)}</span>
-                        <button onclick="removeSaleItem(${index})" style="background:rgba(244,63,94,0.15); border:none; color:var(--color-debt); width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">×</button>
+                        <span style="font-variant-numeric: tabular-nums; font-weight:700; color:var(--color-ink); font-size:14px;">${formatMoney(item.packageCount * item.price)}</span>
+                        <button onclick="removeSaleItem(${index})" style="background:rgba(244,63,94,0.15); border:none; color:var(--color-debt); width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;" title="O'chirish">×</button>
                     </div>
                 </div>
             `).join('')}
@@ -1550,12 +1583,18 @@ async function submitSale(shopId) {
     const initialPaymentMethod = (initialPaidAmount > 0) ? (methodSelect?.value || 'NAQD') : null;
     const remainingDebt = Math.max(0, totalSaleAmount - initialPaidAmount);
     const totalPackages = saleItems.reduce((sum, item) => sum + (item.packageCount || 0), 0);
+    const saleDate = document.getElementById('saleDateInput')?.value || null;
 
     const summaryHtml = `
         <div style="background:var(--color-paper-dim); border:1px solid var(--color-line); border-radius:12px; padding:12px 14px; text-align:left; font-size:13px; line-height:1.7;">
+            ${saleDate ? `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span style="color:var(--color-ink-dim);">Sotuv sanasi:</span>
+                <strong style="color:#FFF;">${escHtml(saleDate)}</strong>
+            </div>` : ''}
             <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                 <span style="color:var(--color-ink-dim);">Tovarlar soni:</span>
-                <strong style="color:#FFF;">${saleItems.length} xil (${totalPackages} paket)</strong>
+                <strong style="color:#FFF;">${saleItems.length} xil (${totalPackages} ta)</strong>
             </div>
             <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                 <span style="color:var(--color-ink-dim);">Jami savdo summasi:</span>
@@ -1585,9 +1624,14 @@ async function submitSale(shopId) {
         onConfirm: async () => {
             const payload = {
                 shopId: shopId,
-                items: saleItems.map(item => ({ productId: item.productId, packageCount: item.packageCount })),
+                items: saleItems.map(item => ({ 
+                    productId: item.productId, 
+                    packageCount: item.packageCount,
+                    price: item.price
+                })),
                 initialPaidAmount: initialPaidAmount,
-                initialPaymentMethod: initialPaymentMethod
+                initialPaymentMethod: initialPaymentMethod,
+                saleDate: saleDate
             };
 
             const btn = document.getElementById('submitSaleBtn');
@@ -1629,6 +1673,16 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
                     <div class="form-card__title">To'lov qabul qilish</div>
                     <div class="form-card__desc">${currentDebt > 0 ? `Joriy qarz: <strong style="color:var(--color-debt); font-variant-numeric:tabular-nums;">${formatMoney(currentDebt)}</strong>` : (currentDebt < 0 ? `Do'kon avansi: <strong style="color:#38BDF8; font-variant-numeric:tabular-nums;">${formatMoney(Math.abs(currentDebt))}</strong>` : 'Qarzdorlik yo\'q')}</div>
                 </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="paymentDateInput">
+                    <span class="label-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    </span>
+                    <span>To'lov sanasi</span>
+                </label>
+                <input type="date" class="form-input" id="paymentDateInput" value="${getLocalDateString()}">
             </div>
 
             <div class="form-group">
@@ -1734,6 +1788,7 @@ async function submitPayment(shopId, currentDebt = 0) {
 }
 
 async function executePayment(shopId, amount, method) {
+    const paymentDate = document.getElementById('paymentDateInput')?.value || null;
     const btn = document.getElementById('submitPaymentBtn');
     if (btn) {
         if (btn.disabled) return;
@@ -1742,7 +1797,7 @@ async function executePayment(shopId, amount, method) {
     }
 
     try {
-        await apiPost('/payments', { shopId, amount, method });
+        await apiPost('/payments', { shopId, amount, method, paymentDate });
         showToast('To\'lov qabul qilindi', 'success');
         showShopDetail(shopId);
     } catch (err) {
@@ -1777,7 +1832,7 @@ function goToTab(tab) {
 
 // Mahsulotlar ro'yxati
 async function showProducts() {
-    updateHeaderMeta('Mahsulotlar', 'Ombor va tovarlar hisobi', 'OMBOR');
+    updateHeaderMeta('Mahsulotlar', 'Mahsulotlar katalogi', 'KATALOG');
     backBtn.style.visibility = 'hidden';
     fabBtn.style.display = 'flex';
     fabBtn.onclick = showAddProductForm;
@@ -1804,28 +1859,25 @@ function renderProductRows(products) {
     const container = document.getElementById('productsListContainer');
 
     if (products.length === 0) {
-        container.innerHTML = '<div class="empty-state">Hech narsa topilmadi.</div>';
+        container.innerHTML = '<div class="empty-state">Mahsulot topilmadi.</div>';
         return;
     }
 
     container.innerHTML = products.map(p => {
-        const isZero = p.stockQuantity === 0;
         const isOil = p.name.toLowerCase().includes('yog');
+        const unitText = p.unit ? escHtml(p.unit) : '';
         return `
-            <div class="ledger-row" onclick="showAddStockInForm(${p.id}, '${escJs(p.name)}')">
+            <div class="ledger-row" onclick="showEditProductForm(${p.id})">
                 <div class="ledger-row__main" style="display:flex; flex-direction:row; align-items:center; gap:12px;">
                     <div class="ledger-avatar ${isOil ? 'ledger-avatar--oil' : 'ledger-avatar--product'}">
                         ${isOil ? Icons.oil : Icons.box}
                     </div>
                     <div>
                         <div class="ledger-row__title">${escHtml(p.name)}</div>
-                        <div class="ledger-row__subtitle">${escHtml(p.packageName)} · Sotish: ${formatMoney(p.sellPrice)}</div>
+                        ${unitText ? `<div class="ledger-row__subtitle">${unitText}</div>` : ''}
                     </div>
                 </div>
                 <div class="ledger-row__right">
-                    <div class="ledger-row__amount ${isZero ? 'amount--debt' : 'amount--neutral'}">
-                        ${isZero ? Icons.alertTriangle + ' ' : ''}${p.stockQuantity} ta
-                    </div>
                     <button class="icon-btn" onclick="event.stopPropagation(); showEditProductForm(${p.id})" title="Tahrirlash">${Icons.edit}</button>
                     <button class="icon-btn icon-btn--danger" onclick="event.stopPropagation(); deleteProduct(${p.id}, '${escJs(p.name)}')" title="O'chirish">${Icons.trash}</button>
                     <span class="chevron">${Icons.chevronRight}</span>
@@ -1871,7 +1923,7 @@ function showAddProductForm() {
                 </div>
                 <div>
                     <div class="form-card__title">Yangi mahsulot yaratish</div>
-                    <div class="form-card__desc">Ombor katalogiga yangi tovar kiritish</div>
+                    <div class="form-card__desc">Katalogga yangi tovar kiritish</div>
                 </div>
             </div>
 
@@ -1880,75 +1932,15 @@ function showAddProductForm() {
                     <span class="label-icon">${Icons.box}</span>
                     <span>Mahsulot nomi</span>
                 </label>
-                <input type="text" class="form-input" id="pNameInput" placeholder="Masalan: Shakar" autofocus>
-            </div>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div class="form-group">
-                    <label class="form-label" for="pUnitInput">Birlik (izoh)</label>
-                    <input type="text" class="form-input" id="pUnitInput" placeholder="kg, litr">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="pPackageInput">Qadoq turi</label>
-                    <input type="text" class="form-input" id="pPackageInput" placeholder="xalta, qop">
-                </div>
+                <input type="text" class="form-input" id="pNameInput" placeholder="Masalan: Shakar yoki Yog' 5L" autofocus>
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="pUnitsPerPackageInput">1 paketda necha dona/kg</label>
-                <input type="number" inputmode="decimal" class="form-input" id="pUnitsPerPackageInput" placeholder="Masalan: 50">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="pPurchasePriceInput">
-                    <span class="label-icon">${Icons.money}</span>
-                    <span>Tannarx (1 paket uchun)</span>
+                <label class="form-label" for="pUnitInput">
+                    <span class="label-icon">${Icons.info}</span>
+                    <span>Birlik / Izoh (ixtiyoriy)</span>
                 </label>
-                <div class="money-field-wrap">
-                    <div class="money-input-box">
-                        <input type="text" 
-                               inputmode="numeric" 
-                               class="form-input money-input" 
-                               id="pPurchasePriceInput" 
-                               placeholder="0" 
-                               oninput="onMoneyInputChange(this, 'pPurchasePriceLive')">
-                        <span class="money-suffix">so'm</span>
-                    </div>
-                    <div class="money-live-container" id="pPurchasePriceLive" style="display:none;"></div>
-                </div>
-                <div class="quick-chips-row">
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 10000, 'pPurchasePriceLive')">+10 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 50000, 'pPurchasePriceLive')">+50 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 100000, 'pPurchasePriceLive')">+100 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 500000, 'pPurchasePriceLive')">+500 ming</button>
-                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('pPurchasePriceInput', 'pPurchasePriceLive')">Tozalash</button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="pSellPriceInput">
-                    <span class="label-icon">${Icons.money}</span>
-                    <span>Sotish narxi (1 paket uchun)</span>
-                </label>
-                <div class="money-field-wrap">
-                    <div class="money-input-box">
-                        <input type="text" 
-                               inputmode="numeric" 
-                               class="form-input money-input" 
-                               id="pSellPriceInput" 
-                               placeholder="0" 
-                               oninput="onMoneyInputChange(this, 'pSellPriceLive')">
-                        <span class="money-suffix">so'm</span>
-                    </div>
-                    <div class="money-live-container" id="pSellPriceLive" style="display:none;"></div>
-                </div>
-                <div class="quick-chips-row">
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 10000, 'pSellPriceLive')">+10 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 50000, 'pSellPriceLive')">+50 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 100000, 'pSellPriceLive')">+100 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 500000, 'pSellPriceLive')">+500 ming</button>
-                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('pSellPriceInput', 'pSellPriceLive')">Tozalash</button>
-                </div>
+                <input type="text" class="form-input" id="pUnitInput" placeholder="Masalan: qop, karobka, dona">
             </div>
 
             <div class="form-group" style="margin-top: 24px;">
@@ -1963,13 +1955,9 @@ function showAddProductForm() {
 async function submitProduct() {
     const name = document.getElementById('pNameInput').value.trim();
     const unit = document.getElementById('pUnitInput').value.trim();
-    const packageName = document.getElementById('pPackageInput').value.trim();
-    const unitsPerPackage = parseFloat(document.getElementById('pUnitsPerPackageInput').value) || null;
-    const purchasePrice = parseMoney(document.getElementById('pPurchasePriceInput').value);
-    const sellPrice = parseMoney(document.getElementById('pSellPriceInput').value);
 
-    if (!name || !packageName || !purchasePrice || !sellPrice) {
-        showToast('Barcha majburiy maydonlarni to\'ldiring', 'error');
+    if (!name) {
+        showToast('Mahsulot nomini kiriting', 'error');
         return;
     }
 
@@ -1981,7 +1969,7 @@ async function submitProduct() {
     }
 
     try {
-        await apiPost('/products', { name, unit, packageName, unitsPerPackage, purchasePrice, sellPrice });
+        await apiPost('/products', { name, unit: unit || null });
         showToast('Mahsulot muvaffaqiyatli saqlandi', 'success');
         showProducts();
     } catch (err) {
@@ -2252,7 +2240,6 @@ function renderSummaryHtml(summary, overdueShops) {
       <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="showDebtorShopsList()">${Icons.wallet} Qarzdor do'konlar</button>
     </div>
     ${overdueHtml}
-    ${lowStockHtml}
   `;
 }
 
@@ -2310,38 +2297,15 @@ function renderDailyReportHtml(report) {
     </div>
   `).join('') : '<div class="empty-state">Bu kuni to\'lov bo\'lmagan</div>';
 
-    const stockInHtml = report.stockIns && report.stockIns.length ? report.stockIns.map(s => `
-    <div class="ledger-row" style="cursor:default;">
-      <div class="ledger-row__main">
-        <div class="ledger-row__title" style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
-          <span>${escHtml(s.productName)}</span>
-          ${formatAdminBadge(s.createdBy)}
-        </div>
-        <div class="ledger-row__subtitle">${s.packageCount} paket</div>
-      </div>
-      <div class="ledger-row__amount amount--debt">${formatMoney(s.totalCost)}</div>
-    </div>
-  `).join('') : '<div class="empty-state">Bu kuni kirim bo\'lmagan</div>';
-
     return `
     <div class="form-group">
       <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="downloadDailyExcel()">${Icons.download} Excel'ga yuklab olish</button>
     </div>
 
-   <div class="stat-grid">
-  <div class="stat-card">
-    <div class="stat-card__label">Kunlik savdo</div>
-    <div class="stat-card__value" style="font-size:18px;">${formatMoney(totalSalesForDay)}</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-card__label">Kunlik sof foyda</div>
-    <div class="stat-card__value" style="color:var(--color-paid); font-size:18px;">${formatMoney(report.dailyProfit)}</div>
-  </div>
-</div>
-<div class="stat-card" style="margin-bottom:12px;">
-  <div class="stat-card__label">Bugungi xarajat (kirim)</div>
-  <div class="stat-card__value" style="color:var(--color-debt); font-size:18px;">${formatMoney(report.totalStockInCost)}</div>
-</div>
+    <div class="stat-card" style="margin-bottom:12px;">
+      <div class="stat-card__label">Kunlik savdo</div>
+      <div class="stat-card__value" style="font-size:24px; font-weight:800; color:#60A5FA; margin-top:4px;">${formatMoney(totalSalesForDay)}</div>
+    </div>
 
     <div class="stat-card" style="margin-bottom:12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -2368,9 +2332,6 @@ function renderDailyReportHtml(report) {
 
     <div class="section-title">${Icons.money} Kimdan olindi</div>
     ${paymentsHtml}
-
-    <div class="section-title">${Icons.cart} Bazadan kirim</div>
-    ${stockInHtml}
   `;
 }
 
@@ -2408,32 +2369,15 @@ function renderMonthlyReportHtml(report) {
     </div>
   `).join('') : '<div class="empty-state">Ma\'lumot yo\'q</div>';
 
-    const stockInVolHtml = report.stockInVolume && report.stockInVolume.length ? report.stockInVolume.map(s => `
-  <div class="ledger-row" style="cursor:default;">
-    <div class="ledger-row__main"><div class="ledger-row__title">${escHtml(s.productName)}</div></div>
-    <div class="ledger-row__amount amount--debt">${s.totalPackagesReceived} ta</div>
-  </div>
-`).join('') : '<div class="empty-state">Ma\'lumot yo\'q</div>';
-
     return `
-<div class="form-group">
-  <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="downloadMonthlyExcel()">${Icons.download} Excel'ga yuklab olish</button>
-</div>
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-card__label">Oylik sotuv</div>
-        <div class="stat-card__value" style="font-size:18px;">${formatMoney(report.totalSalesAmount)}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card__label">Oylik sof foyda</div>
-        <div class="stat-card__value" style="color:var(--color-paid); font-size:18px;">${formatMoney(report.totalProfit)}</div>
-      </div>
+    <div class="form-group">
+      <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="downloadMonthlyExcel()">${Icons.download} Excel'ga yuklab olish</button>
     </div>
-    
+
     <div class="stat-card" style="margin-bottom:12px;">
-  <div class="stat-card__label">Bazadan xarajat (kirim)</div>
-  <div class="stat-card__value" style="color:var(--color-debt); font-size:18px;">${formatMoney(report.totalStockInCost)}</div>
-</div>
+      <div class="stat-card__label">Oylik savdo</div>
+      <div class="stat-card__value" style="font-size:24px; font-weight:800; color:#60A5FA; margin-top:4px;">${formatMoney(report.totalSalesAmount)}</div>
+    </div>
     
     <div class="stat-card" style="margin-bottom:12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -2455,16 +2399,9 @@ function renderMonthlyReportHtml(report) {
       </div>
     </div>
 
-<div class="section-title">${Icons.cart} Bazadan kirim (mahsulot bo'yicha)</div>
-${stockInVolHtml}
-  
-
     <div class="section-title">${Icons.chart} Mahsulot bo'yicha sotuv</div>
     ${productVolHtml}
   `;
-
-
-
 }
 
 
@@ -2654,7 +2591,7 @@ async function deleteShop(id, name, debt = 0) {
 }
 
 async function showEditProductForm(id) {
-    updateHeaderMeta('Mahsulotni tahrirlash', 'Narx va paket o\'lchamlarini yangilash', 'TAHRIR');
+    updateHeaderMeta('Mahsulotni tahrirlash', 'Nomini yangilash', 'TAHRIR');
     backBtn.style.visibility = 'visible';
     backBtn.onclick = showProducts;
     fabBtn.style.display = 'none';
@@ -2672,7 +2609,7 @@ async function showEditProductForm(id) {
                 </div>
                 <div>
                     <div class="form-card__title">${escHtml(p.name)}</div>
-                    <div class="form-card__desc">Mahsulot narxi va ma'lumotlarini tahrirlash</div>
+                    <div class="form-card__desc">Mahsulot nomini tahrirlash</div>
                 </div>
             </div>
 
@@ -2684,82 +2621,12 @@ async function showEditProductForm(id) {
                 <input type="text" class="form-input" id="pNameInput" value="${escAttr(p.name)}">
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div class="form-group">
-                    <label class="form-label" for="pUnitInput">Birlik (izoh)</label>
-                    <input type="text" class="form-input" id="pUnitInput" value="${escAttr(p.unit || '')}">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="pPackageInput">Qadoq turi</label>
-                    <input type="text" class="form-input" id="pPackageInput" value="${escAttr(p.packageName || '')}">
-                </div>
-            </div>
-
             <div class="form-group">
-                <label class="form-label" for="pUnitsPerPackageInput">1 paketda necha dona/kg</label>
-                <input type="number" inputmode="decimal" class="form-input" id="pUnitsPerPackageInput" value="${p.unitsPerPackage || ''}">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="pPurchasePriceInput">
-                    <span class="label-icon">${Icons.money}</span>
-                    <span>Tannarx (1 paket uchun)</span>
+                <label class="form-label" for="pUnitInput">
+                    <span class="label-icon">${Icons.info}</span>
+                    <span>Birlik / Izoh (ixtiyoriy)</span>
                 </label>
-                <div class="money-field-wrap">
-                    <div class="money-input-box">
-                        <input type="text" 
-                               inputmode="numeric" 
-                               class="form-input money-input" 
-                               id="pPurchasePriceInput" 
-                               value="${formatNumberWithSpaces(p.purchasePrice)}" 
-                               oninput="onMoneyInputChange(this, 'pPurchasePriceLive')">
-                        <span class="money-suffix">so'm</span>
-                    </div>
-                    <div class="money-live-container" id="pPurchasePriceLive">
-                        <span class="live-preview-pill">
-                            <span class="live-preview-val">${formatMoney(p.purchasePrice)}</span>
-                            <span class="live-preview-words">(${formatMoneyWords(p.purchasePrice)})</span>
-                        </span>
-                    </div>
-                </div>
-                <div class="quick-chips-row">
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 10000, 'pPurchasePriceLive')">+10 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 50000, 'pPurchasePriceLive')">+50 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 100000, 'pPurchasePriceLive')">+100 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 500000, 'pPurchasePriceLive')">+500 ming</button>
-                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('pPurchasePriceInput', 'pPurchasePriceLive')">Tozalash</button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="pSellPriceInput">
-                    <span class="label-icon">${Icons.money}</span>
-                    <span>Sotish narxi (1 paket uchun)</span>
-                </label>
-                <div class="money-field-wrap">
-                    <div class="money-input-box">
-                        <input type="text" 
-                               inputmode="numeric" 
-                               class="form-input money-input" 
-                               id="pSellPriceInput" 
-                               value="${formatNumberWithSpaces(p.sellPrice)}" 
-                               oninput="onMoneyInputChange(this, 'pSellPriceLive')">
-                        <span class="money-suffix">so'm</span>
-                    </div>
-                    <div class="money-live-container" id="pSellPriceLive">
-                        <span class="live-preview-pill">
-                            <span class="live-preview-val">${formatMoney(p.sellPrice)}</span>
-                            <span class="live-preview-words">(${formatMoneyWords(p.sellPrice)})</span>
-                        </span>
-                    </div>
-                </div>
-                <div class="quick-chips-row">
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 10000, 'pSellPriceLive')">+10 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 50000, 'pSellPriceLive')">+50 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 100000, 'pSellPriceLive')">+100 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 500000, 'pSellPriceLive')">+500 ming</button>
-                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('pSellPriceInput', 'pSellPriceLive')">Tozalash</button>
-                </div>
+                <input type="text" class="form-input" id="pUnitInput" value="${escAttr(p.unit || '')}" placeholder="Masalan: qop, karobka, dona">
             </div>
 
             <div class="form-group" style="margin-top: 24px;">
@@ -2777,13 +2644,9 @@ async function showEditProductForm(id) {
 async function submitEditProduct(id) {
     const name = document.getElementById('pNameInput').value.trim();
     const unit = document.getElementById('pUnitInput').value.trim();
-    const packageName = document.getElementById('pPackageInput').value.trim();
-    const unitsPerPackage = parseFloat(document.getElementById('pUnitsPerPackageInput').value) || null;
-    const purchasePrice = parseMoney(document.getElementById('pPurchasePriceInput').value);
-    const sellPrice = parseMoney(document.getElementById('pSellPriceInput').value);
 
-    if (!name || !packageName || !purchasePrice || !sellPrice) {
-        showToast('Barcha majburiy maydonlarni to\'ldiring', 'error');
+    if (!name) {
+        showToast('Mahsulot nomini kiriting', 'error');
         return;
     }
 
@@ -2795,7 +2658,7 @@ async function submitEditProduct(id) {
     }
 
     try {
-        await apiPut(`/products/${id}`, { name, unit, packageName, unitsPerPackage, purchasePrice, sellPrice });
+        await apiPut(`/products/${id}`, { name, unit: unit || null });
         showToast('Mahsulot muvaffaqiyatli saqlandi', 'success');
         showProducts();
     } catch (err) {
@@ -2811,7 +2674,7 @@ async function deleteProduct(id, name) {
     showConfirmDialog({
         title: "Mahsulotni o'chirish",
         itemName: name || "Mahsulot",
-        message: "Rostdan ham shu mahsulotni katalogdan o'chirmoqchimisiz? Zaxira va kirim hisoblari ta'sirlanishi mumkin.",
+        message: "Rostdan ham shu mahsulotni katalogdan o'chirmoqchimisiz?",
         confirmText: "O'chirish",
         cancelText: "Bekor qilish",
         onConfirm: async () => {
@@ -2882,24 +2745,14 @@ function renderRangeReportHtml(report) {
   `).join('') : '<div class="empty-state">Ma\'lumot yo\'q</div>';
 
     return `
-<div class="form-group">
-  <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="downloadRangeExcel()">${Icons.download} Excel'ga yuklab olish</button>
-</div>
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-card__label">Umumiy sotuv</div>
-        <div class="stat-card__value" style="font-size:18px;">${formatMoney(report.totalSalesAmount)}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card__label">Umumiy sof foyda</div>
-        <div class="stat-card__value" style="color:var(--color-paid); font-size:18px;">${formatMoney(report.totalProfit)}</div>
-      </div>
+    <div class="form-group">
+      <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="downloadRangeExcel()">${Icons.download} Excel'ga yuklab olish</button>
     </div>
-    
+
     <div class="stat-card" style="margin-bottom:12px;">
-  <div class="stat-card__label">Bazadan xarajat (kirim)</div>
-  <div class="stat-card__value" style="color:var(--color-debt); font-size:18px;">${formatMoney(report.totalStockInCost)}</div>
-</div>
+      <div class="stat-card__label">Umumiy savdo</div>
+      <div class="stat-card__value" style="font-size:24px; font-weight:800; color:#60A5FA; margin-top:4px;">${formatMoney(report.totalSalesAmount)}</div>
+    </div>
 
     <div class="stat-card" style="margin-bottom:12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -2920,12 +2773,6 @@ function renderRangeReportHtml(report) {
         <span style="font-size:14px; font-weight:700; color:var(--color-debt);">${formatMoney(revenue.NASIYA || 0)}</span>
       </div>
     </div>
-    
-    
-    <div class="section-title">${Icons.cart} Bazadan kirim (mahsulot bo'yicha)</div>
-${stockInVolHtml}
-
-   
 
     <div class="section-title">${Icons.chart} Mahsulot bo'yicha sotuv</div>
     ${productVolHtml}
