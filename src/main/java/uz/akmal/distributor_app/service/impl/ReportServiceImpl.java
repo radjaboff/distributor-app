@@ -72,7 +72,7 @@ public class ReportServiceImpl implements ReportService {
                 totalProfit = totalProfit.add(itemProfit);
 
                 String productName = item.getEffectiveProductName();
-                productVolumeMap.merge(productName, item.getPackageCount(), Integer::sum);
+                productVolumeMap.merge(productName, count, Integer::sum);
             }
         }
         response.setTotalSalesAmount(totalSales);
@@ -118,7 +118,8 @@ public class ReportServiceImpl implements ReportService {
 
         Map<String, Integer> stockInVolumeMap = new java.util.HashMap<>();
         for (StockIn stockIn : stockIns) {
-            stockInVolumeMap.merge(stockIn.getEffectiveProductName(), stockIn.getPackageCount(), Integer::sum);
+            int pCount = (stockIn.getPackageCount() != null) ? stockIn.getPackageCount() : 0;
+            stockInVolumeMap.merge(stockIn.getEffectiveProductName(), pCount, Integer::sum);
         }
         List<MonthlyReportResponse.StockInVolume> stockInVolumes = stockInVolumeMap.entrySet().stream()
                 .map(entry -> {
@@ -167,6 +168,12 @@ public class ReportServiceImpl implements ReportService {
 
         DailyReportResponse response = new DailyReportResponse();
         response.setDate(date);
+
+        BigDecimal totalSales = sales.stream()
+                .map(Sale::getTotalAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        response.setTotalSalesAmount(totalSales);
 
         // 1) Sotuvlar ro'yxati
         response.setSales(sales.stream().map(sale -> {
@@ -319,7 +326,7 @@ public class ReportServiceImpl implements ReportService {
                 BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
                 totalProfit = totalProfit.add(itemProfit);
 
-                productVolumeMap.merge(item.getEffectiveProductName(), item.getPackageCount(), Integer::sum);
+                productVolumeMap.merge(item.getEffectiveProductName(), count, Integer::sum);
             }
         }
         response.setTotalSalesAmount(totalSales);
@@ -364,7 +371,8 @@ public class ReportServiceImpl implements ReportService {
 
         Map<String, Integer> stockInVolumeMap = new java.util.HashMap<>();
         for (StockIn stockIn : stockIns) {
-            stockInVolumeMap.merge(stockIn.getEffectiveProductName(), stockIn.getPackageCount(), Integer::sum);
+            int pCount = (stockIn.getPackageCount() != null) ? stockIn.getPackageCount() : 0;
+            stockInVolumeMap.merge(stockIn.getEffectiveProductName(), pCount, Integer::sum);
         }
         List<MonthlyReportResponse.StockInVolume> stockInVolumes = stockInVolumeMap.entrySet().stream()
                 .map(entry -> {

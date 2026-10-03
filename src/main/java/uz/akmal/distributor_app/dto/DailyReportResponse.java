@@ -12,6 +12,7 @@ import java.util.Map;
 @Setter
 public class DailyReportResponse {
     private LocalDate date;
+    private BigDecimal totalSalesAmount;
     private List<SaleSummary> sales;
     private List<PaymentSummary> payments;
     private BigDecimal dailyProfit;

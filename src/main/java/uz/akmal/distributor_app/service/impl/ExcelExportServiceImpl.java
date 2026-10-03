@@ -47,9 +47,9 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             int rowNum = 1;
             for (var sale : report.getSales()) {
                 Row row = salesSheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(sale.getShopName());
-                row.createCell(1).setCellValue(sale.getAmount().doubleValue());
-                row.createCell(2).setCellValue(sale.getPaymentType().toString());
+                row.createCell(0).setCellValue(sale.getShopName() != null ? sale.getShopName() : "");
+                row.createCell(1).setCellValue(sale.getAmount() != null ? sale.getAmount().doubleValue() : 0.0);
+                row.createCell(2).setCellValue(sale.getPaymentType() != null ? sale.getPaymentType().toString() : "");
             }
             for (int i = 0; i < salesCols.length; i++) salesSheet.autoSizeColumn(i);
 
@@ -65,8 +65,8 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             rowNum = 1;
             for (var payment : report.getPayments()) {
                 Row row = paymentsSheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(payment.getShopName());
-                row.createCell(1).setCellValue(payment.getAmount().doubleValue());
+                row.createCell(0).setCellValue(payment.getShopName() != null ? payment.getShopName() : "");
+                row.createCell(1).setCellValue(payment.getAmount() != null ? payment.getAmount().doubleValue() : 0.0);
             }
             for (int i = 0; i < paymentCols.length; i++) paymentsSheet.autoSizeColumn(i);
 
@@ -74,14 +74,13 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             Sheet summarySheet = workbook.createSheet("Umumiy");
             String dateStr = date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
             summarySheet.createRow(0).createCell(0).setCellValue("Sana: " + dateStr);
-            summarySheet.createRow(1).createCell(0).setCellValue("Kunlik sof foyda: " + report.getDailyProfit());
-            summarySheet.createRow(2).createCell(0).setCellValue("Bugungi kirim xarajati: " + (report.getTotalStockInCost() != null ? report.getTotalStockInCost() : java.math.BigDecimal.ZERO));
-            summarySheet.createRow(3).createCell(0).setCellValue("Umumiy qarz (barcha): " + report.getTotalDebtAllShops());
+            summarySheet.createRow(1).createCell(0).setCellValue("Kunlik umumiy savdo: " + (report.getTotalSalesAmount() != null ? report.getTotalSalesAmount() : java.math.BigDecimal.ZERO));
             if (report.getRevenueByType() != null) {
-                summarySheet.createRow(4).createCell(0).setCellValue("Undirilgan to'lov (NAQD): " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NAQD, java.math.BigDecimal.ZERO));
-                summarySheet.createRow(5).createCell(0).setCellValue("Undirilgan to'lov (KARTA): " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.KARTA, java.math.BigDecimal.ZERO));
-                summarySheet.createRow(6).createCell(0).setCellValue("Nasiyaga berilgan savdo (NASIYA): " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NASIYA, java.math.BigDecimal.ZERO));
+                summarySheet.createRow(2).createCell(0).setCellValue("Undirilgan to'lov (NAQD): " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NAQD, java.math.BigDecimal.ZERO));
+                summarySheet.createRow(3).createCell(0).setCellValue("Undirilgan to'lov (KARTA): " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.KARTA, java.math.BigDecimal.ZERO));
+                summarySheet.createRow(4).createCell(0).setCellValue("Nasiyaga berilgan savdo (NASIYA): " + report.getRevenueByType().getOrDefault(uz.akmal.distributor_app.enums.PaymentType.NASIYA, java.math.BigDecimal.ZERO));
             }
+            summarySheet.createRow(5).createCell(0).setCellValue("Umumiy qarz (barcha): " + (report.getTotalDebtAllShops() != null ? report.getTotalDebtAllShops() : java.math.BigDecimal.ZERO));
             summarySheet.autoSizeColumn(0);
 
             // 4-varaq: Ombor kirimlari

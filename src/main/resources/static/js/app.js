@@ -2661,7 +2661,7 @@ function renderDailyPicker(el) {
     el.innerHTML = `
     <div class="form-group">
       <label class="form-label">Sanani tanlang</label>
-      <input type="date" class="form-input" id="dailyDateInput" value="${today}" onchange="loadDailyReport()">
+      <input type="date" class="form-input" id="dailyDateInput" value="${today}" max="${today}" onchange="loadDailyReport()">
     </div>
     <div id="dailyReportResult"></div>
   `;
@@ -2682,7 +2682,9 @@ async function loadDailyReport() {
 
 function renderDailyReportHtml(report) {
     const revenue = report.revenueByType || {};
-    const totalSalesForDay = report.sales.reduce((sum, s) => sum + s.amount, 0);
+    const totalSalesForDay = (report.totalSalesAmount != null)
+        ? report.totalSalesAmount
+        : (report.sales || []).reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
 
     const salesHtml = report.sales.length ? report.sales.map(s => `
     <div class="ledger-row" style="cursor:default;">
@@ -2753,7 +2755,7 @@ function renderMonthlyPicker(el) {
     el.innerHTML = `
     <div class="form-group">
       <label class="form-label">Oyni tanlang</label>
-      <input type="month" class="form-input" id="monthlyInput" value="${currentMonth}" onchange="loadMonthlyReport()">
+      <input type="month" class="form-input" id="monthlyInput" value="${currentMonth}" max="${currentMonth}" onchange="loadMonthlyReport()">
     </div>
     <div id="monthlyReportResult"></div>
   `;
@@ -3109,11 +3111,11 @@ function renderRangePicker(el) {
     <div class="form-group" style="display:flex; gap:10px;">
       <div style="flex:1;">
         <label class="form-label">Boshlanish sanasi</label>
-        <input type="date" class="form-input" id="rangeStartInput" value="${weekAgo}" onchange="loadRangeReport()">
+        <input type="date" class="form-input" id="rangeStartInput" value="${weekAgo}" max="${today}" onchange="loadRangeReport()">
       </div>
       <div style="flex:1;">
         <label class="form-label">Tugash sanasi</label>
-        <input type="date" class="form-input" id="rangeEndInput" value="${today}" onchange="loadRangeReport()">
+        <input type="date" class="form-input" id="rangeEndInput" value="${today}" max="${today}" onchange="loadRangeReport()">
       </div>
     </div>
     <div id="rangeReportResult"></div>
@@ -3124,6 +3126,12 @@ function renderRangePicker(el) {
 async function loadRangeReport() {
     const start = document.getElementById('rangeStartInput').value;
     const end = document.getElementById('rangeEndInput').value;
+    if (start && end && start > end) {
+        showToast("Boshlanish sanasi tugash sanasidan katta bo'lishi mumkin emas", 'warning');
+        const resultEl = document.getElementById('rangeReportResult');
+        if (resultEl) resultEl.innerHTML = '<div class="empty-state">Boshlanish sanasi tugash sanasidan kichik yoki teng bo\'lishi kerak</div>';
+        return;
+    }
     const resultEl = document.getElementById('rangeReportResult');
     resultEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
     try {
@@ -3202,6 +3210,10 @@ function downloadMonthlyExcel() {
 function downloadRangeExcel() {
     const start = document.getElementById('rangeStartInput').value;
     const end = document.getElementById('rangeEndInput').value;
+    if (start && end && start > end) {
+        showToast("Boshlanish sanasi tugash sanasidan katta bo'lishi mumkin emas", 'warning');
+        return;
+    }
     window.location.href = `${API_BASE}/reports/range/export?start=${start}&end=${end}`;
 }
 async function showDebtorShopsList() {
