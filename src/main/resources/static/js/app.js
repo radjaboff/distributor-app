@@ -291,6 +291,200 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// ==========================================
+// NATIVE MOBILE NAVIGATION & HISTORY MANAGER
+// ==========================================
+const Nav = {
+    stack: [],
+    isNavigatingHistory: false,
+    activeModalCount: 0,
+    lastExitPressTime: 0,
+    isInitialized: false,
+
+    init() {
+        if (this.isInitialized) return;
+        this.isInitialized = true;
+
+        try {
+            // Android hardware back buttonni rootda ilovani darhol yopib yubormasligi uchun sentinel o'rnatamiz
+            window.history.replaceState({ navType: 'exit-sentinel' }, '');
+            window.history.pushState({ navType: 'root' }, '');
+        } catch (e) {
+            console.warn('History API not available', e);
+        }
+
+        window.addEventListener('popstate', (e) => this.handlePopState(e));
+
+        if (backBtn) {
+            backBtn.onclick = (e) => {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                this.goBack();
+            };
+        }
+    },
+
+    pushScreen(screenName, backAction) {
+        if (this.isNavigatingHistory) return;
+
+        // Agar forma saqlangandan so'ng avvalgi ekranga qaytilsa (masalan: shopDetail)
+        const existingIndex = this.stack.findIndex(s => s.name === screenName);
+        if (existingIndex !== -1) {
+            this.stack = this.stack.slice(0, existingIndex + 1);
+            this.stack[existingIndex].backAction = backAction;
+            try {
+                window.history.replaceState({ navType: 'screen', name: screenName }, '');
+            } catch (e) {}
+            return;
+        }
+
+        this.stack.push({
+            name: screenName,
+            backAction: backAction
+        });
+
+        try {
+            window.history.pushState({ navType: 'screen', name: screenName, depth: this.stack.length }, '');
+        } catch (e) {}
+    },
+
+    enterRoot(tabName = 'bozorlar') {
+        if (this.isNavigatingHistory) return;
+
+        this.stack = [];
+
+        if (tabName !== 'bozorlar') {
+            this.stack.push({
+                name: 'tab-' + tabName,
+                backAction: () => goToTab('bozorlar')
+            });
+            try {
+                window.history.pushState({ navType: 'tab', name: tabName }, '');
+            } catch (e) {}
+        }
+    },
+
+    onModalOpen() {
+        if (this.isNavigatingHistory) return;
+        this.activeModalCount++;
+        try {
+            window.history.pushState({ navType: 'modal', count: this.activeModalCount }, '');
+        } catch (e) {}
+    },
+
+    onModalClose() {
+        if (this.activeModalCount > 0) {
+            this.activeModalCount--;
+            this.isNavigatingHistory = true;
+            window.history.back();
+            setTimeout(() => {
+                this.isNavigatingHistory = false;
+            }, 60);
+        }
+    },
+
+    isAnyModalOpen() {
+        const bs = document.getElementById('globalBottomSheet');
+        if (bs && bs.classList.contains('show')) return true;
+        const confirm = document.getElementById('globalConfirmDialog');
+        if (confirm && confirm.classList.contains('show')) return true;
+        const stmt = document.getElementById('statementModal');
+        if (stmt && stmt.classList.contains('show')) return true;
+        return false;
+    },
+
+    closeTopModal() {
+        const stmt = document.getElementById('statementModal');
+        if (stmt && stmt.classList.contains('show')) {
+            closeStatementModal(false);
+            return true;
+        }
+        const confirm = document.getElementById('globalConfirmDialog');
+        if (confirm && confirm.classList.contains('show')) {
+            closeConfirmDialog(false);
+            return true;
+        }
+        const bs = document.getElementById('globalBottomSheet');
+        if (bs && bs.classList.contains('show')) {
+            closeBottomSheet(false);
+            return true;
+        }
+        return false;
+    },
+
+    goBack() {
+        if (this.isAnyModalOpen()) {
+            this.onModalClose();
+            return;
+        }
+
+        if (this.stack.length > 0) {
+            window.history.back();
+        } else {
+            this.handleRootExit();
+        }
+    },
+
+    handlePopState(e) {
+        // 1. Agar biror modal / bottom-sheet ochiq bo'lsa, avval uni yopamiz
+        if (this.isAnyModalOpen()) {
+            if (this.activeModalCount > 0) this.activeModalCount--;
+            this.closeTopModal();
+            return;
+        }
+
+        // 2. Agar ichki bo'limlarda bo'lsak, navbatdagi oldingi bo'limga qaytamiz
+        if (this.stack.length > 0) {
+            const item = this.stack.pop();
+            if (item && typeof item.backAction === 'function') {
+                this.isNavigatingHistory = true;
+                try {
+                    item.backAction();
+                } finally {
+                    this.isNavigatingHistory = false;
+                }
+                return;
+            }
+        }
+
+        // 3. Asosiy sahifada (Root) telfonning chiqish tugmasi bosilganda
+        this.handleRootExit();
+    },
+
+    handleRootExit() {
+        const now = Date.now();
+        if (now - this.lastExitPressTime < 2000) {
+            // 2 soniya ichida qayta bosildi -> ilovadan chiqishga ruxsat beramiz
+            window.history.back();
+        } else {
+            this.lastExitPressTime = now;
+            showToast("Ilovadan chiqish uchun yana bir marta bosing", "info");
+            try {
+                window.history.pushState({ navType: 'root' }, '');
+            } catch (e) {}
+        }
+    }
+};
+
+function setBackAction(backFn, screenName = '') {
+    backBtn.style.visibility = 'visible';
+    backBtn.onclick = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        Nav.goBack();
+    };
+    Nav.pushScreen(screenName, backFn);
+}
+
+function setRootScreen(tabName = 'bozorlar') {
+    backBtn.style.visibility = 'hidden';
+    Nav.enterRoot(tabName);
+}
+
 // Bottom Sheet (Pastdan chiquvchi mobil oyna)
 function showBottomSheet(contentHtml) {
     let bs = document.getElementById('globalBottomSheet');
@@ -309,11 +503,15 @@ function showBottomSheet(contentHtml) {
     }
     document.getElementById('bottomSheetContent').innerHTML = contentHtml;
     bs.classList.add('show');
+    Nav.onModalOpen();
 }
 
-function closeBottomSheet() {
+function closeBottomSheet(popHistory = true) {
     const bs = document.getElementById('globalBottomSheet');
-    if (bs) bs.classList.remove('show');
+    if (bs && bs.classList.contains('show')) {
+        bs.classList.remove('show');
+        if (popHistory) Nav.onModalClose();
+    }
 }
 
 // Maxsus Tasdiqlash Modali (Brauzerning xunuk confirm dialogi o'rniga)
@@ -380,13 +578,15 @@ function showConfirmDialog({
     // Animatsiya bilan ko'rsatish
     requestAnimationFrame(() => {
         dialogEl.classList.add('show');
+        Nav.onModalOpen();
     });
 }
 
-function closeConfirmDialog() {
+function closeConfirmDialog(popHistory = true) {
     const dialogEl = document.getElementById('globalConfirmDialog');
-    if (dialogEl) {
+    if (dialogEl && dialogEl.classList.contains('show')) {
         dialogEl.classList.remove('show');
+        if (popHistory) Nav.onModalClose();
     }
 }
 
@@ -654,7 +854,7 @@ async function apiDelete(path) {
 // Toifalar (Bozorlar) ro'yxatini ko'rsatish
 async function showMarketGroups() {
     updateHeaderMeta('Bozorlar', "Do'konlar va savdo nuqtalari", 'PRO');
-    backBtn.style.visibility = 'hidden';
+    setRootScreen('bozorlar');
     fabBtn.style.display = 'flex';
     fabBtn.onclick = showAddMarketGroupForm;
 
@@ -693,13 +893,13 @@ async function showMarketGroups() {
 }
 
 // Boshlang'ich sahifa
+Nav.init();
 showMarketGroups();
 
 // Yangi toifa qo'shish formasi
 function showAddMarketGroupForm() {
     updateHeaderMeta('Yangi toifa', "Bozor yoki hudud kiritish", "QO'SHISH");
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = showMarketGroups;
+    setBackAction(showMarketGroups, 'addMarketGroup');
     fabBtn.style.display = 'none';
 
     contentEl.innerHTML = `
@@ -760,8 +960,7 @@ async function showShops(groupId, groupName) {
     updateHeaderMeta(groupName, "Bozor do'konlari ro'yxati", 'BOZOR');
     currentGroupId = groupId;
     currentGroupName = groupName;
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = showMarketGroups;
+    setBackAction(showMarketGroups, 'shops');
     fabBtn.style.display = 'flex';
     fabBtn.onclick = () => showAddShopForm(groupId);
 
@@ -923,8 +1122,7 @@ function shareShopDebt(shopName, debt, phone) {
 
 function showAddShopForm(groupId) {
     updateHeaderMeta('Yangi do\'kon', currentGroupName ? `${currentGroupName} toifasi` : 'Bozor toifasiga qo\'shish', 'QO\'SHISH');
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = () => showShops(groupId, currentGroupName);
+    setBackAction(() => showShops(groupId, currentGroupName), 'addShop');
     fabBtn.style.display = 'none';
 
     contentEl.innerHTML = `
@@ -1299,8 +1497,7 @@ function renderLedgerSection() {
 async function showShopDetail(shopId) {
     currentShopId = shopId;
     updateHeaderMeta('Yuklanmoqda...', '', 'DAFTAR');
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = () => showShops(currentGroupId, currentGroupName);
+    setBackAction(() => currentGroupId ? showShops(currentGroupId, currentGroupName) : showMarketGroups(), 'shopDetail');
     fabBtn.style.display = 'none';
 
     contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -1472,8 +1669,7 @@ async function executeCancelEntry(type, id, shopId) {
 // Yangi sotuv formasi
 async function showAddSaleForm(shopId) {
     updateHeaderMeta('Yangi sotuv', "Tovarlarni rasmiylashtirish", 'SOTUV');
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = () => showShopDetail(shopId);
+    setBackAction(() => showShopDetail(shopId), 'addSale');
     fabBtn.style.display = 'none';
     saleItems = [];
 
@@ -1876,8 +2072,7 @@ async function submitSale(shopId) {
 // Yangi to'lov formasi
 function showAddPaymentForm(shopId, currentDebt = 0) {
     updateHeaderMeta("To'lov qabul qilish", "Qarzni so'ndirish oynasi", "TO'LOV");
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = () => showShopDetail(shopId);
+    setBackAction(() => showShopDetail(shopId), 'addPayment');
     fabBtn.style.display = 'none';
 
     const today = getLocalDateString();
@@ -2091,7 +2286,7 @@ function goToTab(tab) {
 // Mahsulotlar ro'yxati
 async function showProducts() {
     updateHeaderMeta('Mahsulotlar', 'Mahsulotlar katalogi', 'KATALOG');
-    backBtn.style.visibility = 'hidden';
+    setRootScreen('mahsulotlar');
     fabBtn.style.display = 'flex';
     fabBtn.onclick = showAddProductForm;
 
@@ -2169,8 +2364,7 @@ function _executeProductFilter() {
 
 function showAddProductForm() {
     updateHeaderMeta('Yangi mahsulot', 'Katalogga tovar qo\'shish', 'QO\'SHISH');
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = showProducts;
+    setBackAction(showProducts, 'addProduct');
     fabBtn.style.display = 'none';
 
     contentEl.innerHTML = `
@@ -2242,8 +2436,7 @@ async function submitProduct() {
 // Zaxira to'ldirish (Kirim) formasi
 function showAddStockInForm(productId, productName) {
     updateHeaderMeta(`Kirim: ${productName}`, 'Omborga yangi tovar kirimi', 'KIRIM');
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = showProducts;
+    setBackAction(showProducts, 'addStockIn');
     fabBtn.style.display = 'none';
 
     const prod = allProductsList.find(p => p.id === productId) || {};
@@ -2414,7 +2607,7 @@ let dashboardTab = 'umumiy';
 
 async function showDashboard() {
     updateHeaderMeta('Hisobot', 'Moliyaviy tahlil va ko\'rsatkichlar', 'MOLIYA');
-    backBtn.style.visibility = 'hidden';
+    setRootScreen('dashboard');
     fabBtn.style.display = 'none';
     dashboardTab = 'umumiy';
     renderDashboardTabs();
@@ -2665,8 +2858,7 @@ function renderMonthlyReportHtml(report) {
 
 function showEditMarketGroupForm(id, currentName) {
     updateHeaderMeta('Toifani tahrirlash', currentName || 'Nomini o\'zgartirish', 'TAHRIR');
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = showMarketGroups;
+    setBackAction(showMarketGroups, 'editMarketGroup');
     fabBtn.style.display = 'none';
 
     contentEl.innerHTML = `
@@ -2744,8 +2936,7 @@ async function deleteMarketGroup(id, name) {
 
 function showEditShopForm(id, name, ownerName, phone) {
     updateHeaderMeta('Do\'konni tahrirlash', name || 'Ma\'lumotlarni yangilash', 'TAHRIR');
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = () => showShops(currentGroupId, currentGroupName);
+    setBackAction(() => currentGroupId ? showShops(currentGroupId, currentGroupName) : showMarketGroups(), 'editShop');
     fabBtn.style.display = 'none';
 
     contentEl.innerHTML = `
@@ -2850,8 +3041,7 @@ async function deleteShop(id, name, debt = 0) {
 
 async function showEditProductForm(id) {
     updateHeaderMeta('Mahsulotni tahrirlash', 'Nomini yangilash', 'TAHRIR');
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = showProducts;
+    setBackAction(showProducts, 'editProduct');
     fabBtn.style.display = 'none';
 
     contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -3054,8 +3244,7 @@ function downloadRangeExcel() {
 }
 async function showDebtorShopsList() {
     updateHeaderMeta('Qarzdor do\'konlar', 'Muddati o\'tgan va joriy qarzlar', 'QARZ');
-    backBtn.style.visibility = 'visible';
-    backBtn.onclick = () => { dashboardTab = 'umumiy'; showDashboard(); };
+    setBackAction(() => { dashboardTab = 'umumiy'; showDashboard(); }, 'debtorShops');
     fabBtn.style.display = 'none';
 
     contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -3566,6 +3755,7 @@ async function openShopPdfStatement(shopId) {
     `;
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
+    Nav.onModalOpen();
 
     try {
         const ledger = await apiGet(`/shops/${shopId}/ledger`);
@@ -3592,12 +3782,13 @@ async function openShopPdfStatement(shopId) {
     }
 }
 
-function closeStatementModal() {
+function closeStatementModal(popHistory = true) {
     const modal = document.getElementById('statementModal');
-    if (modal) {
+    if (modal && modal.classList.contains('show')) {
         modal.classList.remove('show');
         modal.innerHTML = '';
         document.body.style.overflow = '';
+        if (popHistory) Nav.onModalClose();
     }
 }
 
