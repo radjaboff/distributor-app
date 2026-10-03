@@ -6,6 +6,7 @@ import uz.akmal.distributor_app.dto.PaymentRequest;
 import uz.akmal.distributor_app.dto.PaymentResponse;
 import uz.akmal.distributor_app.entity.Payment;
 import uz.akmal.distributor_app.entity.Shop;
+import uz.akmal.distributor_app.exception.InvalidPaymentException;
 import uz.akmal.distributor_app.exception.ResourceNotFoundException;
 import uz.akmal.distributor_app.repository.PaymentRepository;
 import uz.akmal.distributor_app.repository.SaleRepository;
@@ -69,6 +70,16 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         BigDecimal currentDebt = (shop.getCurrentDebt() != null) ? shop.getCurrentDebt() : BigDecimal.ZERO;
+        if (currentDebt.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidPaymentException("Do'konda qarzdorlik mavjud emas. To'lov qabul qilinmaydi");
+        }
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidPaymentException("To'lov summasi 0 dan katta bo'lishi shart");
+        }
+        if (request.getAmount().compareTo(currentDebt) > 0) {
+            throw new InvalidPaymentException("To'lov summasi (" + request.getAmount() + ") joriy qarzdorlikdan (" + currentDebt + ") ortiq bo'lishi mumkin emas. Avans qabul qilinmaydi.");
+        }
+
         shop.setCurrentDebt(currentDebt.subtract(request.getAmount()));
         shopRepository.save(shop);
 

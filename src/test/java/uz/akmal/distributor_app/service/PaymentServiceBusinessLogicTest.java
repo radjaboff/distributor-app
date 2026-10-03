@@ -152,6 +152,7 @@ class PaymentServiceBusinessLogicTest {
     void testCreatePayment_FutureDate_ThrowsException() {
         Shop shop = new Shop();
         shop.setId(1L);
+        shop.setCurrentDebt(BigDecimal.valueOf(100_000));
         when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
 
         PaymentRequest request = new PaymentRequest();
@@ -167,6 +168,7 @@ class PaymentServiceBusinessLogicTest {
     void testCreatePayment_BeforeFirstSaleDate_ThrowsException() {
         Shop shop = new Shop();
         shop.setId(1L);
+        shop.setCurrentDebt(BigDecimal.valueOf(100_000));
         when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
         when(saleRepository.findFirstActiveSaleDateByShopId(1L))
                 .thenReturn(java.time.LocalDateTime.now().minusDays(1)); // First sale was yesterday
@@ -179,5 +181,35 @@ class PaymentServiceBusinessLogicTest {
         request.setPaymentDate(java.time.LocalDate.now().minusDays(5).toString());
 
         assertThrows(IllegalArgumentException.class, () -> paymentService.create(request));
+    }
+
+    @Test
+    void testCreatePayment_ZeroOrNegativeDebt_ThrowsException() {
+        Shop shop = new Shop();
+        shop.setId(1L);
+        shop.setCurrentDebt(BigDecimal.ZERO);
+        when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
+
+        PaymentRequest request = new PaymentRequest();
+        request.setShopId(1L);
+        request.setAmount(BigDecimal.valueOf(10_000));
+        request.setMethod(PaymentMethod.NAQD);
+
+        assertThrows(uz.akmal.distributor_app.exception.InvalidPaymentException.class, () -> paymentService.create(request));
+    }
+
+    @Test
+    void testCreatePayment_AmountExceedsDebt_ThrowsException() {
+        Shop shop = new Shop();
+        shop.setId(1L);
+        shop.setCurrentDebt(BigDecimal.valueOf(50_000));
+        when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
+
+        PaymentRequest request = new PaymentRequest();
+        request.setShopId(1L);
+        request.setAmount(BigDecimal.valueOf(60_000)); // 60,000 > 50,000
+        request.setMethod(PaymentMethod.NAQD);
+
+        assertThrows(uz.akmal.distributor_app.exception.InvalidPaymentException.class, () -> paymentService.create(request));
     }
 }

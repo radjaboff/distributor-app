@@ -1336,7 +1336,7 @@ function renderLedgerEntryCard(entry, shopId) {
                 ${new Date(entry.date).toLocaleDateString('uz-UZ')}, ${new Date(entry.date).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}
             </span>
             <span style="font-weight:600; color:#94A3B8;">
-                ${Number(entry.balanceAfter) < 0 ? 'Avans: ' + formatMoney(Math.abs(entry.balanceAfter)) : 'Qoldiq: ' + formatMoney(entry.balanceAfter)}
+                ${Number(entry.balanceAfter) <= 0 ? 'Qoldiq: 0 so\'m' : 'Qoldiq: ' + formatMoney(entry.balanceAfter)}
             </span>
         </div>
 
@@ -1512,11 +1512,6 @@ async function showShopDetail(shopId) {
             debtValueText = formatMoney(debt);
             debtStyleColor = 'var(--color-debt)';
             lineGradient = 'linear-gradient(90deg, #F43F5E, #FB7185)';
-        } else if (debt < 0) {
-            debtLabel = "Do'kon haqi (Ortiqcha to'lov / Avans)";
-            debtValueText = formatMoney(Math.abs(debt));
-            debtStyleColor = '#38BDF8';
-            lineGradient = 'linear-gradient(90deg, #38BDF8, #0284C7)';
         } else {
             debtLabel = 'Hisob toza (Qarzdorlik yo\'q)';
             debtValueText = '0 so\'m';
@@ -2054,6 +2049,10 @@ async function submitSale(shopId) {
 
 // Yangi to'lov formasi
 function showAddPaymentForm(shopId, currentDebt = 0) {
+    if (Number(currentDebt) <= 0) {
+        showToast("Do'konda qarzdorlik yo'q. To'lov qabul qilinmaydi.", "info");
+        return;
+    }
     updateHeaderMeta("To'lov qabul qilish", "Qarzni so'ndirish oynasi", "TO'LOV");
     setBackAction(() => showShopDetail(shopId), 'addPayment');
     fabBtn.style.display = 'none';
@@ -2079,7 +2078,7 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
                 </div>
                 <div>
                     <div class="form-card__title">To'lov qabul qilish</div>
-                    <div class="form-card__desc">${currentDebt > 0 ? `Joriy qarz: <strong style="color:var(--color-debt); font-variant-numeric:tabular-nums;">${formatMoney(currentDebt)}</strong>` : (currentDebt < 0 ? `Do'kon avansi: <strong style="color:#38BDF8; font-variant-numeric:tabular-nums;">${formatMoney(Math.abs(currentDebt))}</strong>` : 'Qarzdorlik yo\'q')}</div>
+                    <div class="form-card__desc">${currentDebt > 0 ? `Joriy qarz: <strong style="color:var(--color-debt); font-variant-numeric:tabular-nums;">${formatMoney(currentDebt)}</strong>` : 'Qarzdorlik yo\'q'}</div>
                 </div>
             </div>
 
@@ -2183,36 +2182,13 @@ async function submitPayment(shopId, currentDebt = 0) {
 
     const debtVal = Number(currentDebt) || 0;
 
-    // 1. Agar qarz bo'lsa va to'lov summasi qarzdan ko'p bo'lsa (Avans):
-    if (debtVal > 0 && amount > debtVal) {
-        const overpayment = amount - debtVal;
-        showConfirmDialog({
-            title: "Ortiqcha to'lov (Avans)",
-            message: `Kiritilgan to'lov (${formatMoney(amount)}) joriy qarzdan (${formatMoney(debtVal)}) ortiq. Ortiqcha ${formatMoney(overpayment)} do'kon hisobiga avans (haqqi bor) sifatida yoziladi. Davom etasizmi?`,
-            itemName: `Do'kon avansi: +${formatMoney(overpayment)}`,
-            confirmText: "Ha, avans qabul qilish",
-            cancelText: "Tahrirlash",
-            onConfirm: () => {
-                closeConfirmDialog();
-                executePayment(shopId, amount, method);
-            }
-        });
+    if (debtVal <= 0) {
+        showToast("Do'konda qarzdorlik yo'q! To'lov qabul qilinmaydi.", 'error');
         return;
     }
 
-    // 2. Agar do'konda qarz bo'lmasa (0 yoki manfiy) va yana to'lov kiritilsa:
-    if (debtVal <= 0) {
-        showConfirmDialog({
-            title: "Avans to'lovi",
-            message: `Do'konda hozirda qarzdorlik yo'q. Ushbu ${formatMoney(amount)} do'konning oldindan to'lovi (avansi) sifatida qabul qilinadi. Davom etasizmi?`,
-            itemName: `Yangi avans: ${formatMoney(amount)}`,
-            confirmText: "Ha, avans qabul qilish",
-            cancelText: "Bekor qilish",
-            onConfirm: () => {
-                closeConfirmDialog();
-                executePayment(shopId, amount, method);
-            }
-        });
+    if (amount > debtVal) {
+        showToast(`To'lov summasi (${formatMoney(amount)}) joriy qarzdorlikdan (${formatMoney(debtVal)}) ortiq bo'lishi mumkin emas! Avans qabul qilinmaydi.`, 'error');
         return;
     }
 

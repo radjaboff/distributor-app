@@ -185,7 +185,11 @@ public class SaleServiceImpl implements SaleService {
         BigDecimal initialPaid = (sale.getInitialPaidAmount() != null) ? sale.getInitialPaidAmount() : BigDecimal.ZERO;
         BigDecimal debtIncreaseFromSale = sale.getTotalAmount().subtract(initialPaid);
         BigDecimal currentDebt = (shop.getCurrentDebt() != null) ? shop.getCurrentDebt() : BigDecimal.ZERO;
-        shop.setCurrentDebt(currentDebt.subtract(debtIncreaseFromSale));
+        BigDecimal newDebt = currentDebt.subtract(debtIncreaseFromSale);
+        if (newDebt.compareTo(BigDecimal.ZERO) < 0) {
+            newDebt = BigDecimal.ZERO;
+        }
+        shop.setCurrentDebt(newDebt);
         shopRepository.save(shop);
 
         // 3. Bog'langan boshlang'ich to'lovni ham bekor qilish (faqat aniq bog'langan to'lovlar)
