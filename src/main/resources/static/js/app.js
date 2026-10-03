@@ -1574,7 +1574,7 @@ function promptCancelEntry(type, id, shopId, description, amount) {
                 </div>
                 <div>
                     <div style="font-size:16px; font-weight:800; color:#FFF;">Operatsiyani bekor qilish (Storno)</div>
-                    <div style="font-size:12.5px; color:var(--color-ink-dim);">Ushbu amal ombor va do'kon qarzini avtomatik qaytaradi</div>
+                    <div style="font-size:12.5px; color:var(--color-ink-dim);">Ushbu amal do'kon qarzini avtomatik to'g'irlaydi</div>
                 </div>
             </div>
 
@@ -1594,7 +1594,7 @@ function promptCancelEntry(type, id, shopId, description, amount) {
                 </div>` : ''}
                 <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--color-line); color:#FCA5A5; font-size:12px;">
                     ⚠️ ${isSale 
-                        ? 'Sotuv bekor qilinganda sotilgan tovarlar omborga qaytariladi va do\'kon qarzi mos ravishda kamaytiriladi.' 
+                        ? 'Sotuv bekor qilinganda do\'kon qarzi mos ravishda kamaytiriladi.' 
                         : 'To\'lov bekor qilinganda do\'konning so\'ndirilgan qarzi qayta tiklanadi.'}
                 </div>
             </div>
@@ -1802,7 +1802,7 @@ async function showAddSaleForm(shopId) {
                     </label>
                     <select class="form-select" id="paymentMethodSelect">
                         <option value="NAQD">NAQD (qo'lma-qo'l)</option>
-                        <option value="KARTA">KARTA (Click / O'tkazma)</option>
+                        <option value="KARTA">KARTA (Click / Plastik karta)</option>
                     </select>
                 </div>
             </div>
@@ -2139,7 +2139,7 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
                 </label>
                 <select class="form-select" id="paymentMethodInput">
                     <option value="NAQD">NAQD (qo'lma-qo'l)</option>
-                    <option value="KARTA">KARTA (Click / O'tkazma)</option>
+                    <option value="KARTA">KARTA (Click / Plastik karta)</option>
                 </select>
             </div>
 
@@ -2416,175 +2416,6 @@ async function submitProduct() {
     }
 }
 
-// Zaxira to'ldirish (Kirim) formasi
-function showAddStockInForm(productId, productName) {
-    updateHeaderMeta(`Kirim: ${productName}`, 'Omborga yangi tovar kirimi', 'KIRIM');
-    setBackAction(showProducts, 'addStockIn');
-    fabBtn.style.display = 'none';
-
-    const prod = allProductsList.find(p => p.id === productId) || {};
-    const pkgName = prod.packageName || 'paket';
-    const defaultUnitPrice = prod.purchasePrice || 0;
-
-    contentEl.innerHTML = `
-        <div class="form-card">
-            <div class="form-card__header">
-                <div class="form-card__icon" style="background: rgba(59, 130, 246, 0.15); color: #38BDF8;">
-                    ${Icons.box}
-                </div>
-                <div>
-                    <div class="form-card__title">${escHtml(productName)}</div>
-                    <div class="form-card__desc">Omborga yangi tovar kirimi</div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="stockPackageCountInput">
-                    <span class="label-icon">${Icons.box}</span>
-                    <span>Necha ${escHtml(pkgName)} olindi</span>
-                </label>
-                <div class="quantity-input-box">
-                    <input type="number" inputmode="numeric" class="form-input" id="stockPackageCountInput" placeholder="Masalan: 40" autofocus min="1" oninput="onStockInInputChange('qty')">
-                </div>
-                <div class="quick-chips-row">
-                    <button type="button" class="preset-chip" onclick="addQtyToStockInInput(5)">+5</button>
-                    <button type="button" class="preset-chip" onclick="addQtyToStockInInput(10)">+10</button>
-                    <button type="button" class="preset-chip" onclick="addQtyToStockInInput(20)">+20</button>
-                    <button type="button" class="preset-chip" onclick="addQtyToStockInInput(50)">+50</button>
-                    <button type="button" class="preset-chip" onclick="addQtyToStockInInput(100)">+100</button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="stockUnitPriceInput">
-                    <span class="label-icon">${Icons.money}</span>
-                    <span>1 ${escHtml(pkgName)} tannarxi (olingan narxi)</span>
-                </label>
-                <div class="money-field-wrap">
-                    <div class="money-input-box">
-                        <input type="text" 
-                               inputmode="numeric" 
-                               class="form-input money-input" 
-                               id="stockUnitPriceInput" 
-                               value="${defaultUnitPrice ? formatNumberWithSpaces(defaultUnitPrice) : ''}" 
-                               placeholder="${defaultUnitPrice ? formatMoney(defaultUnitPrice) : '0'}" 
-                               oninput="onMoneyInputChange(this, 'stockUnitPriceLive'); onStockInInputChange('unit')">
-                        <span class="money-suffix">so'm</span>
-                    </div>
-                    <div class="money-live-container" id="stockUnitPriceLive" style="display:none;"></div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="stockTotalCostInput">
-                    <span class="label-icon">${Icons.wallet}</span>
-                    <span>Jami to'langan summa</span>
-                </label>
-                <div class="money-field-wrap">
-                    <div class="money-input-box">
-                        <input type="text" 
-                               inputmode="numeric" 
-                               class="form-input money-input" 
-                               id="stockTotalCostInput" 
-                               placeholder="0" 
-                               oninput="onMoneyInputChange(this, 'stockTotalCostLive'); onStockInInputChange('total')">
-                        <span class="money-suffix">so'm</span>
-                    </div>
-                    <div class="money-live-container" id="stockTotalCostLive" style="display:none;"></div>
-                </div>
-                <div id="stockInLiveSummary" style="font-size:13px; font-weight:600; color:#38BDF8; margin-top:8px; display:none; background:rgba(56,189,248,0.1); padding:8px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.2);"></div>
-            </div>
-
-            <div class="form-group" style="margin-top: 22px;">
-                <button class="btn btn--primary btn--full" id="submitStockInBtn" onclick="submitStockIn(${productId})">
-                    ${Icons.check} Kirimni saqlash
-                </button>
-            </div>
-        </div>
-    `;
-
-    if (defaultUnitPrice) {
-        updateMoneyLivePreview('stockUnitPriceLive', defaultUnitPrice);
-    }
-}
-
-function addQtyToStockInInput(delta) {
-    const input = document.getElementById('stockPackageCountInput');
-    if (!input) return;
-    const current = parseInt(input.value) || 0;
-    input.value = current + delta;
-    onStockInInputChange('qty');
-}
-
-function onStockInInputChange(source) {
-    const qtyInput = document.getElementById('stockPackageCountInput');
-    const unitInput = document.getElementById('stockUnitPriceInput');
-    const totalInput = document.getElementById('stockTotalCostInput');
-    const summaryEl = document.getElementById('stockInLiveSummary');
-
-    if (!qtyInput || !unitInput || !totalInput) return;
-
-    const qty = parseInt(qtyInput.value) || 0;
-    const unitPrice = parseMoney(unitInput.value) || 0;
-    const totalCost = parseMoney(totalInput.value) || 0;
-
-    if (source === 'qty' || source === 'unit') {
-        if (qty > 0 && unitPrice > 0) {
-            const calculatedTotal = qty * unitPrice;
-            totalInput.value = formatNumberWithSpaces(calculatedTotal);
-            updateMoneyLivePreview('stockTotalCostLive', calculatedTotal);
-        }
-    } else if (source === 'total') {
-        if (qty > 0 && totalCost > 0) {
-            const calculatedUnit = Math.round(totalCost / qty);
-            unitInput.value = formatNumberWithSpaces(calculatedUnit);
-            updateMoneyLivePreview('stockUnitPriceLive', calculatedUnit);
-        }
-    }
-
-    const finalQty = parseInt(qtyInput.value) || 0;
-    const finalUnit = parseMoney(unitInput.value) || 0;
-    const finalTotal = parseMoney(totalInput.value) || 0;
-
-    if (summaryEl) {
-        if (finalQty > 0 && finalTotal > 0 && finalUnit > 0) {
-            summaryEl.style.display = 'block';
-            summaryEl.innerHTML = `💡 Hisob: <b>${finalQty}</b> dona × <b>${formatMoney(finalUnit)}</b> = <b>${formatMoney(finalTotal)}</b>`;
-        } else {
-            summaryEl.style.display = 'none';
-        }
-    }
-}
-
-async function submitStockIn(productId) {
-    const packageCount = parseInt(document.getElementById('stockPackageCountInput').value);
-    const totalCost = parseMoney(document.getElementById('stockTotalCostInput').value);
-
-    if (!packageCount || !totalCost) {
-        showToast('Barcha maydonlarni to\'ldiring', 'error');
-        return;
-    }
-
-    const btn = document.getElementById('submitStockInBtn');
-    if (btn) {
-        if (btn.disabled) return;
-        btn.disabled = true;
-        btn.innerHTML = 'Kirim qilinmoqda...';
-    }
-
-    try {
-        await apiPost('/stock-in', { productId, packageCount, totalCost });
-        showToast('Kirim muvaffaqiyatli saqlandi!', 'success');
-        showProducts();
-    } catch (err) {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = `${Icons.check} Kirimni saqlash`;
-        }
-        showToast('Xatolik: ' + err.message, 'error');
-    }
-}
-
 // Hisobot (Dashboard)
 let dashboardTab = 'umumiy';
 
@@ -2666,11 +2497,23 @@ function renderSummaryHtml(summary, overdueShops) {
     }
 
     return `
-    <div class="stat-card" style="margin-bottom: 12px; text-align:center; padding:24px;">
+    <div class="stat-card" style="margin-bottom: 10px; text-align:center; padding:20px;">
       <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.5px; font-size:12px;">Jami umumiy qarz</div>
-      <div class="stat-card__value" style="color: var(--color-debt); font-size: 30px; margin-top:6px;">${formatMoney(summary.totalDebtAllShops)}</div>
+      <div class="stat-card__value" style="color: var(--color-debt); font-size: 28px; margin-top:4px;">${formatMoney(summary.totalDebtAllShops || 0)}</div>
     </div>
-    <div class="form-group">
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 12px;">
+      <div class="stat-card" style="padding:14px 10px; text-align:center;">
+        <div class="stat-card__label" style="font-size:11px; color:var(--color-ink-dim); text-transform:uppercase;">Bugungi savdo</div>
+        <div class="stat-card__value" style="color: #60A5FA; font-size:16px; font-weight:700; margin-top:4px;">${formatMoney(summary.todaysSalesTotal || 0)}</div>
+      </div>
+      <div class="stat-card" style="padding:14px 10px; text-align:center;">
+        <div class="stat-card__label" style="font-size:11px; color:var(--color-ink-dim); text-transform:uppercase;">Bugungi tushum (kassa)</div>
+        <div class="stat-card__value" style="color: var(--color-paid); font-size:16px; font-weight:700; margin-top:4px;">${formatMoney(summary.todaysPaymentsTotal || 0)}</div>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 16px;">
       <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="showDebtorShopsList()">${Icons.wallet} Qarzdor do'konlar</button>
     </div>
     ${overdueHtml}

@@ -11,6 +11,7 @@ public class DashboardSummaryResponse {
     private BigDecimal totalDebtAllShops;
     private BigDecimal todaysSalesTotal;
     private BigDecimal todaysProfit;
+    private BigDecimal todaysPaymentsTotal;
     private List<LowStockProduct> lowStockProducts;
 
     @Getter

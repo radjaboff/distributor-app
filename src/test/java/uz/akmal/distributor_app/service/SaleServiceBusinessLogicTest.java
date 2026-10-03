@@ -155,6 +155,27 @@ class SaleServiceBusinessLogicTest {
     }
 
     @Test
+    void testCreateSale_ZeroOrNullPrice_ThrowsException() {
+        Shop shop = new Shop();
+        shop.setId(1L);
+        Product product = new Product();
+        product.setId(5L);
+
+        when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
+        when(productRepository.findByIdWithLock(5L)).thenReturn(Optional.of(product));
+
+        SaleRequest request = new SaleRequest();
+        request.setShopId(1L);
+        SaleItemRequest itemReq = new SaleItemRequest();
+        itemReq.setProductId(5L);
+        itemReq.setPackageCount(2);
+        itemReq.setPrice(BigDecimal.ZERO); // Narx 0 bo'lsa
+        request.setItems(List.of(itemReq));
+
+        assertThrows(IllegalArgumentException.class, () -> saleService.createSale(request));
+    }
+
+    @Test
     void testCancelSale_Success_RestoresDebtAndCancelsPayment() {
         Shop shop = new Shop();
         shop.setId(1L);

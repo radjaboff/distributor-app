@@ -289,7 +289,19 @@ public class ReportServiceImpl implements ReportService {
         response.setTodaysSalesTotal(salesTotal);
         response.setTodaysProfit(profit);
 
-        // 3) Ombor qoldig'i nazorati olib tashlanganligi sababli bo'sh ro'yxat qaytariladi
+        // 3) Bugungi undirilgan to'lovlar (kassa tushumi)
+        List<Payment> todaysPayments = paymentRepository.findByDateBetweenWithShop(todayStart, todayEnd).stream()
+                .filter(p -> !Boolean.TRUE.equals(p.getIsCancelled()))
+                .toList();
+        BigDecimal paymentsTotal = BigDecimal.ZERO;
+        for (Payment payment : todaysPayments) {
+            if (payment.getAmount() != null) {
+                paymentsTotal = paymentsTotal.add(payment.getAmount());
+            }
+        }
+        response.setTodaysPaymentsTotal(paymentsTotal);
+
+        // 4) Ombor qoldig'i nazorati olib tashlanganligi sababli bo'sh ro'yxat qaytariladi
         response.setLowStockProducts(java.util.Collections.emptyList());
 
         return response;

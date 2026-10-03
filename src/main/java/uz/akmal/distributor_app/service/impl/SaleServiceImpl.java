@@ -89,9 +89,14 @@ public class SaleServiceImpl implements SaleService {
         for (SaleItemRequest itemRequest : request.getItems()) {
             Product product = lockedProducts.get(itemRequest.getProductId());
 
-            BigDecimal unitPrice = (itemRequest.getPrice() != null && itemRequest.getPrice().compareTo(BigDecimal.ZERO) > 0)
-                    ? itemRequest.getPrice()
-                    : ((product.getSellPrice() != null) ? product.getSellPrice() : BigDecimal.ZERO);
+            BigDecimal unitPrice = itemRequest.getPrice();
+            if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                if (product.getSellPrice() != null && product.getSellPrice().compareTo(BigDecimal.ZERO) > 0) {
+                    unitPrice = product.getSellPrice();
+                } else {
+                    throw new IllegalArgumentException("Mahsulot (" + product.getName() + ") narxi kiritilishi va 0 dan katta bo'lishi shart");
+                }
+            }
 
             SaleItem item = new SaleItem();
             item.setProduct(product);
