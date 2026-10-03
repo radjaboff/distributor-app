@@ -74,22 +74,20 @@ Controller → Service (interface + impl) → Repository → Database
 
 ## ⚙️ Key Features
 
-- **Package-based accounting:** goods are counted in whole packages (a sack of sugar, a box of oil), not in kg or liters
-- **Stock management:** stock-in increases the balance, a sale decreases it, all inside transactions
-- **Shop categories:** shops are grouped by market or category, with search and sort by debt
+- **Distributor accounting:** goods are counted in packages/units with instant price adjustments per sale
+- **Shop & debt management:** shops are grouped by market or category, with search and sort by debt
 - **Multi-item sales:** one sale can contain several products and be paid in cash, by card, on credit, or partly upfront
 - **Partial payments:** a shop can pay part of a sale immediately and the rest later; debt is recalculated automatically
-- **Price & cost locking:** the selling price and cost at the time of sale are stored, so later price changes never affect old sales or historical profit
 - **Shop ledger:** a chronological history of sales and payments with a running balance that always matches the shop's current debt
-- **Overdue debtors & low-stock alerts:** shown on the dashboard
-- **Reports:** daily, monthly and custom date-range reports with profit, revenue by payment type, stock-in costs, product sales volume and top debtors
+- **Overdue debtors & collection alerts:** shown on the dashboard with daily collection totals
+- **Reports:** daily, monthly and custom date-range reports with revenue by payment type, product sales volume and top debtors
 
 ---
 
 ## ✅ Production-Grade Details
 
-- **Concurrency safety:** pessimistic locking on sale, payment and stock-in creation prevents race conditions
-- **Storno:** cancel a sale or a payment, with stock and debt recalculated automatically and an audit history kept
+- **Concurrency safety:** pessimistic locking on shop balance and payment transactions prevents race conditions
+- **Storno:** cancel a sale or a payment, with shop debt recalculated automatically and an audit history kept
 - **Soft delete:** deleting a shop, category or product never destroys financial history
 - **Security:** Spring Security login, Remember-Me (30 days), `SameSite=Strict` cookies, brute-force protection, HTML escaping on the frontend, protected Swagger UI
 - **Centralized error handling:** clean JSON errors; internal exception details are never leaked to the client

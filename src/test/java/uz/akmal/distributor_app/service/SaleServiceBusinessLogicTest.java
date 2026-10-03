@@ -62,7 +62,7 @@ class SaleServiceBusinessLogicTest {
         product.setStockQuantity(20);
 
         when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
-        when(productRepository.findByIdWithLock(5L)).thenReturn(Optional.of(product));
+        when(productRepository.findById(5L)).thenReturn(Optional.of(product));
         when(saleRepository.save(any(Sale.class))).thenAnswer(invocation -> {
             Sale s = invocation.getArgument(0);
             s.setId(101L);
@@ -108,7 +108,7 @@ class SaleServiceBusinessLogicTest {
         product.setStockQuantity(0); // Omborda 0 bo'lsa ham sotuv amalga oshadi
 
         when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
-        when(productRepository.findByIdWithLock(5L)).thenReturn(Optional.of(product));
+        when(productRepository.findById(5L)).thenReturn(Optional.of(product));
         when(saleRepository.save(any(Sale.class))).thenAnswer(invocation -> {
             Sale s = invocation.getArgument(0);
             s.setId(102L);
@@ -140,7 +140,7 @@ class SaleServiceBusinessLogicTest {
         product.setStockQuantity(10);
 
         when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
-        when(productRepository.findByIdWithLock(5L)).thenReturn(Optional.of(product));
+        when(productRepository.findById(5L)).thenReturn(Optional.of(product));
 
         SaleRequest request = new SaleRequest();
         request.setShopId(1L);
@@ -162,7 +162,7 @@ class SaleServiceBusinessLogicTest {
         product.setId(5L);
 
         when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
-        when(productRepository.findByIdWithLock(5L)).thenReturn(Optional.of(product));
+        when(productRepository.findById(5L)).thenReturn(Optional.of(product));
 
         SaleRequest request = new SaleRequest();
         request.setShopId(1L);

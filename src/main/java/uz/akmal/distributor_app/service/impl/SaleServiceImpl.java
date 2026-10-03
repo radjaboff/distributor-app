@@ -47,19 +47,18 @@ public class SaleServiceImpl implements SaleService {
 
         log.info("Yangi sotuv boshlandi (qulflangan): shopId={}", request.getShopId());
 
-        // Deadlock oldini olish uchun mahsulot ID larni tartiblangan holda qulflaymiz
+        // Mahsulotlar ma'lumotlarini bazadan o'qiymiz (ombor qoldig'i hisoblanmagani sababli qulflash shart emas)
         java.util.List<Long> productIds = request.getItems().stream()
                 .map(SaleItemRequest::getProductId)
                 .distinct()
-                .sorted()
                 .toList();
 
-        java.util.Map<Long, Product> lockedProducts = new java.util.HashMap<>();
+        java.util.Map<Long, Product> productMap = new java.util.HashMap<>();
         for (Long pId : productIds) {
-            Product product = productRepository.findByIdWithLock(pId)
+            Product product = productRepository.findById(pId)
                     .filter(p -> !Boolean.TRUE.equals(p.getIsDeleted()))
                     .orElseThrow(() -> new ResourceNotFoundException("Mahsulot topilmadi yoki o'chirilgan: ID=" + pId));
-            lockedProducts.put(pId, product);
+            productMap.put(pId, product);
         }
 
         Sale sale = new Sale();
@@ -87,7 +86,7 @@ public class SaleServiceImpl implements SaleService {
         BigDecimal totalAmount = BigDecimal.ZERO;
 
         for (SaleItemRequest itemRequest : request.getItems()) {
-            Product product = lockedProducts.get(itemRequest.getProductId());
+            Product product = productMap.get(itemRequest.getProductId());
 
             BigDecimal unitPrice = itemRequest.getPrice();
             if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) <= 0) {

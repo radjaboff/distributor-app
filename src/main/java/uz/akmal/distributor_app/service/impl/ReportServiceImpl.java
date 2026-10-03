@@ -56,27 +56,25 @@ public class ReportServiceImpl implements ReportService {
         MonthlyReportResponse response = new MonthlyReportResponse();
         response.setMonth(month);
 
-        // 1) Umumiy sotuv summasi va foyda
+        // 1) Umumiy sotuv summasi
         BigDecimal totalSales = BigDecimal.ZERO;
-        BigDecimal totalProfit = BigDecimal.ZERO;
         Map<String, Integer> productVolumeMap = new java.util.HashMap<>();
 
         for (Sale sale : sales) {
-            totalSales = totalSales.add(sale.getTotalAmount());
+            if (sale.getTotalAmount() != null) {
+                totalSales = totalSales.add(sale.getTotalAmount());
+            }
 
-            for (SaleItem item : sale.getItems()) {
-                BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
-                BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
-                int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
-                BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
-                totalProfit = totalProfit.add(itemProfit);
-
-                String productName = item.getEffectiveProductName();
-                productVolumeMap.merge(productName, count, Integer::sum);
+            if (sale.getItems() != null) {
+                for (SaleItem item : sale.getItems()) {
+                    int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
+                    String productName = item.getEffectiveProductName();
+                    productVolumeMap.merge(productName, count, Integer::sum);
+                }
             }
         }
         response.setTotalSalesAmount(totalSales);
-        response.setTotalProfit(totalProfit);
+        response.setTotalProfit(BigDecimal.ZERO);
 
         // 1.1) To'lov turi bo'yicha tushum (NAQD/KARTA/NASIYA)
         Map<PaymentType, BigDecimal> revenueByType = new EnumMap<>(PaymentType.class);
@@ -109,28 +107,9 @@ public class ReportServiceImpl implements ReportService {
                 .toList();
         response.setProductSalesVolume(productVolumes);
 
-        List<StockIn> stockIns = stockInRepository.findByDateBetweenWithProduct(start, end);
-
-        BigDecimal totalStockInCost = stockIns.stream()
-                .map(StockIn::getTotalCost)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        response.setTotalStockInCost(totalStockInCost);
-
-        Map<String, Integer> stockInVolumeMap = new java.util.HashMap<>();
-        for (StockIn stockIn : stockIns) {
-            int pCount = (stockIn.getPackageCount() != null) ? stockIn.getPackageCount() : 0;
-            stockInVolumeMap.merge(stockIn.getEffectiveProductName(), pCount, Integer::sum);
-        }
-        List<MonthlyReportResponse.StockInVolume> stockInVolumes = stockInVolumeMap.entrySet().stream()
-                .map(entry -> {
-                    MonthlyReportResponse.StockInVolume sv = new MonthlyReportResponse.StockInVolume();
-                    sv.setProductName(entry.getKey());
-                    sv.setTotalPackagesReceived(entry.getValue());
-                    return sv;
-                })
-                .sorted((a, b) -> b.getTotalPackagesReceived().compareTo(a.getTotalPackagesReceived()))
-                .toList();
-        response.setStockInVolume(stockInVolumes);
+        // Ombor hisobi olib tashlanganligi sababli bo'sh qaytariladi
+        response.setTotalStockInCost(BigDecimal.ZERO);
+        response.setStockInVolume(java.util.Collections.emptyList());
 
         // 3) TOP qarzdor do'konlar (eng ko'p qarzi bor 5 tasi)
         List<MonthlyReportResponse.TopShop> topShops = shopRepository.findByIsDeletedFalse().stream()
@@ -164,7 +143,6 @@ public class ReportServiceImpl implements ReportService {
         List<Payment> payments = paymentRepository.findByDateBetweenWithShop(start, end).stream()
                 .filter(p -> !Boolean.TRUE.equals(p.getIsCancelled()))
                 .toList();
-        List<StockIn> stockIns = stockInRepository.findByDateBetweenWithProduct(start, end);
 
         DailyReportResponse response = new DailyReportResponse();
         response.setDate(date);
@@ -194,18 +172,8 @@ public class ReportServiceImpl implements ReportService {
             return p;
         }).toList());
 
-        // 3) Kunlik foyda — har bir SaleItem bo'yicha (priceAtSale - costAtSale) * packageCount
-        BigDecimal profit = BigDecimal.ZERO;
-        for (Sale sale : sales) {
-            for (SaleItem item : sale.getItems()) {
-                BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
-                BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
-                int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
-                BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
-                profit = profit.add(itemProfit);
-            }
-        }
-        response.setDailyProfit(profit);
+        // 3) Kunlik foyda — tannarx nazorat qilinmagani sababli 0 qaytariladi
+        response.setDailyProfit(BigDecimal.ZERO);
 
         // 4) To'lov turi bo'yicha summalar (NAQD/KARTA/NASIYA)
         Map<PaymentType, BigDecimal> revenueByType = new EnumMap<>(PaymentType.class);
@@ -233,20 +201,9 @@ public class ReportServiceImpl implements ReportService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         response.setTotalDebtAllShops(totalDebt);
 
-        // 6) Bazadan kirimlar (StockIn) ro'yxati va umumiy xarajat
-        response.setStockIns(stockIns.stream().map(stockIn -> {
-            DailyReportResponse.StockInSummary s = new DailyReportResponse.StockInSummary();
-            s.setProductName(stockIn.getEffectiveProductName());
-            s.setPackageCount(stockIn.getPackageCount());
-            s.setTotalCost(stockIn.getTotalCost());
-            s.setCreatedBy(stockIn.getCreatedBy() != null && !stockIn.getCreatedBy().trim().isEmpty() ? stockIn.getCreatedBy() : "admin");
-            return s;
-        }).toList());
-
-        BigDecimal totalStockInCost = stockIns.stream()
-                .map(StockIn::getTotalCost)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        response.setTotalStockInCost(totalStockInCost);
+        // 6) Ombor kirimlari hisobi olib tashlangan
+        response.setStockIns(java.util.Collections.emptyList());
+        response.setTotalStockInCost(BigDecimal.ZERO);
 
         return response;
     }
@@ -271,23 +228,13 @@ public class ReportServiceImpl implements ReportService {
                 .toList();
 
         BigDecimal salesTotal = BigDecimal.ZERO;
-        BigDecimal profit = BigDecimal.ZERO;
         for (Sale sale : todaysSales) {
             if (sale.getTotalAmount() != null) {
                 salesTotal = salesTotal.add(sale.getTotalAmount());
             }
-            if (sale.getItems() != null) {
-                for (SaleItem item : sale.getItems()) {
-                    BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
-                    BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
-                    int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
-                    BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
-                    profit = profit.add(itemProfit);
-                }
-            }
         }
         response.setTodaysSalesTotal(salesTotal);
-        response.setTodaysProfit(profit);
+        response.setTodaysProfit(BigDecimal.ZERO);
 
         // 3) Bugungi undirilgan to'lovlar (kassa tushumi)
         List<Payment> todaysPayments = paymentRepository.findByDateBetweenWithShop(todayStart, todayEnd).stream()
@@ -325,24 +272,22 @@ public class ReportServiceImpl implements ReportService {
         response.setEndDate(end);
 
         BigDecimal totalSales = BigDecimal.ZERO;
-        BigDecimal totalProfit = BigDecimal.ZERO;
         Map<String, Integer> productVolumeMap = new java.util.HashMap<>();
 
         for (Sale sale : sales) {
-            totalSales = totalSales.add(sale.getTotalAmount());
+            if (sale.getTotalAmount() != null) {
+                totalSales = totalSales.add(sale.getTotalAmount());
+            }
 
-            for (SaleItem item : sale.getItems()) {
-                BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
-                BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
-                int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
-                BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
-                totalProfit = totalProfit.add(itemProfit);
-
-                productVolumeMap.merge(item.getEffectiveProductName(), count, Integer::sum);
+            if (sale.getItems() != null) {
+                for (SaleItem item : sale.getItems()) {
+                    int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
+                    productVolumeMap.merge(item.getEffectiveProductName(), count, Integer::sum);
+                }
             }
         }
         response.setTotalSalesAmount(totalSales);
-        response.setTotalProfit(totalProfit);
+        response.setTotalProfit(BigDecimal.ZERO);
 
         // To'lov turi bo'yicha tushum (NAQD/KARTA/NASIYA) — Payment yozuvlari + Sale'ning NASIYA qismi orqali
         Map<PaymentType, BigDecimal> revenueByType = new EnumMap<>(PaymentType.class);
@@ -374,28 +319,9 @@ public class ReportServiceImpl implements ReportService {
                 .toList();
         response.setProductSalesVolume(productVolumes);
 
-        List<StockIn> stockIns = stockInRepository.findByDateBetweenWithProduct(startDt, endDt);
-
-        BigDecimal totalStockInCost = stockIns.stream()
-                .map(StockIn::getTotalCost)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        response.setTotalStockInCost(totalStockInCost);
-
-        Map<String, Integer> stockInVolumeMap = new java.util.HashMap<>();
-        for (StockIn stockIn : stockIns) {
-            int pCount = (stockIn.getPackageCount() != null) ? stockIn.getPackageCount() : 0;
-            stockInVolumeMap.merge(stockIn.getEffectiveProductName(), pCount, Integer::sum);
-        }
-        List<MonthlyReportResponse.StockInVolume> stockInVolumes = stockInVolumeMap.entrySet().stream()
-                .map(entry -> {
-                    MonthlyReportResponse.StockInVolume sv = new MonthlyReportResponse.StockInVolume();
-                    sv.setProductName(entry.getKey());
-                    sv.setTotalPackagesReceived(entry.getValue());
-                    return sv;
-                })
-                .sorted((a, b) -> b.getTotalPackagesReceived().compareTo(a.getTotalPackagesReceived()))
-                .toList();
-        response.setStockInVolume(stockInVolumes);
+        // Ombor hisobi olib tashlanganligi sababli bo'sh qaytariladi
+        response.setTotalStockInCost(BigDecimal.ZERO);
+        response.setStockInVolume(java.util.Collections.emptyList());
 
         List<MonthlyReportResponse.TopShop> topShops = shopRepository.findByIsDeletedFalse().stream()
                 .filter(s -> s.getCurrentDebt() != null && s.getCurrentDebt().compareTo(BigDecimal.ZERO) > 0)
