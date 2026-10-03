@@ -2,8 +2,8 @@ const CACHE_NAME = 'distributor-app-v36';
 const urlsToCache = [
     '/',
     '/index.html',
-    '/css/style.css',
-    '/js/app.js',
+    '/css/style.css?v=36',
+    '/js/app.js?v=36',
     '/manifest.json',
     '/icons/icon-v2-192.png',
     '/icons/icon-v2-512.png'
@@ -35,7 +35,7 @@ self.addEventListener('fetch', (event) => {
     }
 
     event.respondWith(
-        fetch(event.request)
+        fetch(event.request, { cache: 'no-cache' })
             .then((networkResponse) => {
                 if (networkResponse && networkResponse.status === 200 && !networkResponse.redirected) {
                     const responseClone = networkResponse.clone();

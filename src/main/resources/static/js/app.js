@@ -644,13 +644,13 @@ function showAppProfileModal() {
 
             <!-- Tezkor amallar -->
             <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
-                <button class="btn" style="background:rgba(255,255,255,0.06); border:1px solid var(--color-line); color:#FFF; justify-content:flex-start; padding:13px 15px; font-size:14px; border-radius:14px; display:flex; align-items:center; gap:12px;" onclick="location.reload(true)">
+                <button class="btn" style="background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#60A5FA; justify-content:flex-start; padding:13px 15px; font-size:14px; border-radius:14px; display:flex; align-items:center; gap:12px;" onclick="forceAppUpdate()">
                     <span style="color:#60A5FA; display:flex;">
                         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                     </span>
                     <div style="text-align:left;">
-                        <div style="font-weight:600; font-size:14px;">Ilovani yangilash (Refresh)</div>
-                        <div style="font-size:12px; color:var(--color-ink-dim);">Keshni tozalab ma'lumotlarni qayta yuklash</div>
+                        <div style="font-weight:700; font-size:14px; color:#FFF;">Ilovani yangilash (Keshni tozalash)</div>
+                        <div style="font-size:12px; color:var(--color-ink-dim);">Eng so'nggi versiyaga majburiy o'tish</div>
                     </div>
                 </button>
 
@@ -688,6 +688,27 @@ function showAppProfileModal() {
             <button class="btn btn--full" style="background:var(--color-paper-dim); color:var(--color-ink-dim); border:1px solid var(--color-line); padding:11px; border-radius:12px; font-size:13.5px;" onclick="closeBottomSheet()">Yopish</button>
         </div>
     `);
+}
+ 
+async function forceAppUpdate() {
+    showToast("Ilova eng so'nggi versiyaga yangilanmoqda...", "info");
+    try {
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+                await registration.unregister();
+            }
+        }
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            for (const name of cacheNames) {
+                await caches.delete(name);
+            }
+        }
+    } catch (e) {
+        console.warn("Kesh tozalash xatosi:", e);
+    }
+    window.location.href = window.location.origin + window.location.pathname + '?v=' + Date.now();
 }
 
 // ==========================================
