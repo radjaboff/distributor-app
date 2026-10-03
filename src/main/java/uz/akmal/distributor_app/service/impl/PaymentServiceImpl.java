@@ -8,12 +8,14 @@ import uz.akmal.distributor_app.entity.Payment;
 import uz.akmal.distributor_app.entity.Shop;
 import uz.akmal.distributor_app.exception.ResourceNotFoundException;
 import uz.akmal.distributor_app.repository.PaymentRepository;
+import uz.akmal.distributor_app.repository.SaleRepository;
 import uz.akmal.distributor_app.repository.ShopRepository;
 import uz.akmal.distributor_app.service.PaymentService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,10 +25,14 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final ShopRepository shopRepository;
+    private final SaleRepository saleRepository;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository, ShopRepository shopRepository) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository,
+                              ShopRepository shopRepository,
+                              SaleRepository saleRepository) {
         this.paymentRepository = paymentRepository;
         this.shopRepository = shopRepository;
+        this.saleRepository = saleRepository;
     }
 
     @Override
@@ -36,11 +42,6 @@ public class PaymentServiceImpl implements PaymentService {
                 .filter(s -> !Boolean.TRUE.equals(s.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Do'kon topilmadi yoki o'chirilgan"));
 
-        BigDecimal currentDebt = (shop.getCurrentDebt() != null) ? shop.getCurrentDebt() : BigDecimal.ZERO;
-        shop.setCurrentDebt(currentDebt.subtract(request.getAmount()));
-        shopRepository.save(shop);
-
-        Payment payment = PaymentMapper.toEntity(request, shop);
         LocalDateTime paymentDateTime = LocalDateTime.now();
         if (request.getPaymentDate() != null && !request.getPaymentDate().trim().isEmpty()) {
             String dateStr = request.getPaymentDate().trim();
@@ -54,6 +55,24 @@ public class PaymentServiceImpl implements PaymentService {
                 }
             }
         }
+
+        LocalDate paymentDateOnly = paymentDateTime.toLocalDate();
+        LocalDate today = LocalDate.now();
+        if (paymentDateOnly.isAfter(today)) {
+            throw new IllegalArgumentException("To'lov sanasi bugungi kundan keyingi (kelajak) bo'lishi mumkin emas");
+        }
+
+        LocalDateTime firstSaleDateTime = saleRepository.findFirstActiveSaleDateByShopId(shop.getId());
+        if (firstSaleDateTime != null && paymentDateOnly.isBefore(firstSaleDateTime.toLocalDate())) {
+            throw new IllegalArgumentException("To'lov sanasi do'konga qilingan birinchi sotuv sanasidan ("
+                    + firstSaleDateTime.toLocalDate() + ") oldin bo'lishi mumkin emas");
+        }
+
+        BigDecimal currentDebt = (shop.getCurrentDebt() != null) ? shop.getCurrentDebt() : BigDecimal.ZERO;
+        shop.setCurrentDebt(currentDebt.subtract(request.getAmount()));
+        shopRepository.save(shop);
+
+        Payment payment = PaymentMapper.toEntity(request, shop);
         payment.setDate(paymentDateTime);
         payment.setCreatedBy(uz.akmal.distributor_app.util.SecurityUtils.getCurrentUsername());
 

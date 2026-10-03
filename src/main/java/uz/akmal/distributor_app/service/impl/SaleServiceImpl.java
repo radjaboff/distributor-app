@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.akmal.distributor_app.exception.InvalidPaymentException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -75,6 +76,10 @@ public class SaleServiceImpl implements SaleService {
                     saleDateTime = java.time.LocalDate.parse(dateStr.substring(0, 10)).atTime(java.time.LocalTime.now());
                 }
             }
+        }
+        LocalDate saleDateOnly = saleDateTime.toLocalDate();
+        if (saleDateOnly.isAfter(java.time.LocalDate.now())) {
+            throw new IllegalArgumentException("Sotuv sanasi bugungi kundan keyingi (kelajak) bo'lishi mumkin emas");
         }
         sale.setDate(saleDateTime);
         sale.setCreatedBy(uz.akmal.distributor_app.util.SecurityUtils.getCurrentUsername());

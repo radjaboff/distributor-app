@@ -11,6 +11,7 @@ import uz.akmal.distributor_app.entity.Sale;
 import uz.akmal.distributor_app.entity.Shop;
 import uz.akmal.distributor_app.enums.PaymentMethod;
 import uz.akmal.distributor_app.repository.PaymentRepository;
+import uz.akmal.distributor_app.repository.SaleRepository;
 import uz.akmal.distributor_app.repository.ShopRepository;
 import uz.akmal.distributor_app.service.impl.PaymentServiceImpl;
 
@@ -29,12 +30,15 @@ class PaymentServiceBusinessLogicTest {
     @Mock
     private ShopRepository shopRepository;
 
+    @Mock
+    private SaleRepository saleRepository;
+
     private PaymentServiceImpl paymentService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        paymentService = new PaymentServiceImpl(paymentRepository, shopRepository);
+        paymentService = new PaymentServiceImpl(paymentRepository, shopRepository, saleRepository);
     }
 
     @Test
@@ -142,5 +146,38 @@ class PaymentServiceBusinessLogicTest {
         when(paymentRepository.findByIdWithLock(50L)).thenReturn(Optional.of(payment));
 
         assertThrows(IllegalStateException.class, () -> paymentService.cancelPayment(50L, "Qayta bekor"));
+    }
+
+    @Test
+    void testCreatePayment_FutureDate_ThrowsException() {
+        Shop shop = new Shop();
+        shop.setId(1L);
+        when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
+
+        PaymentRequest request = new PaymentRequest();
+        request.setShopId(1L);
+        request.setAmount(BigDecimal.valueOf(10_000));
+        request.setMethod(PaymentMethod.NAQD);
+        request.setPaymentDate(java.time.LocalDate.now().plusDays(2).toString());
+
+        assertThrows(IllegalArgumentException.class, () -> paymentService.create(request));
+    }
+
+    @Test
+    void testCreatePayment_BeforeFirstSaleDate_ThrowsException() {
+        Shop shop = new Shop();
+        shop.setId(1L);
+        when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
+        when(saleRepository.findFirstActiveSaleDateByShopId(1L))
+                .thenReturn(java.time.LocalDateTime.now().minusDays(1)); // First sale was yesterday
+
+        PaymentRequest request = new PaymentRequest();
+        request.setShopId(1L);
+        request.setAmount(BigDecimal.valueOf(10_000));
+        request.setMethod(PaymentMethod.NAQD);
+        // Trying to record payment 5 days ago (before first sale)
+        request.setPaymentDate(java.time.LocalDate.now().minusDays(5).toString());
+
+        assertThrows(IllegalArgumentException.class, () -> paymentService.create(request));
     }
 }

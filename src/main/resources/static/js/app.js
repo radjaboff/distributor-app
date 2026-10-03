@@ -1502,7 +1502,10 @@ async function showAddSaleForm(shopId) {
                         </span>
                         <span>Sotuv sanasi</span>
                     </label>
-                    <input type="date" class="form-input" id="saleDateInput" value="${getLocalDateString()}">
+                    <input type="date" class="form-input" id="saleDateInput" value="${getLocalDateString()}" max="${getLocalDateString()}">
+                    <div style="font-size:11.5px; color:var(--color-ink-dim); margin-top:5px; line-height:1.4;">
+                        * Kelajak sanani tanlab bo'lmaydi
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -1788,6 +1791,12 @@ async function submitSale(shopId) {
     const remainingDebt = Math.max(0, totalSaleAmount - initialPaidAmount);
     const totalPackages = saleItems.reduce((sum, item) => sum + (item.packageCount || 0), 0);
     const saleDate = document.getElementById('saleDateInput')?.value || null;
+    const today = getLocalDateString();
+
+    if (saleDate && saleDate > today) {
+        showToast("Sotuv sanasi bugungi kundan keyingi (kelajak) bo'lishi mumkin emas!", 'error');
+        return;
+    }
 
     const summaryHtml = `
         <div style="background:var(--color-paper-dim); border:1px solid var(--color-line); border-radius:12px; padding:12px 14px; text-align:left; font-size:13px; line-height:1.7;">
@@ -1871,6 +1880,19 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
     backBtn.onclick = () => showShopDetail(shopId);
     fabBtn.style.display = 'none';
 
+    const today = getLocalDateString();
+    let minPaymentDate = null;
+    let dateHelpText = "* Kelajak sanani tanlab bo'lmaydi";
+
+    if (currentLedgerData && currentLedgerData.entries && currentLedgerData.entries.length > 0) {
+        const sales = currentLedgerData.entries.filter(e => e.type === 'SOTUV' && !e.isCancelled);
+        if (sales.length > 0) {
+            const sortedSales = sales.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+            minPaymentDate = getEntryDateString(sortedSales[0].date);
+            dateHelpText = `* To'lov sanasi mahsulot berilgan ilk kundan (${formatLedgerDateLabel(minPaymentDate)}) oldin bo'lishi mumkin emas`;
+        }
+    }
+
     contentEl.innerHTML = `
         <div class="form-card">
             <div class="form-card__header">
@@ -1890,7 +1912,15 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
                     </span>
                     <span>To'lov sanasi</span>
                 </label>
-                <input type="date" class="form-input" id="paymentDateInput" value="${getLocalDateString()}">
+                <input type="date" 
+                       class="form-input" 
+                       id="paymentDateInput" 
+                       value="${today}" 
+                       ${minPaymentDate ? `min="${minPaymentDate}"` : ''} 
+                       max="${today}">
+                <div style="font-size:11.5px; color:var(--color-ink-dim); margin-top:5px; line-height:1.4;">
+                    ${dateHelpText}
+                </div>
             </div>
 
             <div class="form-group">
@@ -1949,6 +1979,22 @@ function setPaymentPreset(amount) {
 }
 
 async function submitPayment(shopId, currentDebt = 0) {
+    const paymentDateInput = document.getElementById('paymentDateInput');
+    const paymentDate = paymentDateInput?.value || null;
+    const minDateAttr = paymentDateInput?.getAttribute('min');
+    const today = getLocalDateString();
+
+    if (paymentDate) {
+        if (paymentDate > today) {
+            showToast("To'lov sanasi bugungi kundan keyingi (kelajak) bo'lishi mumkin emas!", 'error');
+            return;
+        }
+        if (minDateAttr && paymentDate < minDateAttr) {
+            showToast(`To'lov sanasi mahsulot berilgan ilk kundan (${formatLedgerDateLabel(minDateAttr)}) oldin bo'lishi mumkin emas!`, 'error');
+            return;
+        }
+    }
+
     const amount = parseMoney(document.getElementById('paymentAmountInput').value);
     const method = document.getElementById('paymentMethodInput').value;
 
