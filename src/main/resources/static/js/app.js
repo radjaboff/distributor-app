@@ -1078,10 +1078,6 @@ function renderShopRows(shops) {
                                 <span>Qo'ng'iroq</span>
                             </a>
                         ` : ''}
-                        <button class="action-chip action-chip--telegram" onclick="shareShopDebt('${escJs(shop.name)}', ${debt}, '${escJs(shop.phone || '')}')" title="Telegramga hisob yuborish">
-                            ${Icons.tgAction}
-                            <span>Telegram</span>
-                        </button>
                     </div>
                     <div class="shop-card__action-group">
                         <button class="icon-btn" onclick="showEditShopForm(${shop.id}, '${escJs(shop.name)}', '${escJs(shop.ownerName || '')}', '${escJs(shop.phone || '')}')" title="Tahrirlash">${Icons.edit}</button>
@@ -1093,32 +1089,6 @@ function renderShopRows(shops) {
     }).join('');
 }
 
-// Telegram yoki mobil ulashish orqali qarz/avans ma'lumotini yuborish
-function shareShopDebt(shopName, debt, phone) {
-    let title = `${shopName} — Hisob holati`;
-    let text = '';
-
-    if (debt > 0) {
-        title = `${shopName} — Qarz balansi`;
-        text = `Assalomu alaykum, ${shopName}!\nSizning joriy qarz balansingiz: ${formatMoney(debt)}.\nHisob-kitob bo'yicha savollar bo'lsa bog'lanishingiz mumkin.`;
-    } else if (debt < 0) {
-        title = `${shopName} — Avans (Haqdorlik)`;
-        text = `Assalomu alaykum, ${shopName}!\nSizda ${formatMoney(Math.abs(debt))} oldindan to'langan avans (haqdorlik) mavjud.\nHisob-kitob bo'yicha savollar bo'lsa bog'lanishingiz mumkin.`;
-    } else {
-        title = `${shopName} — Hisob holati`;
-        text = `Assalomu alaykum, ${shopName}!\nSizning hisobingiz toza, hech qanday qarzdorlik mavjud emas.\nHaridingiz uchun rahmat!`;
-    }
-
-    if (navigator.share) {
-        navigator.share({
-            title: title,
-            text: text
-        }).catch(() => {});
-    } else {
-        const url = `https://t.me/share/url?url=${encodeURIComponent('')}&text=${encodeURIComponent(text)}`;
-        window.open(url, '_blank');
-    }
-}
 
 function showAddShopForm(groupId) {
     updateHeaderMeta('Yangi do\'kon', currentGroupName ? `${currentGroupName} toifasi` : 'Bozor toifasiga qo\'shish', 'QO\'SHISH');
@@ -1516,26 +1486,21 @@ async function showShopDetail(shopId) {
         let debtValueText = formatMoney(debt);
         let debtStyleColor = 'var(--color-paid)';
         let lineGradient = 'linear-gradient(90deg, #10B981, #34D399)';
-        let tgBtnText = "Telegramga hisob yuborish";
-
         if (debt > 0) {
             debtLabel = 'Joriy qarz balansi';
             debtValueText = formatMoney(debt);
             debtStyleColor = 'var(--color-debt)';
             lineGradient = 'linear-gradient(90deg, #F43F5E, #FB7185)';
-            tgBtnText = "Telegramga qarz hisobini yuborish";
         } else if (debt < 0) {
             debtLabel = "Do'kon haqi (Ortiqcha to'lov / Avans)";
             debtValueText = formatMoney(Math.abs(debt));
             debtStyleColor = '#38BDF8';
             lineGradient = 'linear-gradient(90deg, #38BDF8, #0284C7)';
-            tgBtnText = "Telegramga avans hisobini yuborish";
         } else {
             debtLabel = 'Hisob toza (Qarzdorlik yo\'q)';
             debtValueText = '0 so\'m';
             debtStyleColor = 'var(--color-paid)';
             lineGradient = 'linear-gradient(90deg, #10B981, #34D399)';
-            tgBtnText = "Telegramga hisob yuborish";
         }
 
         contentEl.innerHTML = `
@@ -1545,11 +1510,8 @@ async function showShopDetail(shopId) {
                 <div class="stat-card__value" style="color: ${debtStyleColor}; font-size: 28px; font-weight:800; margin-top:6px; font-variant-numeric: tabular-nums;">
                     ${debtValueText}
                 </div>
-                <div style="margin-top:14px; display:flex; flex-wrap:wrap; justify-content:center; gap:8px;">
-                    <button class="action-chip action-chip--telegram" onclick="shareShopDebt('${escJs(ledger.shopName)}', ${debt})" style="display:inline-flex; align-items:center; gap:8px; padding: 9px 16px; width:auto; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                        ${Icons.tgAction} ${tgBtnText}
-                    </button>
-                    <button class="action-chip" onclick="directPrintShopStatement(${shopId})" style="display:inline-flex; align-items:center; gap:8px; padding: 9px 16px; width:auto; border-radius: 12px; font-size: 13px; font-weight: 600; background:rgba(37,99,235,0.18); border:1px solid rgba(37,99,235,0.4); color:#60A5FA;">
+                <div style="margin-top:14px; display:flex; justify-content:center;">
+                    <button class="action-chip" onclick="directPrintShopStatement(${shopId})" style="display:inline-flex; align-items:center; gap:8px; padding: 9px 20px; width:auto; border-radius: 12px; font-size: 13.5px; font-weight: 600; background:rgba(37,99,235,0.18); border:1px solid rgba(37,99,235,0.4); color:#60A5FA;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                         <span>Chop etish / PDF olish</span>
                     </button>
@@ -3284,10 +3246,6 @@ async function showDebtorShopsList() {
                                     <span>Qo'ng'iroq</span>
                                 </a>
                             ` : ''}
-                            <button class="action-chip action-chip--telegram" onclick="shareShopDebt('${escJs(shop.name)}', ${debt}, '${escJs(shop.phone || '')}')" title="Telegramga hisob yuborish">
-                                ${Icons.tgAction}
-                                <span>Telegram</span>
-                            </button>
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'distributor-app-v34';
+const CACHE_NAME = 'distributor-app-v35';
 const urlsToCache = [
     '/',
     '/index.html',
