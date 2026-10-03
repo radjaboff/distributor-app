@@ -1,12 +1,12 @@
-const CACHE_NAME = 'distributor-app-v31';
+const CACHE_NAME = 'distributor-app-v32';
 const urlsToCache = [
     '/',
     '/index.html',
     '/css/style.css',
     '/js/app.js',
     '/manifest.json',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png'
+    '/icons/icon-v2-192.png',
+    '/icons/icon-v2-512.png'
 ];
 
 self.addEventListener('install', (event) => {

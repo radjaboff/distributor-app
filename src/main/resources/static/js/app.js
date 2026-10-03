@@ -414,7 +414,7 @@ function showAppProfileModal() {
             <!-- Brand & User Header -->
             <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid var(--color-line);">
                 <div style="width:52px; height:52px; border-radius:16px; background:#090D16; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 22px rgba(0,0,0,0.4), 0 0 15px rgba(59,130,246,0.3); border:1px solid rgba(255,255,255,0.15); flex-shrink:0; overflow:hidden;">
-                    <img src="icons/icon-192.png" alt="Logo" style="width:100%; height:100%; object-fit:cover; display:block;">
+                    <img src="icons/icon-v2-192.png" alt="Logo" style="width:100%; height:100%; object-fit:cover; display:block;">
                 </div>
                 <div style="flex:1;">
                     <div style="font-size:17.5px; font-weight:700; color:#FFF; display:flex; align-items:center; gap:7px;">
