@@ -999,6 +999,302 @@ async function submitShop(groupId) {
     }
 }
 
+// State for ledger filtering
+let currentLedgerData = null;
+let currentLedgerFilterMode = 'day'; // 'day' | 'all'
+let currentLedgerSelectedDate = getLocalDateString();
+
+function getEntryDateString(dateVal) {
+    if (!dateVal) return '';
+    if (typeof dateVal === 'string' && dateVal.length >= 10 && dateVal.indexOf('-') === 4) {
+        return dateVal.slice(0, 10);
+    }
+    return getLocalDateString(new Date(dateVal));
+}
+
+function formatDatePretty(dateStr) {
+    try {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            const monthNames = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'];
+            const monthName = monthNames[d.getMonth()] || parts[1];
+            const dayNames = ['Yak', 'Dush', 'Sesh', 'Chor', 'Pay', 'Jum', 'Shan'];
+            const dayOfWeek = dayNames[d.getDay()] || '';
+            return `${Number(parts[2])}-${monthName} (${dayOfWeek})`;
+        }
+    } catch (e) {}
+    return dateStr;
+}
+
+function formatLedgerDateLabel(dateStr) {
+    const todayStr = getLocalDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = getLocalDateString(yesterday);
+
+    if (dateStr === todayStr) {
+        return `Bugun (${formatDatePretty(dateStr)})`;
+    } else if (dateStr === yesterdayStr) {
+        return `Kecha (${formatDatePretty(dateStr)})`;
+    } else {
+        return formatDatePretty(dateStr);
+    }
+}
+
+function changeLedgerDate(deltaDays) {
+    currentLedgerFilterMode = 'day';
+    const baseDate = currentLedgerSelectedDate || getLocalDateString();
+    const parts = baseDate.split('-');
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    d.setDate(d.getDate() + deltaDays);
+    currentLedgerSelectedDate = getLocalDateString(d);
+    renderLedgerSection();
+}
+
+function setLedgerDateFilter(mode) {
+    if (mode === 'today') {
+        currentLedgerFilterMode = 'day';
+        currentLedgerSelectedDate = getLocalDateString();
+    } else if (mode === 'yesterday') {
+        currentLedgerFilterMode = 'day';
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        currentLedgerSelectedDate = getLocalDateString(yesterday);
+    } else if (mode === 'all') {
+        currentLedgerFilterMode = 'all';
+    }
+    renderLedgerSection();
+}
+
+function onLedgerDatePicked(pickedDate) {
+    if (pickedDate) {
+        currentLedgerFilterMode = 'day';
+        currentLedgerSelectedDate = pickedDate;
+        renderLedgerSection();
+    }
+}
+
+function renderLedgerEntryCard(entry, shopId) {
+    const isCancelled = Boolean(entry.isCancelled);
+    const isSale = entry.type === 'SOTUV';
+    const rowOpacity = isCancelled ? 'opacity: 0.65; background: rgba(239,68,68,0.04);' : '';
+    const titleStyle = isCancelled ? 'text-decoration: line-through; color: var(--color-ink-dim);' : '';
+    const amountClass = isCancelled 
+        ? 'amount--muted' 
+        : (isSale ? 'amount--debt' : 'amount--paid');
+    const amountText = (isSale ? '+' : '−') + formatMoney(entry.amount);
+
+    let cancelBadge = '';
+    if (isCancelled) {
+        cancelBadge = `
+            <div style="font-size:11.5px; color:#F87171; display:flex; flex-wrap:wrap; align-items:center; gap:6px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); padding:6px 10px; border-radius:8px;">
+                <span style="background:rgba(239,68,68,0.25); border:1px solid rgba(239,68,68,0.4); padding:1px 5px; border-radius:4px; font-weight:700; font-size:10px;">BEKOR QILINGAN</span>
+                <span>${escHtml(entry.cancelReason || '')}</span>
+                <span style="opacity:0.8;">(${escHtml(entry.cancelledBy || '')})</span>
+            </div>
+        `;
+    }
+
+    let actionBtn = '';
+    if (!isCancelled && entry.id) {
+        actionBtn = `
+            <button class="btn" onclick="promptCancelEntry('${entry.type}', ${entry.id}, ${shopId}, '${escJs(entry.description || '')}', ${entry.amount})" 
+                    style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#F87171; padding:4px 8px; border-radius:8px; font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; gap:5px; cursor:pointer;" 
+                    title="Operatsiyani bekor qilish (Storno)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+                <span>Bekor qilish</span>
+            </button>
+        `;
+    }
+
+    const typeTitle = isSale 
+        ? 'Sotuv' 
+        : ('To\'lov (' + escHtml(entry.paymentMethod || 'NAQD') + ')');
+    const typeIcon = isSale ? Icons.box : Icons.wallet;
+    const iconColor = isSale ? '#60A5FA' : '#34D399';
+    const iconBg = isSale ? 'rgba(59,130,246,0.14)' : 'rgba(16,185,129,0.14)';
+
+    return `
+    <div class="ledger-row" style="cursor:default; margin-bottom:10px; display:flex; flex-direction:column; align-items:stretch; gap:10px; padding:14px 15px; ${rowOpacity}">
+        <!-- 1-qator: Turi va Summa -->
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:${iconBg}; color:${iconColor}; flex-shrink:0;">
+                    ${typeIcon}
+                </div>
+                <span style="font-weight:700; font-size:14.5px; color:#FFFFFF; letter-spacing:-0.2px;">
+                    ${typeTitle}
+                </span>
+            </div>
+            <div class="ledger-row__amount ${amountClass}" style="font-size:14px; font-weight:800; padding:4px 12px; border-radius:999px; ${isCancelled ? 'text-decoration: line-through; opacity:0.6;' : ''}">
+                ${amountText}
+            </div>
+        </div>
+
+        <!-- 2-qator: Mahsulotlar tarkibi (faqat sotuv uchun) -->
+        ${isSale && entry.description ? `
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:13px; font-weight:500; color:#F1F5F9; line-height:1.45; word-break:break-word; ${titleStyle}">
+                <span style="color:var(--color-ink-dim); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:2px;">Tovar tarkibi:</span>
+                ${escHtml(entry.description)}
+            </div>
+        ` : ''}
+
+        <!-- 3-qator: Sana & Qoldiq -->
+        <div style="display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--color-ink-dim); flex-wrap:wrap; gap:6px;">
+            <span style="display:inline-flex; align-items:center; gap:4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                ${new Date(entry.date).toLocaleDateString('uz-UZ')}, ${new Date(entry.date).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}
+            </span>
+            <span style="font-weight:600; color:#94A3B8;">
+                ${Number(entry.balanceAfter) < 0 ? 'Avans: ' + formatMoney(Math.abs(entry.balanceAfter)) : 'Qoldiq: ' + formatMoney(entry.balanceAfter)}
+            </span>
+        </div>
+
+        ${cancelBadge}
+
+        <!-- 4-qator: Mas'ul xodim & Bekor qilish tugmasi -->
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.08); margin-top:2px;">
+            <div>
+                ${formatAdminBadge(entry.createdBy)}
+            </div>
+            <div>
+                ${actionBtn}
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+function renderLedgerSection() {
+    const container = document.getElementById('ledgerSectionContainer');
+    if (!container || !currentLedgerData) return;
+
+    const todayStr = getLocalDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = getLocalDateString(yesterday);
+
+    const isDayMode = currentLedgerFilterMode === 'day';
+    const isToday = isDayMode && currentLedgerSelectedDate === todayStr;
+    const isYesterday = isDayMode && currentLedgerSelectedDate === yesterdayStr;
+    const isAll = currentLedgerFilterMode === 'all';
+
+    const allEntries = currentLedgerData.entries ? currentLedgerData.entries.slice().reverse() : [];
+
+    let filteredEntries = [];
+    if (isDayMode) {
+        filteredEntries = allEntries.filter(e => getEntryDateString(e.date) === currentLedgerSelectedDate);
+    } else {
+        filteredEntries = allEntries;
+    }
+
+    // Sarhisob (faqat bekor qilinmagan operatsiyalar)
+    let totalSales = 0;
+    let totalPayments = 0;
+    filteredEntries.forEach(e => {
+        if (!e.isCancelled) {
+            const amt = Number(e.amount) || 0;
+            if (e.type === 'SOTUV') {
+                totalSales += amt;
+            } else {
+                totalPayments += amt;
+            }
+        }
+    });
+
+    let entriesListHtml = '';
+    if (filteredEntries.length === 0) {
+        if (isDayMode) {
+            entriesListHtml = `
+                <div class="empty-state" style="padding:26px 16px; margin: 10px 0; background:rgba(255,255,255,0.02); border:1px dashed var(--color-line); border-radius:16px;">
+                    <div style="font-size:26px; margin-bottom:8px;">📅</div>
+                    <div style="font-weight:700; color:#FFF; font-size:15px; margin-bottom:4px;">Ushbu sanada operatsiyalar yo'q</div>
+                    <div style="font-size:12.5px; color:var(--color-ink-dim); margin-bottom:14px;">Tanlangan kunda sotuv yoki to'lov bo'lmagan.</div>
+                    <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap;">
+                        ${!isToday ? `<button class="chip-btn active" onclick="setLedgerDateFilter('today')">Bugungi kun</button>` : ''}
+                        <button class="chip-btn" onclick="setLedgerDateFilter('all')">Barcha amallarni ko'rish</button>
+                    </div>
+                </div>
+            `;
+        } else {
+            entriesListHtml = '<div class="empty-state">Hali harakatlar tarixi mavjud emas.</div>';
+        }
+    } else if (isAll) {
+        let lastDateGroup = null;
+        entriesListHtml = filteredEntries.map(entry => {
+            const entryDateStr = getEntryDateString(entry.date);
+            let groupHeader = '';
+            if (entryDateStr !== lastDateGroup) {
+                lastDateGroup = entryDateStr;
+                groupHeader = `
+                    <div style="display:flex; align-items:center; gap:8px; margin:18px 0 10px 0;">
+                        <span style="font-size:12px; font-weight:700; color:#60A5FA; background:rgba(37,99,235,0.15); border:1px solid rgba(37,99,235,0.3); padding:4px 12px; border-radius:999px;">
+                            📅 ${formatLedgerDateLabel(entryDateStr)}
+                        </span>
+                        <div style="flex:1; height:1px; background:var(--color-line);"></div>
+                    </div>
+                `;
+            }
+            return groupHeader + renderLedgerEntryCard(entry, currentLedgerData.shopId);
+        }).join('');
+    } else {
+        entriesListHtml = filteredEntries.map(entry => renderLedgerEntryCard(entry, currentLedgerData.shopId)).join('');
+    }
+
+    container.innerHTML = `
+        <!-- Filter Tugmalari -->
+        <div style="margin-bottom:14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:10px;">
+                <div class="chips-group" style="margin:0; gap:6px;">
+                    <button class="chip-btn ${isToday ? 'active' : ''}" onclick="setLedgerDateFilter('today')">Bugun</button>
+                    <button class="chip-btn ${isYesterday ? 'active' : ''}" onclick="setLedgerDateFilter('yesterday')">Kecha</button>
+                    <button class="chip-btn ${isAll ? 'active' : ''}" onclick="setLedgerDateFilter('all')">Barchasi (${allEntries.length})</button>
+                </div>
+            </div>
+
+            <!-- Kunma-kun varaqlash (Faqat kunlik rejimda) -->
+            ${isDayMode ? `
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--color-paper-dim); border:1px solid var(--color-line); border-radius:14px; padding:7px 10px; margin-bottom:12px;">
+                    <button class="btn" onclick="changeLedgerDate(-1)" style="padding:6px 12px; background:rgba(255,255,255,0.06); border:none; color:#FFF; border-radius:8px; cursor:pointer;" title="Oldingi kun">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    
+                    <label style="display:flex; align-items:center; gap:7px; cursor:pointer; margin:0; position:relative; flex:1; justify-content:center;">
+                        <input type="date" value="${currentLedgerSelectedDate}" onchange="onLedgerDatePicked(this.value)" style="position:absolute; opacity:0; width:100%; height:100%; top:0; left:0; cursor:pointer;">
+                        <span style="font-size:13.5px; font-weight:700; color:#FFFFFF; display:flex; align-items:center; gap:6px;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            ${formatLedgerDateLabel(currentLedgerSelectedDate)}
+                        </span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.6;"><path d="M6 9l6 6 6-6"/></svg>
+                    </label>
+
+                    <button class="btn" onclick="changeLedgerDate(1)" style="padding:6px 12px; background:rgba(255,255,255,0.06); border:none; color:#FFF; border-radius:8px; cursor:pointer;" title="Keyingi kun">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                </div>
+            ` : ''}
+
+            <!-- Kunlik sarhisob kartochkasi -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:14px;">
+                <div style="background:rgba(244,63,94,0.08); border:1px solid rgba(244,63,94,0.2); border-radius:12px; padding:10px 12px;">
+                    <div style="font-size:11px; color:var(--color-debt); font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">${isDayMode ? 'Kunlik savdo' : 'Jami savdo'}</div>
+                    <div style="font-size:15px; font-weight:800; color:var(--color-debt); margin-top:2px;">+${formatMoney(totalSales)}</div>
+                </div>
+                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); border-radius:12px; padding:10px 12px;">
+                    <div style="font-size:11px; color:var(--color-paid); font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">${isDayMode ? "Kunlik to'lov" : "Jami to'lov"}</div>
+                    <div style="font-size:15px; font-weight:800; color:var(--color-paid); margin-top:2px;">−${formatMoney(totalPayments)}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Operatsiyalar ro'yxati -->
+        <div>
+            ${entriesListHtml}
+        </div>
+    `;
+}
+
 // Do'kon ichki kabineti (Tarix va operatsiyalar)
 async function showShopDetail(shopId) {
     currentShopId = shopId;
@@ -1011,6 +1307,11 @@ async function showShopDetail(shopId) {
 
     try {
         const ledger = await apiGet(`/shops/${shopId}/ledger`);
+        currentLedgerData = ledger;
+        if (!currentLedgerSelectedDate) {
+            currentLedgerSelectedDate = getLocalDateString();
+        }
+
         updateHeaderMeta(ledger.shopName, "Do'kon qarz daftari va amallar", 'DAFTAR');
 
         const debt = Number(ledger.currentDebt) || 0;
@@ -1038,102 +1339,6 @@ async function showShopDetail(shopId) {
             debtStyleColor = 'var(--color-paid)';
             lineGradient = 'linear-gradient(90deg, #10B981, #34D399)';
             tgBtnText = "Telegramga hisob yuborish";
-        }
-
-        let entriesHtml = '';
-        if (!ledger.entries || ledger.entries.length === 0) {
-            entriesHtml = '<div class="empty-state">Hali harakatlar tarixi yo\'q.</div>';
-        } else {
-            entriesHtml = ledger.entries.slice().reverse().map(entry => {
-                const isCancelled = Boolean(entry.isCancelled);
-                const isSale = entry.type === 'SOTUV';
-                const rowOpacity = isCancelled ? 'opacity: 0.65; background: rgba(239,68,68,0.04);' : '';
-                const titleStyle = isCancelled ? 'text-decoration: line-through; color: var(--color-ink-dim);' : '';
-                const amountClass = isCancelled 
-                    ? 'amount--muted' 
-                    : (isSale ? 'amount--debt' : 'amount--paid');
-                const amountText = (isSale ? '+' : '−') + formatMoney(entry.amount);
-
-                let cancelBadge = '';
-                if (isCancelled) {
-                    cancelBadge = `
-                        <div style="font-size:11.5px; color:#F87171; display:flex; flex-wrap:wrap; align-items:center; gap:6px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); padding:6px 10px; border-radius:8px;">
-                            <span style="background:rgba(239,68,68,0.25); border:1px solid rgba(239,68,68,0.4); padding:1px 5px; border-radius:4px; font-weight:700; font-size:10px;">BEKOR QILINGAN</span>
-                            <span>${escHtml(entry.cancelReason || '')}</span>
-                            <span style="opacity:0.8;">(${escHtml(entry.cancelledBy || '')})</span>
-                        </div>
-                    `;
-                }
-
-                let actionBtn = '';
-                if (!isCancelled && entry.id) {
-                    actionBtn = `
-                        <button class="btn" onclick="promptCancelEntry('${entry.type}', ${entry.id}, ${shopId}, '${escJs(entry.description || '')}', ${entry.amount})" 
-                                style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#F87171; padding:4px 8px; border-radius:8px; font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; gap:5px; cursor:pointer;" 
-                                title="Operatsiyani bekor qilish (Storno)">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
-                            <span>Bekor qilish</span>
-                        </button>
-                    `;
-                }
-
-                const typeTitle = isSale 
-                    ? 'Sotuv' 
-                    : ('To\'lov (' + escHtml(entry.paymentMethod || 'NAQD') + ')');
-                const typeIcon = isSale ? Icons.box : Icons.wallet;
-                const iconColor = isSale ? '#60A5FA' : '#34D399';
-                const iconBg = isSale ? 'rgba(59,130,246,0.14)' : 'rgba(16,185,129,0.14)';
-
-                return `
-                <div class="ledger-row" style="cursor:default; margin-bottom:10px; display:flex; flex-direction:column; align-items:stretch; gap:10px; padding:14px 15px; ${rowOpacity}">
-                    <!-- 1-qator: Turi va Summa -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <div style="width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:${iconBg}; color:${iconColor}; flex-shrink:0;">
-                                ${typeIcon}
-                            </div>
-                            <span style="font-weight:700; font-size:14.5px; color:#FFFFFF; letter-spacing:-0.2px;">
-                                ${typeTitle}
-                            </span>
-                        </div>
-                        <div class="ledger-row__amount ${amountClass}" style="font-size:14px; font-weight:800; padding:4px 12px; border-radius:999px; ${isCancelled ? 'text-decoration: line-through; opacity:0.6;' : ''}">
-                            ${amountText}
-                        </div>
-                    </div>
-
-                    <!-- 2-qator: Mahsulotlar tarkibi (faqat sotuv uchun) -->
-                    ${isSale && entry.description ? `
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:13px; font-weight:500; color:#F1F5F9; line-height:1.45; word-break:break-word; ${titleStyle}">
-                            <span style="color:var(--color-ink-dim); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:2px;">Tovar tarkibi:</span>
-                            ${escHtml(entry.description)}
-                        </div>
-                    ` : ''}
-
-                    <!-- 3-qator: Sana & Qoldiq -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--color-ink-dim); flex-wrap:wrap; gap:6px;">
-                        <span style="display:inline-flex; align-items:center; gap:4px;">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                            ${new Date(entry.date).toLocaleDateString('uz-UZ')}, ${new Date(entry.date).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}
-                        </span>
-                        <span style="font-weight:600; color:#94A3B8;">
-                            ${Number(entry.balanceAfter) < 0 ? 'Avans: ' + formatMoney(Math.abs(entry.balanceAfter)) : 'Qoldiq: ' + formatMoney(entry.balanceAfter)}
-                        </span>
-                    </div>
-
-                    ${cancelBadge}
-
-                    <!-- 4-qator: Mas'ul xodim & Bekor qilish tugmasi -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.08); margin-top:2px;">
-                        <div>
-                            ${formatAdminBadge(entry.createdBy)}
-                        </div>
-                        <div>
-                            ${actionBtn}
-                        </div>
-                    </div>
-                </div>
-                `;
-            }).join('');
         }
 
         contentEl.innerHTML = `
@@ -1166,8 +1371,11 @@ async function showShopDetail(shopId) {
             <div class="section-title">
                 Operatsiyalar tarixi
             </div>
-            ${entriesHtml}
+
+            <div id="ledgerSectionContainer"></div>
         `;
+
+        renderLedgerSection();
 
     } catch (err) {
         contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
@@ -1640,6 +1848,10 @@ async function submitSale(shopId) {
             try {
                 await apiPost('/sales', payload);
                 showToast('Sotuv muvaffaqiyatli saqlandi!', 'success');
+                if (saleDate) {
+                    currentLedgerSelectedDate = saleDate;
+                    currentLedgerFilterMode = 'day';
+                }
                 showShopDetail(shopId);
             } catch (err) {
                 if (btn) {
@@ -1795,6 +2007,10 @@ async function executePayment(shopId, amount, method) {
     try {
         await apiPost('/payments', { shopId, amount, method, paymentDate });
         showToast('To\'lov qabul qilindi', 'success');
+        if (paymentDate) {
+            currentLedgerSelectedDate = paymentDate;
+            currentLedgerFilterMode = 'day';
+        }
         showShopDetail(shopId);
     } catch (err) {
         if (btn) {
