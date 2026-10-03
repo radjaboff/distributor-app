@@ -413,12 +413,8 @@ function showAppProfileModal() {
         <div style="padding: 4px 0 10px 0;">
             <!-- Brand & User Header -->
             <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid var(--color-line);">
-                <div style="width:52px; height:52px; border-radius:16px; background:linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%); display:flex; align-items:center; justify-content:center; color:#FFF; box-shadow:0 8px 22px rgba(37,99,235,0.45); border:1px solid rgba(255,255,255,0.25); flex-shrink:0;">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                    </svg>
+                <div style="width:52px; height:52px; border-radius:16px; background:#090D16; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 22px rgba(0,0,0,0.4), 0 0 15px rgba(59,130,246,0.3); border:1px solid rgba(255,255,255,0.15); flex-shrink:0; overflow:hidden;">
+                    <img src="icons/icon-192.png" alt="Logo" style="width:100%; height:100%; object-fit:cover; display:block;">
                 </div>
                 <div style="flex:1;">
                     <div style="font-size:17.5px; font-weight:700; color:#FFF; display:flex; align-items:center; gap:7px;">
