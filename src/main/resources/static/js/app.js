@@ -4608,11 +4608,17 @@ function renderSupplierLedgerEntryCard(entry, supplierId) {
     const iconColor = isPurchase ? '#F43F5E' : '#34D399';
     const iconBg = isPurchase ? 'rgba(244,63,94,0.14)' : 'rgba(16,185,129,0.14)';
 
-    // Kirim tafsilotlari (Qop yoki Tonna, Birlik narxi)
+    // Kirim tafsilotlari (Qop, Tonna yoki Kg, Birlik narxi)
     let detailsHtml = '';
     if (isPurchase) {
-        const unitLabel = entry.unit === 'TONNA' ? 'tonna' : 'qop';
-        const qtyFormatted = entry.unit === 'TONNA' ? Number(entry.quantity).toFixed(2) : Math.round(Number(entry.quantity));
+        let unitLabel = 'qop';
+        if (entry.unit === 'TONNA') unitLabel = 'tonna';
+        else if (entry.unit === 'KG') unitLabel = 'kg';
+
+        const qtyFormatted = (entry.unit === 'TONNA' || entry.unit === 'KG') 
+            ? (Number.isInteger(Number(entry.quantity)) ? Number(entry.quantity) : Number(entry.quantity).toFixed(2)) 
+            : Math.round(Number(entry.quantity));
+
         detailsHtml = `
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:12.5px; font-weight:500; color:#F1F5F9; line-height:1.5; ${titleStyle}">
                 <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
@@ -4720,7 +4726,7 @@ function showAddSupplyPurchaseForm(supplierId, supplierName) {
                        autofocus>
             </div>
 
-            <!-- 2. O'lchov birligi (Qop yoki Tonna) -->
+            <!-- 2. O'lchov birligi (Qop, Tonna yoki Kg) -->
             <div class="form-group" style="margin-bottom:16px;">
                 <label class="form-label" style="margin-bottom:8px;">
                     <span class="label-icon">${Icons.scale}</span>
@@ -4732,6 +4738,9 @@ function showAddSupplyPurchaseForm(supplierId, supplierName) {
                     </button>
                     <button type="button" class="segmented-btn" id="unitTonnaBtn" onclick="setPurchaseUnit('TONNA')">
                         ⚖️ Tonna
+                    </button>
+                    <button type="button" class="segmented-btn" id="unitKgBtn" onclick="setPurchaseUnit('KG')">
+                        ⚖️ Kg
                     </button>
                 </div>
             </div>
@@ -4774,14 +4783,7 @@ function showAddSupplyPurchaseForm(supplierId, supplierName) {
                     </div>
                 </div>
 
-                <div class="quick-chips-row" style="margin-top:8px;">
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 10000); updateSupplyPurchaseTotal();">+10 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 50000); updateSupplyPurchaseTotal();">+50 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 100000); updateSupplyPurchaseTotal();">+100 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 500000); updateSupplyPurchaseTotal();">+500 ming</button>
-                    <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 1000000); updateSupplyPurchaseTotal();">+1 mln</button>
-                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('purchaseUnitPriceInput'); updateSupplyPurchaseTotal();">Tozalash</button>
-                </div>
+                <div class="quick-chips-row" id="purchasePriceChipsContainer" style="margin-top:8px;"></div>
             </div>
 
             <!-- 5. Kirim sanasi -->
@@ -4836,34 +4838,82 @@ function showAddSupplyPurchaseForm(supplierId, supplierName) {
         </div>
     `;
 
+    renderPurchasePriceChips();
     updateSupplyPurchaseTotal();
+}
+
+function renderPurchasePriceChips() {
+    const container = document.getElementById('purchasePriceChipsContainer');
+    if (!container) return;
+
+    if (currentPurchaseUnit === 'KG') {
+        container.innerHTML = `
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 1000); updateSupplyPurchaseTotal();">+1 000</button>
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 5000); updateSupplyPurchaseTotal();">+5 000</button>
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 10000); updateSupplyPurchaseTotal();">+10 000</button>
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 20000); updateSupplyPurchaseTotal();">+20 000</button>
+            <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('purchaseUnitPriceInput'); updateSupplyPurchaseTotal();">Tozalash</button>
+        `;
+    } else if (currentPurchaseUnit === 'TONNA') {
+        container.innerHTML = `
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 100000); updateSupplyPurchaseTotal();">+100 ming</button>
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 500000); updateSupplyPurchaseTotal();">+500 ming</button>
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 1000000); updateSupplyPurchaseTotal();">+1 mln</button>
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 5000000); updateSupplyPurchaseTotal();">+5 mln</button>
+            <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('purchaseUnitPriceInput'); updateSupplyPurchaseTotal();">Tozalash</button>
+        `;
+    } else {
+        container.innerHTML = `
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 10000); updateSupplyPurchaseTotal();">+10 ming</button>
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 50000); updateSupplyPurchaseTotal();">+50 ming</button>
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 100000); updateSupplyPurchaseTotal();">+100 ming</button>
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 500000); updateSupplyPurchaseTotal();">+500 ming</button>
+            <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 1000000); updateSupplyPurchaseTotal();">+1 mln</button>
+            <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('purchaseUnitPriceInput'); updateSupplyPurchaseTotal();">Tozalash</button>
+        `;
+    }
 }
 
 function setPurchaseUnit(unit) {
     currentPurchaseUnit = unit;
     const qopBtn = document.getElementById('unitQopBtn');
     const tonnaBtn = document.getElementById('unitTonnaBtn');
-    if (qopBtn && tonnaBtn) {
-        qopBtn.classList.toggle('active', unit === 'QOP');
-        tonnaBtn.classList.toggle('active', unit === 'TONNA');
-    }
+    const kgBtn = document.getElementById('unitKgBtn');
+    if (qopBtn) qopBtn.classList.toggle('active', unit === 'QOP');
+    if (tonnaBtn) tonnaBtn.classList.toggle('active', unit === 'TONNA');
+    if (kgBtn) kgBtn.classList.toggle('active', unit === 'KG');
 
     const priceLabel = document.getElementById('purchaseUnitPriceLabel');
     if (priceLabel) {
-        priceLabel.innerHTML = `<span class="label-icon">${Icons.money}</span><span>${unit === 'TONNA' ? '1 tonna narxi (so\'m) *' : '1 ta qop narxi (so\'m) *'}</span>`;
+        let labelText = '1 ta qop narxi (so\'m) *';
+        if (unit === 'TONNA') labelText = '1 tonna narxi (so\'m) *';
+        else if (unit === 'KG') labelText = '1 kg narxi (so\'m) *';
+        priceLabel.innerHTML = `<span class="label-icon">${Icons.money}</span><span>${labelText}</span>`;
+    }
+
+    const priceInput = document.getElementById('purchaseUnitPriceInput');
+    if (priceInput) {
+        if (unit === 'TONNA') priceInput.placeholder = 'Masalan: 8 500 000';
+        else if (unit === 'KG') priceInput.placeholder = 'Masalan: 8 500';
+        else priceInput.placeholder = 'Masalan: 450 000';
     }
 
     const qtyLabel = document.getElementById('purchaseQuantityLabel');
     if (qtyLabel) {
-        qtyLabel.textContent = unit === 'TONNA' ? 'Miqdori (Tonna) *' : 'Miqdori (Qop soni) *';
+        if (unit === 'TONNA') qtyLabel.textContent = 'Miqdori (Tonna) *';
+        else if (unit === 'KG') qtyLabel.textContent = 'Miqdori (Kg) *';
+        else qtyLabel.textContent = 'Miqdori (Qop soni) *';
     }
 
     const qtyInput = document.getElementById('purchaseQuantityInput');
     if (qtyInput) {
-        qtyInput.step = unit === 'TONNA' ? '0.01' : '1';
-        qtyInput.placeholder = unit === 'TONNA' ? 'Masalan: 10.5' : 'Masalan: 100';
+        qtyInput.step = (unit === 'TONNA' || unit === 'KG') ? '0.01' : '1';
+        if (unit === 'TONNA') qtyInput.placeholder = 'Masalan: 10.5';
+        else if (unit === 'KG') qtyInput.placeholder = 'Masalan: 50';
+        else qtyInput.placeholder = 'Masalan: 100';
     }
 
+    renderPurchasePriceChips();
     updateSupplyPurchaseTotal();
 }
 
@@ -4872,8 +4922,8 @@ function adjustPurchaseQuantity(delta) {
     if (!qtyInput) return;
     let cur = parseFloat(qtyInput.value) || 0;
     cur = Math.max(0, cur + delta);
-    if (currentPurchaseUnit === 'TONNA') {
-        qtyInput.value = cur > 0 ? parseFloat(cur.toFixed(2)) : '';
+    if (currentPurchaseUnit === 'TONNA' || currentPurchaseUnit === 'KG') {
+        qtyInput.value = cur > 0 ? (Number.isInteger(cur) ? cur : parseFloat(cur.toFixed(2))) : '';
     } else {
         qtyInput.value = cur > 0 ? Math.round(cur) : '';
     }
@@ -4908,8 +4958,13 @@ function updateSupplyPurchaseTotal() {
     const wordsEl = document.getElementById('purchaseTotalWords');
     const formulaEl = document.getElementById('purchaseCalculationFormula');
 
-    const unitLabel = currentPurchaseUnit === 'TONNA' ? 'tonna' : 'qop';
-    const qtyText = currentPurchaseUnit === 'TONNA' ? (Number.isInteger(qty) ? qty : qty.toFixed(2)) : Math.round(qty);
+    let unitLabel = 'qop';
+    if (currentPurchaseUnit === 'TONNA') unitLabel = 'tonna';
+    else if (currentPurchaseUnit === 'KG') unitLabel = 'kg';
+
+    const qtyText = (currentPurchaseUnit === 'TONNA' || currentPurchaseUnit === 'KG') 
+        ? (Number.isInteger(qty) ? qty : qty.toFixed(2)) 
+        : Math.round(qty);
 
     if (formulaEl) {
         if (qty > 0 && price > 0) {
