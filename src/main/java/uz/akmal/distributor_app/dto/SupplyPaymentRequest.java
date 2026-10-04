@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Setter
 public class SupplyPaymentRequest {
     @NotNull(message = "To'lov summasi kiritilishi shart")
-    @DecimalMin(value = "1", message = "To'lov summasi 0 dan katta bo'lishi kerak")
+    @DecimalMin(value = "0.01", message = "To'lov summasi 0 dan katta bo'lishi kerak")
     private BigDecimal amount;
 
     private String paymentMethod = "NAQD"; // NAQD, KARTA, BANK

@@ -4061,12 +4061,39 @@ let currentSupplierId = null;
 let currentSupplierLedgerData = null;
 let currentSupplierLedgerFilterMode = 'all'; // 'all' | 'day'
 let currentSupplierLedgerSelectedDate = getLocalDateString();
-let currentPurchaseUnit = 'QOP'; // 'QOP' | 'TONNA'
+let currentPurchaseUnit = 'QOP'; // 'QOP' | 'TONNA' | 'KG'
 let currentSupplyPaymentMethod = 'NAQD'; // 'NAQD' | 'KARTA' | 'BANK'
+
+function formatDollar(amount) {
+    if (amount === null || amount === undefined || isNaN(amount)) return '$0.00';
+    const num = Number(amount);
+    const isNegative = num < 0;
+    const absVal = Math.abs(num);
+    const parts = absVal.toFixed(2).split('.');
+    const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return (isNegative ? '−$' : '$') + intPart + '.' + parts[1];
+}
+
+function parseDollar(val) {
+    if (!val) return 0;
+    const clean = String(val).replace(/\$/g, '').replace(/\s+/g, '').replace(/,/g, '.');
+    const num = parseFloat(clean);
+    return isNaN(num) ? 0 : Math.max(0, num);
+}
+
+function formatSupplyMoney(amount, category) {
+    if (category === 'YOG') return formatDollar(amount);
+    return formatMoney(amount);
+}
 
 async function showSuppliers(category = 'SHAKAR') {
     currentSupplyCategory = category;
-    updateHeaderMeta('Ta\'minot', 'Ta\'minotchilar va birjalar qarz daftari', 'TA\'MINOT');
+    const isOil = category === 'YOG';
+    if (isOil) {
+        updateHeaderMeta('Ta\'minot', 'Yog\' zavodlari va ta\'minotchilar ($ USD)', 'TA\'MINOT');
+    } else {
+        updateHeaderMeta('Ta\'minot', 'Ta\'minotchilar va birjalar qarz daftari', 'TA\'MINOT');
+    }
     setRootScreen('taminot');
     fabBtn.style.display = 'flex';
     fabBtn.onclick = () => showAddSupplierForm();
@@ -4086,10 +4113,10 @@ async function showSuppliers(category = 'SHAKAR') {
                     <span>🍚</span>
                     <span>Shakar</span>
                 </button>
-                <button type="button" class="tab-btn" onclick="showToast('Yog\' ta\'minoti bo\'limi tez kunda ishga tushadi', 'info')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px; opacity:0.65; cursor:pointer;">
+                <button type="button" class="tab-btn ${currentSupplyCategory === 'YOG' ? 'active' : ''}" onclick="showSuppliers('YOG')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
                     <span>🛢️</span>
                     <span>Yog'</span>
-                    <span style="font-size:10px; background:rgba(245,158,11,0.22); color:#FBBF24; border:1px solid rgba(245,158,11,0.35); padding:1px 6px; border-radius:6px; font-weight:700;">Tez kunda</span>
+                    <span style="font-size:10px; background:rgba(16,185,129,0.22); color:#34D399; border:1px solid rgba(16,185,129,0.35); padding:1px 6px; border-radius:6px; font-weight:700;">$ USD</span>
                 </button>
             </div>
 
@@ -4097,18 +4124,18 @@ async function showSuppliers(category = 'SHAKAR') {
             <div class="market-summary-bar" style="justify-content:space-between; padding:10px 16px;">
                 <div class="market-summary-item" style="font-size:12.5px;">
                     <span>🏭</span>
-                    <span>Jami: <strong>${allSuppliersList.length} ta birja</strong></span>
+                    <span>Jami: <strong>${allSuppliersList.length} ta ${isOil ? 'zavod' : 'birja'}</strong></span>
                 </div>
                 <div class="market-summary-divider"></div>
                 <div class="market-summary-item" style="font-size:12.5px;">
                     <span>💳</span>
-                    <span>Qarzimiz: <strong style="color:${totalDebt > 0 ? '#FB7185' : '#34D399'}; font-variant-numeric:tabular-nums; white-space:nowrap;">${formatMoney(totalDebt)}</strong></span>
+                    <span>Qarzimiz: <strong style="color:${totalDebt > 0 ? '#FB7185' : '#34D399'}; font-variant-numeric:tabular-nums; white-space:nowrap;">${isOil ? formatDollar(totalDebt) : formatMoney(totalDebt)}</strong></span>
                 </div>
             </div>
 
             <!-- Qidiruv maydoni -->
             <div class="form-group" style="padding-bottom:10px;">
-                <input type="text" class="form-input" id="supplierSearchInput" placeholder="Birja yoki ta'minotchi nomini qidirish..." oninput="filterSuppliers()">
+                <input type="text" class="form-input" id="supplierSearchInput" placeholder="${isOil ? 'Yog\' zavodi yoki ta\'minotchi nomini qidirish...' : 'Birja yoki ta\'minotchi nomini qidirish...'}" oninput="filterSuppliers()">
             </div>
 
             <div id="suppliersListContainer"></div>
@@ -4140,14 +4167,16 @@ function renderSupplierRows(suppliers) {
     const container = document.getElementById('suppliersListContainer');
     if (!container) return;
 
+    const isOil = currentSupplyCategory === 'YOG';
+
     if (!suppliers || suppliers.length === 0) {
         container.innerHTML = `
             <div class="empty-state" style="padding: 36px 16px;">
-                <div style="font-size:36px; margin-bottom:10px;">🏭</div>
-                <div style="font-weight:700; color:#FFF; font-size:16px; margin-bottom:6px;">Hali birja yoki ta'minotchi yo'q</div>
-                <div style="font-size:13px; color:var(--color-ink-dim); max-width:280px; margin:0 auto 16px auto;">Pastdagi + tugmasini bosib shakar oladigan birja yoki ta'minotchilarni qo'shing.</div>
+                <div style="font-size:36px; margin-bottom:10px;">${isOil ? '🛢️' : '🏭'}</div>
+                <div style="font-weight:700; color:#FFF; font-size:16px; margin-bottom:6px;">${isOil ? 'Hali yog\' zavodi yoki ta\'minotchi yo\'q' : 'Hali birja yoki ta\'minotchi yo\'q'}</div>
+                <div style="font-size:13px; color:var(--color-ink-dim); max-width:280px; margin:0 auto 16px auto;">${isOil ? 'Pastdagi + tugmasini bosib yog\' olinadigan zavod yoki ta\'minotchilarni qo\'shing (hisob-kitob dollarda).' : 'Pastdagi + tugmasini bosib shakar oladigan birja yoki ta\'minotchilarni qo\'shing.'}</div>
                 <button class="btn btn--primary" onclick="showAddSupplierForm()" style="display:inline-flex; align-items:center; gap:8px;">
-                    ${Icons.plus} Yangi birja qo'shish
+                    ${Icons.plus} ${isOil ? 'Yangi yog\' ta\'minotchisi qo\'shish' : 'Yangi birja qo\'shish'}
                 </button>
             </div>
         `;
@@ -4156,8 +4185,9 @@ function renderSupplierRows(suppliers) {
 
     container.innerHTML = suppliers.map(supplier => {
         const debt = Number(supplier.currentDebt) || 0;
-        const initial = (supplier.name && supplier.name.trim().length > 0) ? supplier.name.trim()[0].toUpperCase() : 'B';
+        const initial = (supplier.name && supplier.name.trim().length > 0) ? supplier.name.trim()[0].toUpperCase() : (isOil ? 'Y' : 'B');
         const isDebt = debt > 0;
+        const supplierIsOil = (supplier.category || currentSupplyCategory) === 'YOG';
 
         const theme = getShopTheme(supplier.id, supplier.name);
         const rawPhone = (supplier.phone || '').replace(/[^\d+]/g, '');
@@ -4192,14 +4222,14 @@ function renderSupplierRows(suppliers) {
                     <span class="market-card__chevron" style="flex-shrink:0; opacity:0.65; margin-left:4px;">${Icons.chevronRight}</span>
                 </div>
 
-                <!-- 2-qator: Maxsus Qarz Ko'rsatkichi (To'liq alohida qator, hech qachon ism bilan to'qnashmaydi) -->
+                <!-- 2-qator: Maxsus Qarz Ko'rsatkichi (To'liq alohida qator) -->
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(255,255,255,0.03); border:1px solid ${isDebt ? 'rgba(244,63,94,0.25)' : 'rgba(52,211,153,0.22)'}; border-radius:12px; padding:8px 12px; margin-bottom:11px;">
                     <div style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--color-ink-dim);">
                         <span style="font-size:11px;">${isDebt ? '🔴' : '🟢'}</span>
                         <span>${isDebt ? 'Bizning qarzimiz:' : 'Qarzdorlik holati:'}</span>
                     </div>
                     <div style="font-size:14.5px; font-weight:800; color:${isDebt ? '#FB7185' : '#34D399'}; font-variant-numeric:tabular-nums; white-space:nowrap;">
-                        ${isDebt ? formatMoney(debt) : "Qarz yo'q (0 so'm)"}
+                        ${isDebt ? (supplierIsOil ? formatDollar(debt) : formatMoney(debt)) : (supplierIsOil ? "Qarz yo'q ($0.00)" : "Qarz yo'q (0 so'm)")}
                     </div>
                 </div>
 
@@ -4221,7 +4251,7 @@ function renderSupplierRows(suppliers) {
                     </div>
                     <div class="shop-card__action-group">
                         <button class="market-action-btn" onclick="showEditSupplierForm(${supplier.id})" title="Tahrirlash">${Icons.edit}</button>
-                        <button class="market-action-btn market-action-btn--danger" onclick="deleteSupplier(${supplier.id}, '${escJs(supplier.name)}', ${debt})" title="O'chirish">${Icons.trash}</button>
+                        <button class="market-action-btn market-action-btn--danger" onclick="deleteSupplier(${supplier.id}, '${escJs(supplier.name)}', ${debt}, '${escJs(supplier.category || currentSupplyCategory)}')" title="O'chirish">${Icons.trash}</button>
                     </div>
                 </div>
             </div>
@@ -4230,19 +4260,20 @@ function renderSupplierRows(suppliers) {
 }
 
 function showAddSupplierForm() {
-    updateHeaderMeta('Yangi birja', 'Ta\'minotchi qo\'shish', 'QO\'SHISH');
+    const isOil = currentSupplyCategory === 'YOG';
+    updateHeaderMeta(isOil ? "Yangi zavod" : "Yangi birja", isOil ? "Yog' ta'minotchisi qo'shish ($ USD)" : "Ta'minotchi qo'shish", 'QO\'SHISH');
     setBackAction(() => showSuppliers(currentSupplyCategory), 'addSupplier');
     fabBtn.style.display = 'none';
 
     contentEl.innerHTML = `
         <div class="form-card">
             <div class="form-card__header">
-                <div class="form-card__icon" style="background: rgba(59, 130, 246, 0.15); color: #60A5FA;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7v14M21 7v14M6 11h12M6 15h12M9 7V3h6v4"/></svg>
+                <div class="form-card__icon" style="background: ${isOil ? 'rgba(245, 158, 11, 0.18)' : 'rgba(59, 130, 246, 0.15)'}; color: ${isOil ? '#FBBF24' : '#60A5FA'};">
+                    ${isOil ? '🛢️' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7v14M21 7v14M6 11h12M6 15h12M9 7V3h6v4"/></svg>'}
                 </div>
                 <div>
-                    <div class="form-card__title">Yangi birja / ta'minotchi</div>
-                    <div class="form-card__desc">Shakar olinadigan firma yoki shaxs ma'lumotlari</div>
+                    <div class="form-card__title">${isOil ? 'Yangi yog\' zavodi / ta\'minotchi' : 'Yangi birja / ta\'minotchi'}</div>
+                    <div class="form-card__desc">${isOil ? 'Yog\' olinadigan firma yoki zavod ma\'lumotlari (Valyuta: $ USD)' : 'Shakar olinadigan firma yoki shaxs ma\'lumotlari'}</div>
                 </div>
             </div>
 
@@ -4251,7 +4282,7 @@ function showAddSupplierForm() {
                     <span class="label-icon">${Icons.storeFront}</span>
                     <span>Nomi yoki Firma nomi *</span>
                 </label>
-                <input type="text" class="form-input" id="supplierNameInput" placeholder="Masalan: Xorazm Shakar Birja, Bekzod aka..." autofocus>
+                <input type="text" class="form-input" id="supplierNameInput" placeholder="${isOil ? 'Masalan: Sunny Gold Zavod, Rossiya Maslo, Bekzod aka...' : 'Masalan: Xorazm Shakar Birja, Bekzod aka...'}" autofocus>
             </div>
 
             <div class="form-group">
@@ -4278,6 +4309,7 @@ async function showEditSupplierForm(supplierId) {
         return;
     }
 
+    const isOil = (supplier.category || currentSupplyCategory) === 'YOG';
     updateHeaderMeta("Tahrirlash", supplier.name, "TAHRIR");
     setBackAction(() => showSuppliers(currentSupplyCategory), 'editSupplier');
     fabBtn.style.display = 'none';
@@ -4289,7 +4321,7 @@ async function showEditSupplierForm(supplierId) {
                     ${Icons.edit}
                 </div>
                 <div>
-                    <div class="form-card__title">Birja ma'lumotlarini tahrirlash</div>
+                    <div class="form-card__title">${isOil ? 'Yog\' ta\'minotchisi ma\'lumotlarini tahrirlash' : 'Birja ma\'lumotlarini tahrirlash'}</div>
                     <div class="form-card__desc">Nom va telefon raqamini o'zgartirish</div>
                 </div>
             </div>
@@ -4359,22 +4391,24 @@ async function submitSupplier(supplierId = null) {
     }
 }
 
-async function deleteSupplier(supplierId, name, currentDebt) {
+async function deleteSupplier(supplierId, name, currentDebt, category = 'SHAKAR') {
+    const isOil = category === 'YOG';
     if (Number(currentDebt) > 0) {
-        showToast(`Ushbu birjadan hali qarzimiz bor (${formatMoney(currentDebt)})! Qarz to'liq yopilmaguncha o'chirib bo'lmaydi.`, "error");
+        const debtText = isOil ? formatDollar(currentDebt) : formatMoney(currentDebt);
+        showToast(`Ushbu ta'minotchidan hali qarzimiz bor (${debtText})! Qarz to'liq yopilmaguncha o'chirib bo'lmaydi.`, "error");
         return;
     }
 
     showConfirmDialog({
-        title: "Birjani o'chirish",
-        message: "Rostdan ham ushbu birjani o'chirmoqchimisiz?",
+        title: isOil ? "Ta'minotchini o'chirish" : "Birjani o'chirish",
+        message: "Rostdan ham ushbu ta'minotchini o'chirmoqchimisiz?",
         itemName: name,
         confirmText: "O'chirish",
         isDanger: true,
         onConfirm: async () => {
             try {
                 await apiDelete('/suppliers/' + supplierId);
-                showToast("Birja o'chirildi", "success");
+                showToast("Ta'minotchi o'chirildi", "success");
                 showSuppliers(currentSupplyCategory);
             } catch (err) {
                 showToast("Xatolik: " + err.message, "error");
@@ -4398,12 +4432,13 @@ async function showSupplierDetail(supplierId) {
         const ledger = await apiGet('/suppliers/' + supplierId + '/ledger');
         currentSupplierLedgerData = ledger;
 
-        updateHeaderMeta(ledger.supplierName, "Ta'minotchi qarz daftari va amallar", 'TA\'MINOT');
+        const isOil = ledger.category === 'YOG';
+        updateHeaderMeta(ledger.supplierName, isOil ? "Yog' ta'minotchisi qarz daftari ($ USD)" : "Ta'minotchi qarz daftari va amallar", 'TA\'MINOT');
 
         const debt = Number(ledger.currentDebt) || 0;
         const isDebt = debt > 0;
-        const debtLabel = isDebt ? "Bizning qarzimiz (Berishimiz kerak)" : "Hisob toza (Qarzdorlik yo'q)";
-        const debtValueText = formatMoney(debt);
+        const debtLabel = isDebt ? (isOil ? "Bizning qarzimiz ($ AQSH Dollari)" : "Bizning qarzimiz (Berishimiz kerak)") : (isOil ? "Hisob toza ($0.00 qarz)" : "Hisob toza (Qarzdorlik yo'q)");
+        const debtValueText = isOil ? formatDollar(debt) : formatMoney(debt);
         const debtStyleColor = isDebt ? 'var(--color-debt)' : 'var(--color-paid)';
         const lineGradient = isDebt ? 'linear-gradient(90deg, #F43F5E, #FB7185)' : 'linear-gradient(90deg, #10B981, #34D399)';
         const debtGlowClass = isDebt ? 'stat-card--glow-rose' : 'stat-card--glow-emerald';
@@ -4430,11 +4465,11 @@ async function showSupplierDetail(supplierId) {
 
             <!-- Action Buttons: Mahsulot olish & To'lov qilish -->
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;">
-                <button class="btn btn--primary" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius: 14px; padding: 14px; box-shadow: 0 4px 16px rgba(37,99,235,0.3);" onclick="showAddSupplyPurchaseForm(${supplierId}, '${escJs(ledger.supplierName)}')">
+                <button class="btn btn--primary" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius: 14px; padding: 14px; box-shadow: 0 4px 16px rgba(37,99,235,0.3);" onclick="showAddSupplyPurchaseForm(${supplierId}, '${escJs(ledger.supplierName)}', '${escJs(ledger.category)}')">
                     ${Icons.truck}
                     <span>Mahsulot olish</span>
                 </button>
-                <button class="btn" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.18) 100%); color: #34D399; border: 1.5px solid rgba(16,185,129,0.45); display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius: 14px; padding: 14px; font-weight: 700; box-shadow: 0 4px 16px rgba(16,185,129,0.2);" onclick="showAddSupplyPaymentForm(${supplierId}, '${escJs(ledger.supplierName)}', ${debt})">
+                <button class="btn" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.18) 100%); color: #34D399; border: 1.5px solid rgba(16,185,129,0.45); display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius: 14px; padding: 14px; font-weight: 700; box-shadow: 0 4px 16px rgba(16,185,129,0.2);" onclick="showAddSupplyPaymentForm(${supplierId}, '${escJs(ledger.supplierName)}', ${debt}, '${escJs(ledger.category)}')">
                     ${Icons.wallet}
                     <span>To'lov qilish</span>
                 </button>
@@ -4482,6 +4517,7 @@ function renderSupplierLedgerSection() {
     const container = document.getElementById('supplierLedgerSectionContainer');
     if (!container || !currentSupplierLedgerData) return;
 
+    const isOil = currentSupplierLedgerData?.category === 'YOG';
     const todayStr = getLocalDateString();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -4553,11 +4589,11 @@ function renderSupplierLedgerSection() {
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
             <div style="background:rgba(244,63,94,0.08); border:1px solid rgba(244,63,94,0.22); border-radius:12px; padding:10px 12px;">
                 <div style="font-size:11px; font-weight:700; color:#FDA4AF; text-transform:uppercase;">Kirim (Tovar)</div>
-                <div style="font-size:15px; font-weight:800; color:#FB7185; margin-top:3px; font-variant-numeric:tabular-nums;">+${formatMoney(totalPurchases)}</div>
+                <div style="font-size:15px; font-weight:800; color:#FB7185; margin-top:3px; font-variant-numeric:tabular-nums;">+${isOil ? formatDollar(totalPurchases) : formatMoney(totalPurchases)}</div>
             </div>
             <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.22); border-radius:12px; padding:10px 12px;">
                 <div style="font-size:11px; font-weight:700; color:#6EE7B7; text-transform:uppercase;">To'lov (Chiqim)</div>
-                <div style="font-size:15px; font-weight:800; color:#34D399; margin-top:3px; font-variant-numeric:tabular-nums;">−${formatMoney(totalPayments)}</div>
+                <div style="font-size:15px; font-weight:800; color:#34D399; margin-top:3px; font-variant-numeric:tabular-nums;">−${isOil ? formatDollar(totalPayments) : formatMoney(totalPayments)}</div>
             </div>
         </div>
 
@@ -4569,6 +4605,7 @@ function renderSupplierLedgerSection() {
 }
 
 function renderSupplierLedgerEntryCard(entry, supplierId) {
+    const isOil = currentSupplierLedgerData?.category === 'YOG';
     const isCancelled = Boolean(entry.isCancelled);
     const isPurchase = entry.type === 'KIRIM';
     const rowOpacity = isCancelled ? 'opacity: 0.65; background: rgba(239,68,68,0.04);' : '';
@@ -4576,7 +4613,7 @@ function renderSupplierLedgerEntryCard(entry, supplierId) {
     const amountClass = isCancelled 
         ? 'amount--muted' 
         : (isPurchase ? 'amount--debt' : 'amount--paid');
-    const amountText = (isPurchase ? '+' : '−') + formatMoney(entry.amount);
+    const amountText = (isPurchase ? '+' : '−') + (isOil ? formatDollar(entry.amount) : formatMoney(entry.amount));
 
     let cancelBadge = '';
     if (isCancelled) {
@@ -4592,7 +4629,7 @@ function renderSupplierLedgerEntryCard(entry, supplierId) {
     let actionBtn = '';
     if (!isCancelled && entry.id) {
         actionBtn = `
-            <button class="btn" onclick="promptCancelSupplierEntry('${entry.type}', ${entry.id}, ${supplierId}, '${escJs(entry.description || '')}', ${entry.amount})" 
+            <button class="btn" onclick="promptCancelSupplierEntry('${entry.type}', ${entry.id}, ${supplierId}, '${escJs(entry.note || entry.productName || '')}', ${entry.amount}, '${escJs(currentSupplierLedgerData?.category || '')}')" 
                     style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#F87171; padding:4px 8px; border-radius:8px; font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; gap:5px; cursor:pointer;" 
                     title="Operatsiyani bekor qilish (Storno)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
@@ -4603,43 +4640,82 @@ function renderSupplierLedgerEntryCard(entry, supplierId) {
 
     const typeTitle = isPurchase 
         ? `Kirim: ${escHtml(entry.productName || 'Mahsulot')}` 
-        : `To'lov (${escHtml(entry.paymentMethod || 'NAQD')})`;
+        : (isOil ? `To'lov (Naqd $)` : `To'lov (${escHtml(entry.paymentMethod || 'NAQD')})`);
     const typeIcon = isPurchase ? Icons.box : Icons.wallet;
     const iconColor = isPurchase ? '#F43F5E' : '#34D399';
     const iconBg = isPurchase ? 'rgba(244,63,94,0.14)' : 'rgba(16,185,129,0.14)';
 
-    // Kirim tafsilotlari (Qop, Tonna yoki Kg, Birlik narxi)
+    // Kirim tafsilotlari
     let detailsHtml = '';
     if (isPurchase) {
-        let unitLabel = 'qop';
-        if (entry.unit === 'TONNA') unitLabel = 'tonna';
-        else if (entry.unit === 'KG') unitLabel = 'kg';
+        if (isOil || entry.boxesCount || entry.totalLiters) {
+            const boxes = entry.boxesCount || Math.round(Number(entry.quantity) || 0);
+            const items = entry.itemsPerBox;
+            const liter = entry.litersPerItem ? Number(entry.litersPerItem) : null;
+            const boxLit = (items && liter) ? (items * liter) : null;
+            const totalLit = entry.totalLiters ? Number(entry.totalLiters) : (boxLit ? boxes * boxLit : null);
+            const pLiter = entry.pricePerLiter ? Number(entry.pricePerLiter) : Number(entry.unitPrice || 0);
 
-        const qtyFormatted = (entry.unit === 'TONNA' || entry.unit === 'KG') 
-            ? (Number.isInteger(Number(entry.quantity)) ? Number(entry.quantity) : Number(entry.quantity).toFixed(2)) 
-            : Math.round(Number(entry.quantity));
-
-        detailsHtml = `
-            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:12.5px; font-weight:500; color:#F1F5F9; line-height:1.5; ${titleStyle}">
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
-                    <span style="color:var(--color-ink-dim);">Hajmi:</span>
-                    <strong style="color:#FFF;">${qtyFormatted} ${unitLabel}</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span style="color:var(--color-ink-dim);">1 ${unitLabel} narxi:</span>
-                    <span style="color:#60A5FA; font-weight:700;">${formatMoney(entry.unitPrice)}</span>
-                </div>
-                ${entry.description ? `
-                    <div style="margin-top:4px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.08); font-size:12px; color:var(--color-ink-dim);">
-                        Izoh: ${escHtml(entry.description)}
+            detailsHtml = `
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:12.5px; font-weight:500; color:#F1F5F9; line-height:1.55; ${titleStyle}">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                        <span style="color:var(--color-ink-dim);">📦 Miqdori:</span>
+                        <strong style="color:#FFF;">${boxes} karopka</strong>
                     </div>
-                ` : ''}
-            </div>
-        `;
-    } else if (entry.description) {
+                    ${boxLit ? `
+                        <div style="display:flex; justify-content:space-between; margin-bottom:3px; font-size:12px; color:#94A3B8;">
+                            <span>1 karopkada:</span>
+                            <span>${items} dona × ${liter}L = <strong style="color:#E2E8F0;">${Number.isInteger(boxLit) ? boxLit : boxLit.toFixed(1)} litr</strong></span>
+                        </div>
+                    ` : ''}
+                    ${totalLit ? `
+                        <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                            <span style="color:var(--color-ink-dim);">🛢️ Jami hajm:</span>
+                            <strong style="color:#38BDF8;">${Number.isInteger(totalLit) ? totalLit.toLocaleString('uz-UZ') : totalLit.toFixed(1)} litr</strong>
+                        </div>
+                    ` : ''}
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:var(--color-ink-dim);">💵 1 litr narxi:</span>
+                        <span style="color:#34D399; font-weight:700;">$${pLiter.toFixed(2)}</span>
+                    </div>
+                    ${entry.note ? `
+                        <div style="margin-top:4px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.08); font-size:12px; color:var(--color-ink-dim);">
+                            Izoh: ${escHtml(entry.note)}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        } else {
+            let unitLabel = 'qop';
+            if (entry.unit === 'TONNA') unitLabel = 'tonna';
+            else if (entry.unit === 'KG') unitLabel = 'kg';
+
+            const qtyFormatted = (entry.unit === 'TONNA' || entry.unit === 'KG') 
+                ? (Number.isInteger(Number(entry.quantity)) ? Number(entry.quantity) : Number(entry.quantity).toFixed(2)) 
+                : Math.round(Number(entry.quantity));
+
+            detailsHtml = `
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:12.5px; font-weight:500; color:#F1F5F9; line-height:1.5; ${titleStyle}">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                        <span style="color:var(--color-ink-dim);">Hajmi:</span>
+                        <strong style="color:#FFF;">${qtyFormatted} ${unitLabel}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:var(--color-ink-dim);">1 ${unitLabel} narxi:</span>
+                        <span style="color:#60A5FA; font-weight:700;">${formatMoney(entry.unitPrice)}</span>
+                    </div>
+                    ${entry.note ? `
+                        <div style="margin-top:4px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.08); font-size:12px; color:var(--color-ink-dim);">
+                            Izoh: ${escHtml(entry.note)}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+    } else if (entry.note) {
         detailsHtml = `
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:12px; color:var(--color-ink-dim); ${titleStyle}">
-                Izoh: ${escHtml(entry.description)}
+                Izoh: ${escHtml(entry.note)}
             </div>
         `;
     }
@@ -4693,7 +4769,12 @@ function renderSupplierLedgerEntryCard(entry, supplierId) {
 // ==========================================
 // MAHSULOT SOTIB OLISH (KIRIM) FORMASI
 // ==========================================
-function showAddSupplyPurchaseForm(supplierId, supplierName) {
+function showAddSupplyPurchaseForm(supplierId, supplierName, category = null) {
+    const isOil = category === 'YOG' || currentSupplierLedgerData?.category === 'YOG' || currentSupplyCategory === 'YOG';
+    if (isOil) {
+        showAddOilPurchaseForm(supplierId, supplierName);
+        return;
+    }
     currentPurchaseUnit = 'QOP';
     updateHeaderMeta("Mahsulot olish", supplierName, "KIRIM");
     setBackAction(() => showSupplierDetail(supplierId), 'addSupplyPurchase');
@@ -5046,11 +5127,408 @@ async function submitSupplyPurchase(supplierId) {
 }
 
 // ==========================================
+// YOG' SOTIB OLISH (KIRIM) MAXSUS FORMASI (USD $)
+// ==========================================
+function showAddOilPurchaseForm(supplierId, supplierName) {
+    updateHeaderMeta("Mahsulot olish", supplierName, "KIRIM $");
+    setBackAction(() => showSupplierDetail(supplierId), 'addOilPurchase');
+    fabBtn.style.display = 'none';
+
+    const today = getLocalDateString();
+
+    contentEl.innerHTML = `
+        <div class="form-card">
+            <div class="form-card__header">
+                <div class="form-card__icon" style="background: rgba(245, 158, 11, 0.18); color: #FBBF24;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <div>
+                    <div class="form-card__title">Yog' sotib olish (Kirim - USD $)</div>
+                    <div class="form-card__desc">${escHtml(supplierName)} dan yuk qabul qilish</div>
+                </div>
+            </div>
+
+            <!-- 1. Mahsulot nomi -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="oilProductNameInput">
+                    <span class="label-icon">${Icons.box}</span>
+                    <span>Mahsulot nomi *</span>
+                </label>
+                <input type="text" 
+                       class="form-input" 
+                       id="oilProductNameInput" 
+                       placeholder="Masalan: Sunny gold, Sulton, Altay, Lasko..." 
+                       autofocus>
+            </div>
+
+            <!-- 2. Yog' hajmi (Litr) -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="oilLiterPerItemInput">
+                    <span class="label-icon">🛢️</span>
+                    <span>Yog' hajmi (1 ta butilka litri) *</span>
+                </label>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <input type="number" 
+                           step="0.1" 
+                           min="0.1" 
+                           class="form-input" 
+                           id="oilLiterPerItemInput" 
+                           placeholder="Masalan: 5" 
+                           style="font-size:17px; font-weight:700;"
+                           oninput="updateOilPurchaseTotal()">
+                    <span style="font-size:14px; font-weight:700; color:var(--color-ink-dim); padding-right:6px;">Litr</span>
+                </div>
+                <div class="quick-chips-row" style="margin-top:8px;">
+                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(1)">1 L</button>
+                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(1.8)">1.8 L</button>
+                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(2)">2 L</button>
+                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(4.5)">4.5 L</button>
+                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(5)">5 L</button>
+                </div>
+            </div>
+
+            <!-- 3. Karopka ichidagi soni (dona) -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="oilItemsPerBoxInput">
+                    <span class="label-icon">📦</span>
+                    <span>1 karopka ichidagi soni (dona) *</span>
+                </label>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="btn" onclick="adjustOilItemsPerBox(-1)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">−</button>
+                    <input type="number" 
+                           class="form-input" 
+                           id="oilItemsPerBoxInput" 
+                           step="1" 
+                           min="1" 
+                           placeholder="Masalan: 3" 
+                           style="text-align:center; font-size:18px; font-weight:700;"
+                           oninput="updateOilPurchaseTotal()">
+                    <button type="button" class="btn" onclick="adjustOilItemsPerBox(1)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">+</button>
+                </div>
+                <div class="quick-chips-row" style="margin-top:8px;">
+                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(3)">3 dona (5L)</button>
+                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(6)">6 dona (2L)</button>
+                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(12)">12 dona (1L)</button>
+                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(15)">15 dona</button>
+                </div>
+            </div>
+
+            <!-- 4. Karopka soni -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="oilBoxesCountInput">
+                    <span class="label-icon">${Icons.cart}</span>
+                    <span>Karopka soni *</span>
+                </label>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="btn" onclick="adjustOilBoxesCount(-5)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">−</button>
+                    <input type="number" 
+                           class="form-input" 
+                           id="oilBoxesCountInput" 
+                           step="1" 
+                           min="1" 
+                           placeholder="Masalan: 100" 
+                           style="text-align:center; font-size:18px; font-weight:700;"
+                           oninput="updateOilPurchaseTotal()">
+                    <button type="button" class="btn" onclick="adjustOilBoxesCount(5)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">+</button>
+                </div>
+                <div class="quick-chips-row" style="margin-top:8px;">
+                    <button type="button" class="preset-chip" onclick="addOilBoxesCount(10)">+10</button>
+                    <button type="button" class="preset-chip" onclick="addOilBoxesCount(50)">+50</button>
+                    <button type="button" class="preset-chip" onclick="addOilBoxesCount(100)">+100</button>
+                    <button type="button" class="preset-chip" onclick="addOilBoxesCount(500)">+500</button>
+                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearOilBoxesCount()">Tozalash</button>
+                </div>
+            </div>
+
+            <!-- 5. 1 litr narxi ($) -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="oilPricePerLiterInput">
+                    <span class="label-icon">${Icons.money}</span>
+                    <span>1 litr narxi ($ AQSH Dollari) *</span>
+                </label>
+                <div class="money-field-wrap">
+                    <div class="money-input-box">
+                        <input type="number" 
+                               step="0.01" 
+                               min="0.001" 
+                               class="form-input" 
+                               id="oilPricePerLiterInput" 
+                               placeholder="Masalan: 1.86" 
+                               style="font-size:18px; font-weight:700;"
+                               oninput="updateOilPurchaseTotal()">
+                        <span class="money-suffix" style="font-weight:800; color:#38BDF8;">$</span>
+                    </div>
+                </div>
+                <div class="quick-chips-row" style="margin-top:8px;">
+                    <button type="button" class="preset-chip" onclick="addOilPrice(0.05)">+$0.05</button>
+                    <button type="button" class="preset-chip" onclick="addOilPrice(0.10)">+$0.10</button>
+                    <button type="button" class="preset-chip" onclick="addOilPrice(0.50)">+$0.50</button>
+                    <button type="button" class="preset-chip" onclick="addOilPrice(1.00)">+$1.00</button>
+                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearOilPrice()">Tozalash</button>
+                </div>
+            </div>
+
+            <!-- 6. Kirim sanasi -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="oilPurchaseDateInput">
+                    <span class="label-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    </span>
+                    <span>Kirim sanasi</span>
+                </label>
+                <input type="date" 
+                       class="form-input" 
+                       id="oilPurchaseDateInput" 
+                       value="${today}" 
+                       max="${today}">
+            </div>
+
+            <!-- 7. Izoh (ixtiyoriy) -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="oilPurchaseNoteInput">
+                    <span class="label-icon">${Icons.info}</span>
+                    <span>Izoh (ixtiyoriy)</span>
+                </label>
+                <input type="text" class="form-input" id="oilPurchaseNoteInput" placeholder="Masalan: Fura raqami, yuk xati yoki vagon...">
+            </div>
+
+            <!-- 8. Professional Hisob-kitob kartasi (Jonli kalkulyator) -->
+            <div class="stat-card stat-card--glow-blue" style="margin-bottom:20px; padding:18px; position:relative; overflow:hidden;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-size:11.5px; font-weight:700; color:#93C5FD; text-transform:uppercase; letter-spacing:0.8px;">
+                        🧮 Jonli hisob-kitob (USD $)
+                    </div>
+                    <span style="font-size:11px; background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3); padding:2px 8px; border-radius:999px; font-weight:700;">
+                        Avtomatik
+                    </span>
+                </div>
+
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.7;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="color:var(--color-ink-dim);">📦 1 karopka hajmi:</span>
+                        <strong id="oilCalcBoxLiters" style="color:#FFF;">0 litr</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="color:var(--color-ink-dim);">🛢️ Jami qabul qilingan hajm:</span>
+                        <strong id="oilCalcTotalLiters" style="color:#38BDF8;">0 litr</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:var(--color-ink-dim);">💵 1 karopka narxi:</span>
+                        <strong id="oilCalcBoxPrice" style="color:#34D399;">$0.00</strong>
+                    </div>
+                </div>
+
+                <div style="text-align:center; padding: 4px 0 10px 0;">
+                    <div style="font-size:12px; color:var(--color-ink-dim); text-transform:uppercase; letter-spacing:0.5px;">Jami hisoblangan summa ($):</div>
+                    <div id="oilCalcTotalAmount" style="font-size:30px; font-weight:800; color:#38BDF8; margin-top:4px; font-variant-numeric:tabular-nums;">
+                        $0.00
+                    </div>
+                </div>
+
+                <div style="text-align:center; margin-top:4px; font-size:11.5px; color:#94A3B8; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:7px 12px; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <span>💳</span>
+                    <span>Zavoddan bizning qarzimizga dollarda ($) qo'shiladi</span>
+                </div>
+            </div>
+
+            <!-- 9. Saqlash tugmasi -->
+            <div class="form-group" style="margin-top:10px;">
+                <button class="btn btn--primary btn--full" id="submitOilSupplyPurchaseBtn" onclick="submitOilSupplyPurchase(${supplierId})">
+                    ${Icons.check} Kirimni tasdiqlash va saqlash
+                </button>
+            </div>
+        </div>
+    `;
+
+    updateOilPurchaseTotal();
+}
+
+function setOilLiterPreset(liters) {
+    const el = document.getElementById('oilLiterPerItemInput');
+    if (el) {
+        el.value = liters;
+        updateOilPurchaseTotal();
+    }
+}
+
+function setOilItemsPreset(items) {
+    const el = document.getElementById('oilItemsPerBoxInput');
+    if (el) {
+        el.value = items;
+        updateOilPurchaseTotal();
+    }
+}
+
+function adjustOilItemsPerBox(delta) {
+    const el = document.getElementById('oilItemsPerBoxInput');
+    if (!el) return;
+    let cur = parseInt(el.value, 10) || 0;
+    cur = Math.max(1, cur + delta);
+    el.value = cur;
+    updateOilPurchaseTotal();
+}
+
+function adjustOilBoxesCount(delta) {
+    const el = document.getElementById('oilBoxesCountInput');
+    if (!el) return;
+    let cur = parseInt(el.value, 10) || 0;
+    cur = Math.max(1, cur + delta);
+    el.value = cur;
+    updateOilPurchaseTotal();
+}
+
+function addOilBoxesCount(delta) {
+    const el = document.getElementById('oilBoxesCountInput');
+    if (!el) return;
+    let cur = parseInt(el.value, 10) || 0;
+    el.value = cur + delta;
+    updateOilPurchaseTotal();
+}
+
+function clearOilBoxesCount() {
+    const el = document.getElementById('oilBoxesCountInput');
+    if (el) {
+        el.value = '';
+        updateOilPurchaseTotal();
+    }
+}
+
+function addOilPrice(delta) {
+    const el = document.getElementById('oilPricePerLiterInput');
+    if (!el) return;
+    let cur = parseFloat(el.value) || 0;
+    el.value = (cur + delta).toFixed(2);
+    updateOilPurchaseTotal();
+}
+
+function clearOilPrice() {
+    const el = document.getElementById('oilPricePerLiterInput');
+    if (el) {
+        el.value = '';
+        updateOilPurchaseTotal();
+    }
+}
+
+function updateOilPurchaseTotal() {
+    const literInput = document.getElementById('oilLiterPerItemInput');
+    const itemsInput = document.getElementById('oilItemsPerBoxInput');
+    const boxesInput = document.getElementById('oilBoxesCountInput');
+    const priceInput = document.getElementById('oilPricePerLiterInput');
+
+    const litersPerItem = parseFloat(literInput?.value) || 0;
+    const itemsPerBox = parseInt(itemsInput?.value, 10) || 0;
+    const boxesCount = parseInt(boxesInput?.value, 10) || 0;
+    const pricePerLiter = parseFloat(priceInput?.value) || 0;
+
+    const boxLiters = (litersPerItem > 0 && itemsPerBox > 0) ? (litersPerItem * itemsPerBox) : 0;
+    const totalLiters = (boxLiters > 0 && boxesCount > 0) ? (boxesCount * boxLiters) : 0;
+    const boxPrice = (boxLiters > 0 && pricePerLiter > 0) ? (boxLiters * pricePerLiter) : 0;
+    const totalAmount = (totalLiters > 0 && pricePerLiter > 0) ? (totalLiters * pricePerLiter) : 0;
+
+    const boxLitersEl = document.getElementById('oilCalcBoxLiters');
+    const totalLitersEl = document.getElementById('oilCalcTotalLiters');
+    const boxPriceEl = document.getElementById('oilCalcBoxPrice');
+    const totalAmountEl = document.getElementById('oilCalcTotalAmount');
+
+    if (boxLitersEl) {
+        boxLitersEl.textContent = boxLiters > 0 ? `${Number.isInteger(boxLiters) ? boxLiters : boxLiters.toFixed(1)} litr (${itemsPerBox} dona × ${litersPerItem}L)` : '0 litr';
+    }
+    if (totalLitersEl) {
+        totalLitersEl.textContent = totalLiters > 0 ? `${Number.isInteger(totalLiters) ? totalLiters.toLocaleString('uz-UZ') : totalLiters.toFixed(1)} litr` : '0 litr';
+    }
+    if (boxPriceEl) {
+        boxPriceEl.textContent = boxPrice > 0 ? formatDollar(boxPrice) : '$0.00';
+    }
+    if (totalAmountEl) {
+        totalAmountEl.textContent = formatDollar(totalAmount);
+        totalAmountEl.style.color = totalAmount > 0 ? '#38BDF8' : 'var(--color-ink-dim)';
+    }
+}
+
+async function submitOilSupplyPurchase(supplierId) {
+    const productName = document.getElementById('oilProductNameInput')?.value.trim();
+    const litersPerItem = parseFloat(document.getElementById('oilLiterPerItemInput')?.value);
+    const itemsPerBox = parseInt(document.getElementById('oilItemsPerBoxInput')?.value, 10);
+    const boxesCount = parseInt(document.getElementById('oilBoxesCountInput')?.value, 10);
+    const pricePerLiter = parseFloat(document.getElementById('oilPricePerLiterInput')?.value);
+    const purchaseDate = document.getElementById('oilPurchaseDateInput')?.value || null;
+    const note = document.getElementById('oilPurchaseNoteInput')?.value.trim() || null;
+    const today = getLocalDateString();
+
+    if (!productName) {
+        showToast("Mahsulot nomini kiriting", "error");
+        return;
+    }
+    if (!litersPerItem || litersPerItem <= 0) {
+        showToast("Yog' hajmini (1 butilka litri) kiriting", "error");
+        return;
+    }
+    if (!itemsPerBox || itemsPerBox <= 0) {
+        showToast("Karopkadagi donalar sonini kiriting", "error");
+        return;
+    }
+    if (!boxesCount || boxesCount <= 0) {
+        showToast("Karopkalar sonini kiriting", "error");
+        return;
+    }
+    if (!pricePerLiter || pricePerLiter <= 0) {
+        showToast("1 litr narxini ($) to'g'ri kiriting", "error");
+        return;
+    }
+    if (purchaseDate && purchaseDate > today) {
+        showToast("Kirim sanasi kelajak sanada bo'lishi mumkin emas", "error");
+        return;
+    }
+
+    const boxLiters = litersPerItem * itemsPerBox;
+    const totalLiters = boxesCount * boxLiters;
+
+    const btn = document.getElementById('submitOilSupplyPurchaseBtn');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Kirim saqlanmoqda...';
+    }
+
+    try {
+        const payload = {
+            productName: productName,
+            unit: 'KAROPKA',
+            quantity: boxesCount,
+            unitPrice: pricePerLiter,
+            purchaseDate: purchaseDate,
+            note: note,
+            category: 'YOG',
+            litersPerItem: litersPerItem,
+            itemsPerBox: itemsPerBox,
+            boxesCount: boxesCount,
+            pricePerLiter: pricePerLiter,
+            totalLiters: totalLiters
+        };
+
+        await apiPost('/suppliers/' + supplierId + '/purchases', payload);
+        showToast("Yog' kirimi muvaffaqiyatli saqlandi!", "success");
+        if (purchaseDate) {
+            currentSupplierLedgerSelectedDate = purchaseDate;
+            currentSupplierLedgerFilterMode = 'day';
+        }
+        showSupplierDetail(supplierId);
+    } catch (err) {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} Kirimni tasdiqlash va saqlash`;
+        }
+        showToast("Xatolik: " + err.message, "error");
+    }
+}
+
+// ==========================================
 // TA'MINOTCHIGA TO'LOV QILISH FORMASI
 // ==========================================
-function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0) {
+function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0, category = null) {
+    const isOil = category === 'YOG' || currentSupplierLedgerData?.category === 'YOG' || currentSupplyCategory === 'YOG';
     currentSupplyPaymentMethod = 'NAQD';
-    updateHeaderMeta("To'lov qilish", supplierName, "TO'LOV");
+    updateHeaderMeta("To'lov qilish", supplierName, isOil ? "TO'LOV $" : "TO'LOV");
     setBackAction(() => showSupplierDetail(supplierId), 'addSupplyPayment');
     fabBtn.style.display = 'none';
 
@@ -5062,10 +5540,10 @@ function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0) {
         <div class="stat-card stat-card--glow-rose" style="margin-bottom:14px; text-align:center; padding: 18px 16px; position:relative; overflow:hidden;">
             <div style="position: absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #F43F5E, #FB7185);"></div>
             <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11px; font-weight:700; color:#FDA4AF;">
-                Bizning joriy qarzimiz
+                ${isOil ? 'Bizning joriy qarzimiz (AQSH Dollari $)' : 'Bizning joriy qarzimiz'}
             </div>
             <div class="stat-card__value" style="color: #FB7185; font-size: 26px; font-weight:800; margin-top:4px; font-variant-numeric: tabular-nums;">
-                ${formatMoney(debtVal)}
+                ${isOil ? formatDollar(debtVal) : formatMoney(debtVal)}
             </div>
         </div>
 
@@ -5075,8 +5553,8 @@ function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0) {
                     ${Icons.wallet}
                 </div>
                 <div>
-                    <div class="form-card__title">Birjaga to'lov qilish</div>
-                    <div class="form-card__desc">To'lov sanasi, summasi va usulini tasdiqlang</div>
+                    <div class="form-card__title">${isOil ? 'Yog\' ta\'minotchisiga to\'lov qilish ($ USD)' : 'Birjaga to\'lov qilish'}</div>
+                    <div class="form-card__desc">${isOil ? `${escHtml(supplierName)} ga dollar to'lovini qayd etish` : 'To\'lov sanasi, summasi va usulini tasdiqlang'}</div>
                 </div>
             </div>
 
@@ -5099,30 +5577,42 @@ function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0) {
             <div class="form-group" style="margin-bottom:16px;">
                 <label class="form-label" for="supplyPaymentAmountInput">
                     <span class="label-icon">${Icons.money}</span>
-                    <span>To'lov summasi *</span>
+                    <span>To'lov summasi (${isOil ? '$ USD' : 'so\'m'}) *</span>
                 </label>
                 <div class="money-field-wrap">
                     <div class="money-input-box">
-                        <input type="text" 
-                               inputmode="numeric" 
+                        <input type="${isOil ? 'number' : 'text'}" 
+                               ${isOil ? 'step="0.01" min="0.01"' : 'inputmode="numeric"'}
                                class="form-input money-input" 
                                id="supplyPaymentAmountInput" 
-                               placeholder="0" 
+                               placeholder="${isOil ? 'Masalan: 1000' : '0'}" 
                                autofocus
-                               oninput="onSupplyPaymentAmountChange(this, ${debtVal})">
-                        <span class="money-suffix">so'm</span>
+                               oninput="${isOil ? `onSupplyPaymentDollarChange(this, ${debtVal})` : `onSupplyPaymentAmountChange(this, ${debtVal})`}">
+                        <span class="money-suffix" style="font-weight:700; ${isOil ? 'color:#38BDF8;' : ''}">${isOil ? '$' : 'so\'m'}</span>
                     </div>
                 </div>
 
                 <div class="quick-chips-row" style="margin-top:8px;">
-                    ${debtVal > 0 ? `
-                        <button type="button" class="preset-chip preset-chip--accent" onclick="setSupplyPaymentPreset(${debtVal}, ${debtVal})">To'liq qarz (${formatMoney(debtVal)})</button>
-                    ` : ''}
-                    <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(1000000, ${debtVal})">+1 mln</button>
-                    <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(5000000, ${debtVal})">+5 mln</button>
-                    <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(10000000, ${debtVal})">+10 mln</button>
-                    <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(50000000, ${debtVal})">+50 mln</button>
-                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearSupplyPaymentAmount(${debtVal})">Tozalash</button>
+                    ${isOil ? `
+                        ${debtVal > 0 ? `
+                            <button type="button" class="preset-chip preset-chip--accent" onclick="setSupplyPaymentDollarPreset(${debtVal}, ${debtVal})">To'liq qarz (${formatDollar(debtVal)})</button>
+                        ` : ''}
+                        <button type="button" class="preset-chip" onclick="addSupplyPaymentDollarAmount(100, ${debtVal})">+$100</button>
+                        <button type="button" class="preset-chip" onclick="addSupplyPaymentDollarAmount(500, ${debtVal})">+$500</button>
+                        <button type="button" class="preset-chip" onclick="addSupplyPaymentDollarAmount(1000, ${debtVal})">+$1 000</button>
+                        <button type="button" class="preset-chip" onclick="addSupplyPaymentDollarAmount(2000, ${debtVal})">+$2 000</button>
+                        <button type="button" class="preset-chip" onclick="addSupplyPaymentDollarAmount(5000, ${debtVal})">+$5 000</button>
+                        <button type="button" class="preset-chip preset-chip--clear" onclick="clearSupplyPaymentDollarAmount(${debtVal})">Tozalash</button>
+                    ` : `
+                        ${debtVal > 0 ? `
+                            <button type="button" class="preset-chip preset-chip--accent" onclick="setSupplyPaymentPreset(${debtVal}, ${debtVal})">To'liq qarz (${formatMoney(debtVal)})</button>
+                        ` : ''}
+                        <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(1000000, ${debtVal})">+1 mln</button>
+                        <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(5000000, ${debtVal})">+5 mln</button>
+                        <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(10000000, ${debtVal})">+10 mln</button>
+                        <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(50000000, ${debtVal})">+50 mln</button>
+                        <button type="button" class="preset-chip preset-chip--clear" onclick="clearSupplyPaymentAmount(${debtVal})">Tozalash</button>
+                    `}
                 </div>
             </div>
 
@@ -5131,7 +5621,7 @@ function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0) {
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="font-size:12.5px; color:var(--color-ink-dim);">To'lovdan keyingi qarzimiz:</span>
                     <strong id="supplyPaymentRemainingDebt" style="font-size:14px; color:${debtVal > 0 ? '#FB7185' : '#34D399'}; font-variant-numeric:tabular-nums;">
-                        ${formatMoney(debtVal)}
+                        ${isOil ? formatDollar(debtVal) : formatMoney(debtVal)}
                     </strong>
                 </div>
                 <div id="supplyPaymentWarning" style="display:none; margin-top:8px; font-size:11.5px; color:#F87171; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:8px; padding:6px 10px;">
@@ -5139,23 +5629,30 @@ function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0) {
                 </div>
             </div>
 
-            <!-- 4. To'lov usuli (Segmented) -->
+            <!-- 4. To'lov usuli -->
             <div class="form-group" style="margin-bottom:16px;">
                 <label class="form-label" style="margin-bottom:8px;">
                     <span class="label-icon">${Icons.wallet}</span>
                     <span>To'lov usuli *</span>
                 </label>
-                <div class="segmented-group">
-                    <button type="button" class="segmented-btn segmented-btn--emerald active" id="supplyPayNaqdBtn" onclick="setSupplyPaymentType('NAQD')">
-                        💵 NAQD
-                    </button>
-                    <button type="button" class="segmented-btn segmented-btn--sky" id="supplyPayKartaBtn" onclick="setSupplyPaymentType('KARTA')">
-                        💳 KARTA
-                    </button>
-                    <button type="button" class="segmented-btn" id="supplyPayBankBtn" onclick="setSupplyPaymentType('BANK')">
-                        🏛️ BANK
-                    </button>
-                </div>
+                ${isOil ? `
+                    <div style="display:inline-flex; align-items:center; gap:8px; padding:11px 18px; border-radius:12px; background:rgba(16,185,129,0.15); border:1.5px solid rgba(16,185,129,0.4); color:#34D399; font-weight:700; font-size:14px;">
+                        <span style="font-size:18px;">💵</span>
+                        <span>Naqd ($ AQSH Dollari)</span>
+                    </div>
+                ` : `
+                    <div class="segmented-group">
+                        <button type="button" class="segmented-btn segmented-btn--emerald active" id="supplyPayNaqdBtn" onclick="setSupplyPaymentType('NAQD')">
+                            💵 NAQD
+                        </button>
+                        <button type="button" class="segmented-btn segmented-btn--sky" id="supplyPayKartaBtn" onclick="setSupplyPaymentType('KARTA')">
+                            💳 KARTA
+                        </button>
+                        <button type="button" class="segmented-btn" id="supplyPayBankBtn" onclick="setSupplyPaymentType('BANK')">
+                            🏛️ BANK
+                        </button>
+                    </div>
+                `}
             </div>
 
             <!-- 5. Izoh -->
@@ -5169,12 +5666,51 @@ function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0) {
 
             <!-- 6. Saqlash tugmasi -->
             <div class="form-group" style="margin-top: 22px;">
-                <button class="btn btn--full" id="submitSupplyPaymentBtn" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(52, 211, 153, 0.4); color: #FFFFFF; font-size:15px; font-weight: 800; padding: 15px; border-radius: 14px; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);" onclick="submitSupplyPayment(${supplierId}, ${debtVal})">
+                <button class="btn btn--full" id="submitSupplyPaymentBtn" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(52, 211, 153, 0.4); color: #FFFFFF; font-size:15px; font-weight: 800; padding: 15px; border-radius: 14px; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);" onclick="submitSupplyPayment(${supplierId}, ${debtVal}, '${isOil ? 'YOG' : 'SHAKAR'}')">
                     ${Icons.check} To'lovni tasdiqlash va saqlash
                 </button>
             </div>
         </div>
     `;
+}
+
+function onSupplyPaymentDollarChange(input, currentDebt) {
+    const val = parseFloat(input.value) || 0;
+    const remaining = Math.max(0, currentDebt - val);
+    const remEl = document.getElementById('supplyPaymentRemainingDebt');
+    const warnEl = document.getElementById('supplyPaymentWarning');
+    if (remEl) {
+        remEl.textContent = formatDollar(remaining);
+        remEl.style.color = remaining > 0 ? '#FB7185' : '#34D399';
+    }
+    if (warnEl) {
+        warnEl.style.display = (currentDebt > 0 && val > currentDebt) ? 'block' : 'none';
+    }
+}
+
+function setSupplyPaymentDollarPreset(amount, currentDebt) {
+    const input = document.getElementById('supplyPaymentAmountInput');
+    if (input) {
+        input.value = amount > 0 ? (Number.isInteger(amount) ? amount : amount.toFixed(2)) : '';
+        onSupplyPaymentDollarChange(input, currentDebt);
+    }
+}
+
+function addSupplyPaymentDollarAmount(delta, currentDebt) {
+    const input = document.getElementById('supplyPaymentAmountInput');
+    if (input) {
+        const cur = parseFloat(input.value) || 0;
+        input.value = (cur + delta).toFixed(2);
+        onSupplyPaymentDollarChange(input, currentDebt);
+    }
+}
+
+function clearSupplyPaymentDollarAmount(currentDebt) {
+    const input = document.getElementById('supplyPaymentAmountInput');
+    if (input) {
+        input.value = '';
+        onSupplyPaymentDollarChange(input, currentDebt);
+    }
 }
 
 function setSupplyPaymentType(method) {
@@ -5246,9 +5782,12 @@ function clearSupplyPaymentAmount(currentDebt) {
     }
 }
 
-async function submitSupplyPayment(supplierId, currentDebt = 0) {
+async function submitSupplyPayment(supplierId, currentDebt = 0, category = 'SHAKAR') {
+    const isOil = category === 'YOG' || currentSupplierLedgerData?.category === 'YOG' || currentSupplyCategory === 'YOG';
     const paymentDate = document.getElementById('supplyPaymentDateInput')?.value || null;
-    const amount = parseMoney(document.getElementById('supplyPaymentAmountInput')?.value);
+    const amount = isOil 
+        ? parseFloat(document.getElementById('supplyPaymentAmountInput')?.value) 
+        : parseMoney(document.getElementById('supplyPaymentAmountInput')?.value);
     const note = document.getElementById('supplyPaymentNoteInput')?.value.trim() || null;
     const today = getLocalDateString();
 
@@ -5258,7 +5797,9 @@ async function submitSupplyPayment(supplierId, currentDebt = 0) {
     }
 
     if (currentDebt > 0 && amount > currentDebt) {
-        showToast(`To'lov summasi (${formatMoney(amount)}) joriy qarzdan (${formatMoney(currentDebt)}) oshib ketmasligi lozim!`, "error");
+        const amtText = isOil ? formatDollar(amount) : formatMoney(amount);
+        const debtText = isOil ? formatDollar(currentDebt) : formatMoney(currentDebt);
+        showToast(`To'lov summasi (${amtText}) joriy qarzdan (${debtText}) oshib ketmasligi lozim!`, "error");
         return;
     }
 
@@ -5277,7 +5818,7 @@ async function submitSupplyPayment(supplierId, currentDebt = 0) {
     try {
         const payload = {
             amount: amount,
-            paymentMethod: currentSupplyPaymentMethod || 'NAQD',
+            paymentMethod: isOil ? 'NAQD' : (currentSupplyPaymentMethod || 'NAQD'),
             paymentDate: paymentDate,
             note: note
         };
@@ -5301,8 +5842,10 @@ async function submitSupplyPayment(supplierId, currentDebt = 0) {
 // ==========================================
 // OPERATSIYANI BEKOR QILISH (STORNO)
 // ==========================================
-function promptCancelSupplierEntry(type, id, supplierId, description, amount) {
+function promptCancelSupplierEntry(type, id, supplierId, description, amount, category = 'SHAKAR') {
     const isPurchase = type === 'KIRIM';
+    const isOil = category === 'YOG' || currentSupplierLedgerData?.category === 'YOG' || currentSupplyCategory === 'YOG';
+    const amountText = isOil ? formatDollar(amount) : formatMoney(amount);
     
     showBottomSheet(`
         <div style="text-align:left;">
@@ -5323,7 +5866,7 @@ function promptCancelSupplierEntry(type, id, supplierId, description, amount) {
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                     <span style="color:var(--color-ink-dim);">Summa:</span>
-                    <strong style="color:#60A5FA;">${formatMoney(amount)}</strong>
+                    <strong style="color:#60A5FA;">${amountText}</strong>
                 </div>
                 ${description ? `
                     <div style="color:var(--color-ink-dim); font-size:12px; margin-top:4px; padding-top:4px; border-top:1px dashed var(--color-line);">

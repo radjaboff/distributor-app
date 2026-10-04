@@ -54,6 +54,21 @@ public class SupplyPurchase extends BaseEntity {
     @Column(length = 500)
     private String note;
 
+    @Column(name = "liters_per_item", precision = 10, scale = 2)
+    private BigDecimal litersPerItem;
+
+    @Column(name = "items_per_box")
+    private Integer itemsPerBox;
+
+    @Column(name = "boxes_count")
+    private Integer boxesCount;
+
+    @Column(name = "price_per_liter", precision = 15, scale = 4)
+    private BigDecimal pricePerLiter;
+
+    @Column(name = "total_liters", precision = 15, scale = 3)
+    private BigDecimal totalLiters;
+
     @Column(name = "is_cancelled", nullable = false)
     private Boolean isCancelled = false;
 

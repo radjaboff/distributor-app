@@ -128,7 +128,12 @@ public class SupplierServiceImpl implements SupplierService {
             throw new InvalidPaymentException("Birlik narxi 0 dan katta bo'lishi kerak!");
         }
 
-        BigDecimal totalAmount = request.getQuantity().multiply(request.getUnitPrice()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalAmount;
+        if (request.getTotalLiters() != null && request.getPricePerLiter() != null && request.getTotalLiters().compareTo(BigDecimal.ZERO) > 0) {
+            totalAmount = request.getTotalLiters().multiply(request.getPricePerLiter()).setScale(2, RoundingMode.HALF_UP);
+        } else {
+            totalAmount = request.getQuantity().multiply(request.getUnitPrice()).setScale(2, RoundingMode.HALF_UP);
+        }
 
         SupplyPurchase purchase = new SupplyPurchase();
         purchase.setSupplier(supplier);
@@ -140,6 +145,11 @@ public class SupplierServiceImpl implements SupplierService {
         purchase.setTotalAmount(totalAmount);
         purchase.setPurchaseDate(purchaseDateTime);
         purchase.setNote(request.getNote() != null ? request.getNote().trim() : null);
+        purchase.setLitersPerItem(request.getLitersPerItem());
+        purchase.setItemsPerBox(request.getItemsPerBox());
+        purchase.setBoxesCount(request.getBoxesCount());
+        purchase.setPricePerLiter(request.getPricePerLiter());
+        purchase.setTotalLiters(request.getTotalLiters());
         purchase.setIsCancelled(false);
 
         // Qarzni ko'paytiramiz (Bizning qarzimiz)
@@ -277,6 +287,11 @@ public class SupplierServiceImpl implements SupplierService {
                     .unitPrice(p.getUnitPrice())
                     .amount(p.getTotalAmount())
                     .note(p.getNote())
+                    .litersPerItem(p.getLitersPerItem())
+                    .itemsPerBox(p.getItemsPerBox())
+                    .boxesCount(p.getBoxesCount())
+                    .pricePerLiter(p.getPricePerLiter())
+                    .totalLiters(p.getTotalLiters())
                     .isCancelled(p.getIsCancelled())
                     .cancelReason(p.getCancelReason())
                     .cancelledBy(p.getCancelledBy())

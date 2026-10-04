@@ -29,4 +29,9 @@ public class SupplierLedgerEntryResponse {
     private String cancelReason;
     private String cancelledBy;
     private String createdBy;
+    private BigDecimal litersPerItem;
+    private Integer itemsPerBox;
+    private Integer boxesCount;
+    private BigDecimal pricePerLiter;
+    private BigDecimal totalLiters;
 }

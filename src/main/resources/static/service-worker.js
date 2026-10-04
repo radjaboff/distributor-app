@@ -1,9 +1,9 @@
-const CACHE_NAME = 'distributor-app-v47';
+const CACHE_NAME = 'distributor-app-v48';
 const urlsToCache = [
     '/',
     '/index.html',
-    '/css/style.css?v=47',
-    '/js/app.js?v=47',
+    '/css/style.css?v=48',
+    '/js/app.js?v=48',
     '/manifest.json',
     '/icons/icon-v2-192.png',
     '/icons/icon-v2-512.png'
