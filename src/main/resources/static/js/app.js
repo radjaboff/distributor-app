@@ -1142,8 +1142,23 @@ async function showShops(groupId, groupName) {
 
     try {
         allShopsInGroup = await apiGet(`/shops?groupId=${groupId}`);
+        allShopsInGroup = Array.isArray(allShopsInGroup) ? allShopsInGroup : [];
+
+        const totalMarketDebt = allShopsInGroup.reduce((sum, s) => sum + (Number(s.currentDebt) || 0), 0);
 
         contentEl.innerHTML = `
+            <div class="market-summary-bar">
+                <div class="market-summary-item">
+                    <span>🏪</span>
+                    <span>Do'konlar: <strong>${allShopsInGroup.length} ta</strong></span>
+                </div>
+                <div class="market-summary-divider"></div>
+                <div class="market-summary-item">
+                    <span>💳</span>
+                    <span>${totalMarketDebt > 0 ? `Qarz: <strong style="color:#F87171;">${formatMoney(totalMarketDebt)}</strong>` : `<strong style="color:#34D399;">Qarz yo'q ✓</strong>`}</span>
+                </div>
+            </div>
+
             <div class="form-group" style="padding-bottom:6px;">
                 <input type="text" class="form-input" id="shopSearchInput" placeholder="Do'kon yoki egasini qidirish..." oninput="filterShops()">
             </div>
@@ -1215,13 +1230,28 @@ function renderShopRows(shops) {
 
     container.innerHTML = shops.map(shop => {
         const debt = Number(shop.currentDebt) || 0;
+        const initial = (shop.name && shop.name.trim().length > 0) ? shop.name.trim()[0].toUpperCase() : 'D';
+
+        // Qarzga qarab rang mavzusi
+        const isDebt = debt > 0;
+        const cardBorder = isDebt ? 'rgba(244, 63, 94, 0.32)' : 'rgba(52, 211, 153, 0.28)';
+        const cardBorderHover = isDebt ? 'rgba(244, 63, 94, 0.65)' : 'rgba(52, 211, 153, 0.65)';
+        const cardGlow = isDebt ? 'rgba(244, 63, 94, 0.2)' : 'rgba(52, 211, 153, 0.18)';
+        const cardGlowHover = isDebt ? 'rgba(244, 63, 94, 0.35)' : 'rgba(52, 211, 153, 0.32)';
+        const avatarBg = isDebt 
+            ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)'
+            : 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)';
+        const avatarBorder = isDebt ? 'rgba(244, 63, 94, 0.45)' : 'rgba(52, 211, 153, 0.45)';
+        const avatarColor = isDebt ? '#FB7185' : '#34D399';
+        const avatarShadow = isDebt ? 'rgba(244, 63, 94, 0.28)' : 'rgba(52, 211, 153, 0.28)';
+
         let debtBadgeHtml = '';
         if (debt > 0) {
-            debtBadgeHtml = `<div class="ledger-row__amount amount--debt">${formatMoney(debt)}</div>`;
+            debtBadgeHtml = `<div class="ledger-row__amount amount--debt" style="font-size:13.5px; padding:6px 12px; font-weight:800;">${formatMoney(debt)}</div>`;
         } else if (debt < 0) {
-            debtBadgeHtml = `<div class="ledger-row__amount amount--credit">Haqdorlik: ${formatMoney(Math.abs(debt))}</div>`;
+            debtBadgeHtml = `<div class="ledger-row__amount amount--credit" style="font-size:13px; padding:5px 10px;">Haqdor: ${formatMoney(Math.abs(debt))}</div>`;
         } else {
-            debtBadgeHtml = `<div class="ledger-row__amount amount--paid">Toza ${Icons.check}</div>`;
+            debtBadgeHtml = `<div class="ledger-row__amount amount--paid" style="font-size:13px; padding:5px 10px;">Toza ${Icons.check}</div>`;
         }
 
         let subtitleParts = [];
@@ -1233,15 +1263,27 @@ function renderShopRows(shops) {
         }
 
         return `
-            <div class="shop-card" onclick="showShopDetail(${shop.id})">
+            <div class="shop-card" style="
+                --card-border: ${cardBorder};
+                --card-border-hover: ${cardBorderHover};
+                --card-glow: ${cardGlow};
+                --card-glow-hover: ${cardGlowHover};
+                --avatar-bg: ${avatarBg};
+                --avatar-border: ${avatarBorder};
+                --avatar-color: ${avatarColor};
+                --avatar-shadow: ${avatarShadow};
+            " onclick="showShopDetail(${shop.id})">
                 <div class="shop-card__top">
+                    <div class="shop-card__avatar">
+                        ${escHtml(initial)}
+                    </div>
                     <div class="shop-card__main">
                         <div class="shop-card__title">${escHtml(shop.name)}</div>
                         ${subtitleParts.length > 0 ? `<div class="shop-card__subtitle">${subtitleParts.join('<span style="opacity:0.4;">·</span>')}</div>` : ''}
                     </div>
                     <div class="shop-card__badge-wrap">
                         ${debtBadgeHtml}
-                        <span class="chevron">${Icons.chevronRight}</span>
+                        <span class="market-card__chevron">${Icons.chevronRight}</span>
                     </div>
                 </div>
                 <div class="shop-card__actions" onclick="event.stopPropagation()">
@@ -1254,8 +1296,8 @@ function renderShopRows(shops) {
                         ` : ''}
                     </div>
                     <div class="shop-card__action-group">
-                        <button class="icon-btn" onclick="showEditShopForm(${shop.id}, '${escJs(shop.name)}', '${escJs(shop.ownerName || '')}', '${escJs(shop.phone || '')}')" title="Tahrirlash">${Icons.edit}</button>
-                        <button class="icon-btn icon-btn--danger" onclick="deleteShop(${shop.id}, '${escJs(shop.name)}', ${debt})" title="O'chirish">${Icons.trash}</button>
+                        <button class="market-action-btn" onclick="showEditShopForm(${shop.id}, '${escJs(shop.name)}', '${escJs(shop.ownerName || '')}', '${escJs(shop.phone || '')}')" title="Tahrirlash">${Icons.edit}</button>
+                        <button class="market-action-btn market-action-btn--danger" onclick="deleteShop(${shop.id}, '${escJs(shop.name)}', ${debt})" title="O'chirish">${Icons.trash}</button>
                     </div>
                 </div>
             </div>
@@ -2406,8 +2448,16 @@ async function showProducts() {
 
     try {
         allProductsList = await apiGet('/products');
+        allProductsList = Array.isArray(allProductsList) ? allProductsList : [];
 
         contentEl.innerHTML = `
+            <div class="market-summary-bar">
+                <div class="market-summary-item">
+                    <span>📦</span>
+                    <span>Jami: <strong>${allProductsList.length} turdagi tovar</strong></span>
+                </div>
+            </div>
+
             <div class="form-group" style="padding-bottom:8px;">
                 <input type="text" class="form-input" id="productSearchInput" placeholder="Mahsulot nomini qidirish..." oninput="filterProducts()">
             </div>
@@ -2422,30 +2472,46 @@ async function showProducts() {
 
 function renderProductRows(products) {
     const container = document.getElementById('productsListContainer');
+    if (!container) return;
 
     if (products.length === 0) {
-        container.innerHTML = '<div class="empty-state">Mahsulot topilmadi.</div>';
+        container.innerHTML = '<div class="empty-state" style="padding:20px 0;">Mahsulot topilmadi.</div>';
         return;
     }
 
-    container.innerHTML = products.map(p => {
+    container.innerHTML = products.map((p, index) => {
         const isOil = p.name.toLowerCase().includes('yog');
-        const unitText = p.unit ? escHtml(p.unit) : '';
+        const unitText = p.unit ? escHtml(p.unit) : (p.packageName ? escHtml(p.packageName) : 'dona');
+        const price = Number(p.sellPrice) || 0;
+        const t = MARKET_THEMES[index % MARKET_THEMES.length];
+
         return `
-            <div class="ledger-row" onclick="showEditProductForm(${p.id})">
-                <div class="ledger-row__main" style="display:flex; flex-direction:row; align-items:center; gap:12px;">
-                    <div class="ledger-avatar ${isOil ? 'ledger-avatar--oil' : 'ledger-avatar--product'}">
-                        ${isOil ? Icons.oil : Icons.box}
-                    </div>
-                    <div>
-                        <div class="ledger-row__title">${escHtml(p.name)}</div>
-                        ${unitText ? `<div class="ledger-row__subtitle">${unitText}</div>` : ''}
+            <div class="product-card" style="
+                --card-border: ${t.border};
+                --card-border-hover: ${t.borderHover};
+                --card-glow: ${t.glow};
+                --card-glow-hover: ${t.glowHover};
+                --avatar-bg: ${t.avatarBg};
+                --avatar-border: ${t.avatarBorder};
+                --avatar-color: ${t.avatarColor};
+                --avatar-shadow: ${t.avatarShadow};
+            " onclick="showEditProductForm(${p.id})">
+                <div class="product-card__avatar">
+                    ${isOil ? Icons.oil : Icons.box}
+                </div>
+                <div class="product-card__info">
+                    <div class="product-card__title">${escHtml(p.name)}</div>
+                    <div class="product-card__badge" style="background:${t.badgeBg}; border:1px solid ${t.badgeBorder}; color:${t.badgeText};">
+                        <span>${unitText}</span>
                     </div>
                 </div>
-                <div class="ledger-row__right">
-                    <button class="icon-btn" onclick="event.stopPropagation(); showEditProductForm(${p.id})" title="Tahrirlash">${Icons.edit}</button>
-                    <button class="icon-btn icon-btn--danger" onclick="event.stopPropagation(); deleteProduct(${p.id}, '${escJs(p.name)}')" title="O'chirish">${Icons.trash}</button>
-                    <span class="chevron">${Icons.chevronRight}</span>
+                <div class="product-card__price-wrap">
+                    ${price > 0 ? `<div class="product-card__price">${formatMoney(price)}</div>` : ''}
+                </div>
+                <div class="product-card__actions" onclick="event.stopPropagation()">
+                    <button class="market-action-btn" onclick="showEditProductForm(${p.id})" title="Tahrirlash">${Icons.edit}</button>
+                    <button class="market-action-btn market-action-btn--danger" onclick="deleteProduct(${p.id}, '${escJs(p.name)}')" title="O'chirish">${Icons.trash}</button>
+                    <span class="market-card__chevron">${Icons.chevronRight}</span>
                 </div>
             </div>
         `;
