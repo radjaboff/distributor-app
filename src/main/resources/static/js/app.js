@@ -4087,50 +4087,50 @@ function renderSupplierRows(suppliers) {
         const cleanPhone = (supplier.phone || '').replace(/[^\d]/g, '');
 
         return `
-            <div class="shop-card" 
-                 style="--card-border: ${cardBorder}; --card-border-hover: ${cardBorderHover}; --card-glow: ${cardGlow}; --card-glow-hover: ${cardGlowHover}; margin-bottom:12px;"
-                 onclick="showSupplierDetail(${supplier.id})">
-                <div class="shop-card__header">
-                    <div class="shop-card__avatar" style="background: ${avatarBg}; border-color: ${avatarBorder}; color: ${avatarColor}; box-shadow: 0 4px 14px ${avatarShadow};">
+            <div class="shop-card" style="
+                --card-border: ${cardBorder};
+                --card-border-hover: ${cardBorderHover};
+                --card-glow: ${cardGlow};
+                --card-glow-hover: ${cardGlowHover};
+                --avatar-bg: ${avatarBg};
+                --avatar-border: ${avatarBorder};
+                --avatar-color: ${avatarColor};
+                --avatar-shadow: ${avatarShadow};
+                margin-bottom: 12px;
+            " onclick="showSupplierDetail(${supplier.id})">
+                <div class="shop-card__top">
+                    <div class="shop-card__avatar">
                         ${escHtml(initial)}
                     </div>
-                    <div class="shop-card__info" style="min-width:0;">
-                        <div class="shop-card__title" title="${escAttr(supplier.name)}" style="font-size:16px;">
-                            ${escHtml(supplier.name)}
-                        </div>
-                        <div class="shop-card__sub" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:3px;">
-                            <span style="font-size:11px; background:rgba(59,130,246,0.15); color:#60A5FA; border:1px solid rgba(59,130,246,0.3); padding:1px 6px; border-radius:6px; font-weight:700;">🍚 Shakar</span>
-                            ${supplier.phone ? `<span style="font-size:12px; color:var(--color-ink-dim);">${escHtml(supplier.phone)}</span>` : ''}
+                    <div class="shop-card__main">
+                        <div class="shop-card__title">${escHtml(supplier.name)}</div>
+                        <div class="shop-card__subtitle">
+                            ${supplier.phone ? `<span class="shop-card__meta">${Icons.phoneAction} ${escHtml(supplier.phone)}</span>` : '<span style="color:var(--color-ink-dim);">Telefon kiritilmagan</span>'}
                         </div>
                     </div>
-                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0;">
+                    <div class="shop-card__badge-wrap">
                         ${debtBadgeHtml}
                         <span class="market-card__chevron">${Icons.chevronRight}</span>
                     </div>
                 </div>
-
                 <div class="shop-card__actions" onclick="event.stopPropagation()">
                     <div class="shop-card__action-group">
                         ${rawPhone ? `
-                            <a href="tel:${escAttr(rawPhone)}" class="action-btn action-btn--phone" title="Qo'ng'iroq qilish">
+                            <a href="tel:${escAttr(rawPhone)}" class="action-chip action-chip--call" title="Qo'ng'iroq qilish">
                                 ${Icons.phoneAction}
                                 <span>Qo'ng'iroq</span>
                             </a>
                         ` : ''}
                         ${cleanPhone ? `
-                            <a href="https://t.me/+${escAttr(cleanPhone)}" target="_blank" rel="noopener noreferrer" class="action-btn action-btn--tg" title="Telegram">
+                            <a href="https://t.me/+${escAttr(cleanPhone)}" target="_blank" rel="noopener noreferrer" class="action-chip action-chip--telegram" title="Telegram">
                                 ${Icons.tgAction}
                                 <span>Telegram</span>
                             </a>
                         ` : ''}
                     </div>
                     <div class="shop-card__action-group">
-                        <button class="action-btn action-btn--edit" title="Tahrirlash" onclick="showEditSupplierForm(${supplier.id})">
-                            ${Icons.edit}
-                        </button>
-                        <button class="action-btn action-btn--delete" title="O'chirish" onclick="deleteSupplier(${supplier.id}, '${escJs(supplier.name)}', ${debt})">
-                            ${Icons.trash}
-                        </button>
+                        <button class="market-action-btn" onclick="showEditSupplierForm(${supplier.id})" title="Tahrirlash">${Icons.edit}</button>
+                        <button class="market-action-btn market-action-btn--danger" onclick="deleteSupplier(${supplier.id}, '${escJs(supplier.name)}', ${debt})" title="O'chirish">${Icons.trash}</button>
                     </div>
                 </div>
             </div>
@@ -4616,7 +4616,7 @@ function showAddSupplyPurchaseForm(supplierId, supplierName) {
                 </div>
             </div>
 
-            <!-- 1. Mahsulot nomi va tezkor chiplar -->
+            <!-- 1. Mahsulot nomi (Foydalanuvchi o'zi erkin yozadi, ortiqcha takliflarsiz) -->
             <div class="form-group" style="margin-bottom:16px;">
                 <label class="form-label" for="purchaseProductNameInput">
                     <span class="label-icon">${Icons.box}</span>
@@ -4625,15 +4625,8 @@ function showAddSupplyPurchaseForm(supplierId, supplierName) {
                 <input type="text" 
                        class="form-input" 
                        id="purchaseProductNameInput" 
-                       value="Shakar" 
-                       placeholder="Masalan: Shakar, Xorazm shakari...">
-                
-                <div class="quick-chips-row" style="margin-top:8px;">
-                    <button type="button" class="preset-chip" onclick="setPurchaseProductName('Xorazm shakari')">Xorazm shakari</button>
-                    <button type="button" class="preset-chip" onclick="setPurchaseProductName('Rossiya shakari')">Rossiya shakari</button>
-                    <button type="button" class="preset-chip" onclick="setPurchaseProductName('Angren shakari')">Angren shakari</button>
-                    <button type="button" class="preset-chip" onclick="setPurchaseProductName('Oq shakar')">Oq shakar</button>
-                </div>
+                       placeholder="Mahsulot nomini kiriting (masalan: Shakar, Shakar Xorazm...)" 
+                       autofocus>
             </div>
 
             <!-- 2. O'lchov birligi (Qop yoki Tonna) -->
@@ -4656,23 +4649,19 @@ function showAddSupplyPurchaseForm(supplierId, supplierName) {
             <div class="form-group" style="margin-bottom:16px;">
                 <label class="form-label" for="purchaseQuantityInput">
                     <span class="label-icon">${Icons.cart}</span>
-                    <span>Miqdori (Hajmi) *</span>
+                    <span id="purchaseQuantityLabel">Miqdori (Qop soni) *</span>
                 </label>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button type="button" class="btn" onclick="adjustPurchaseQuantity(currentPurchaseUnit === 'TONNA' ? -1 : -10)" style="width:44px; height:44px; padding:0; font-size:18px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF; flex-shrink:0;">−</button>
+                    <button type="button" class="btn" onclick="adjustPurchaseQuantity(-1)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">−</button>
                     <input type="number" 
                            class="form-input" 
                            id="purchaseQuantityInput" 
                            step="1" 
                            min="0.001" 
                            placeholder="Masalan: 100" 
-                           style="text-align:center; font-size:17px; font-weight:700;"
+                           style="text-align:center; font-size:18px; font-weight:700;"
                            oninput="updateSupplyPurchaseTotal()">
-                    <button type="button" class="btn" onclick="adjustPurchaseQuantity(currentPurchaseUnit === 'TONNA' ? 1 : 10)" style="width:44px; height:44px; padding:0; font-size:18px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF; flex-shrink:0;">+</button>
-                </div>
-
-                <div class="quick-chips-row" id="purchaseQuantityChips" style="margin-top:8px;">
-                    <!-- Chiplar unitga qarab yangilanadi -->
+                    <button type="button" class="btn" onclick="adjustPurchaseQuantity(1)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">+</button>
                 </div>
             </div>
 
@@ -4688,7 +4677,7 @@ function showAddSupplyPurchaseForm(supplierId, supplierName) {
                                inputmode="numeric" 
                                class="form-input money-input" 
                                id="purchaseUnitPriceInput" 
-                               placeholder="0" 
+                               placeholder="Masalan: 450 000" 
                                oninput="onPurchasePriceChange(this)">
                         <span class="money-suffix">so'm</span>
                     </div>
@@ -4728,18 +4717,22 @@ function showAddSupplyPurchaseForm(supplierId, supplierName) {
                 <input type="text" class="form-input" id="purchaseNoteInput" placeholder="Masalan: Fura raqami, yuk xati yoki vagon...">
             </div>
 
-            <!-- 7. Avtomatik hisoblangan umumiy summa (Real-time Preview) -->
+            <!-- 7. Avtomatik hisoblangan umumiy summa (Professional Hisob-kitob kartasi) -->
             <div class="stat-card stat-card--glow-blue" id="purchaseTotalCard" style="margin-bottom:20px; padding:18px; text-align:center; position:relative; overflow:hidden;">
                 <div style="font-size:11.5px; font-weight:700; color:#93C5FD; text-transform:uppercase; letter-spacing:0.8px;">
                     Jami hisoblangan summa
                 </div>
-                <div id="purchaseTotalValue" style="font-size:26px; font-weight:800; color:#60A5FA; margin-top:5px; font-variant-numeric:tabular-nums;">
+                <div id="purchaseCalculationFormula" style="font-size:13px; color:#94A3B8; margin-top:5px; font-variant-numeric:tabular-nums;">
+                    Miqdor va narx kiritilgach avtomatik hisoblanadi
+                </div>
+                <div id="purchaseTotalValue" style="font-size:28px; font-weight:800; color:#38BDF8; margin-top:6px; font-variant-numeric:tabular-nums;">
                     0 so'm
                 </div>
-                <div id="purchaseTotalWords" style="font-size:12px; color:var(--color-ink-dim); margin-top:3px; min-height:16px;">
+                <div id="purchaseTotalWords" style="font-size:12.5px; color:#A7F3D0; font-weight:600; margin-top:3px; min-height:18px;">
                 </div>
-                <div style="margin-top:8px; font-size:11px; color:#94A3B8; background:rgba(255,255,255,0.04); border-radius:8px; padding:6px 10px;">
-                    ℹ️ Ushbu summa to'liqligicha ushbu birjadan bizning qarzimizga qo'shiladi
+                <div style="margin-top:10px; font-size:11.5px; color:#94A3B8; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:7px 12px; display:inline-flex; align-items:center; gap:6px;">
+                    <span>💳</span>
+                    <span>Birjadan bizning qarzimizga qo'shiladi</span>
                 </div>
             </div>
 
@@ -4752,7 +4745,6 @@ function showAddSupplyPurchaseForm(supplierId, supplierName) {
         </div>
     `;
 
-    renderPurchaseQuickChips();
     updateSupplyPurchaseTotal();
 }
 
@@ -4770,45 +4762,18 @@ function setPurchaseUnit(unit) {
         priceLabel.innerHTML = `<span class="label-icon">${Icons.money}</span><span>${unit === 'TONNA' ? '1 tonna narxi (so\'m) *' : '1 ta qop narxi (so\'m) *'}</span>`;
     }
 
+    const qtyLabel = document.getElementById('purchaseQuantityLabel');
+    if (qtyLabel) {
+        qtyLabel.textContent = unit === 'TONNA' ? 'Miqdori (Tonna) *' : 'Miqdori (Qop soni) *';
+    }
+
     const qtyInput = document.getElementById('purchaseQuantityInput');
     if (qtyInput) {
         qtyInput.step = unit === 'TONNA' ? '0.01' : '1';
         qtyInput.placeholder = unit === 'TONNA' ? 'Masalan: 10.5' : 'Masalan: 100';
     }
 
-    renderPurchaseQuickChips();
     updateSupplyPurchaseTotal();
-}
-
-function renderPurchaseQuickChips() {
-    const container = document.getElementById('purchaseQuantityChips');
-    if (!container) return;
-
-    if (currentPurchaseUnit === 'TONNA') {
-        container.innerHTML = `
-            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(5)">5 tonna</button>
-            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(10)">10 tonna</button>
-            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(20)">20 tonna</button>
-            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(25)">25 tonna</button>
-            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(50)">50 tonna</button>
-        `;
-    } else {
-        container.innerHTML = `
-            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(50)">50 qop</button>
-            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(100)">100 qop</button>
-            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(200)">200 qop</button>
-            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(500)">500 qop</button>
-            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(1000)">1 000 qop</button>
-        `;
-    }
-}
-
-function setPurchaseProductName(name) {
-    const input = document.getElementById('purchaseProductNameInput');
-    if (input) {
-        input.value = name;
-        input.focus();
-    }
 }
 
 function adjustPurchaseQuantity(delta) {
@@ -4817,19 +4782,11 @@ function adjustPurchaseQuantity(delta) {
     let cur = parseFloat(qtyInput.value) || 0;
     cur = Math.max(0, cur + delta);
     if (currentPurchaseUnit === 'TONNA') {
-        qtyInput.value = parseFloat(cur.toFixed(2));
+        qtyInput.value = cur > 0 ? parseFloat(cur.toFixed(2)) : '';
     } else {
-        qtyInput.value = Math.round(cur);
+        qtyInput.value = cur > 0 ? Math.round(cur) : '';
     }
     updateSupplyPurchaseTotal();
-}
-
-function setPurchaseQuantityValue(val) {
-    const qtyInput = document.getElementById('purchaseQuantityInput');
-    if (qtyInput) {
-        qtyInput.value = val;
-        updateSupplyPurchaseTotal();
-    }
 }
 
 function onPurchasePriceChange(input) {
@@ -4850,14 +4807,30 @@ function onPurchasePriceChange(input) {
 }
 
 function updateSupplyPurchaseTotal() {
-    const qty = parseFloat(document.getElementById('purchaseQuantityInput')?.value) || 0;
-    const price = parseMoney(document.getElementById('purchaseUnitPriceInput')?.value) || 0;
+    const qtyInput = document.getElementById('purchaseQuantityInput');
+    const priceInput = document.getElementById('purchaseUnitPriceInput');
+    const qty = parseFloat(qtyInput?.value) || 0;
+    const price = parseMoney(priceInput?.value) || 0;
     const total = qty * price;
 
     const totalEl = document.getElementById('purchaseTotalValue');
     const wordsEl = document.getElementById('purchaseTotalWords');
+    const formulaEl = document.getElementById('purchaseCalculationFormula');
+
+    const unitLabel = currentPurchaseUnit === 'TONNA' ? 'tonna' : 'qop';
+    const qtyText = currentPurchaseUnit === 'TONNA' ? (Number.isInteger(qty) ? qty : qty.toFixed(2)) : Math.round(qty);
+
+    if (formulaEl) {
+        if (qty > 0 && price > 0) {
+            formulaEl.innerHTML = `<span style="color:#FFF; font-weight:700;">${qtyText} ${unitLabel}</span> × <span style="color:#60A5FA; font-weight:700;">${formatMoney(price)}</span>`;
+        } else {
+            formulaEl.innerHTML = `<span style="color:var(--color-ink-dim);">Miqdor va narx kiritilgach avtomatik hisoblanadi</span>`;
+        }
+    }
+
     if (totalEl) {
         totalEl.textContent = formatMoney(total);
+        totalEl.style.color = total > 0 ? '#38BDF8' : 'var(--color-ink-dim)';
     }
     if (wordsEl) {
         wordsEl.textContent = total > 0 ? formatMoneyWords(total) : '';
