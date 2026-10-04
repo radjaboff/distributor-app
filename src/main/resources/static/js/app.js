@@ -4000,15 +4000,15 @@ async function showSuppliers(category = 'SHAKAR') {
             </div>
 
             <!-- Sarhisob paneli -->
-            <div class="market-summary-bar">
-                <div class="market-summary-item">
+            <div class="market-summary-bar" style="justify-content:space-between; padding:10px 16px;">
+                <div class="market-summary-item" style="font-size:12.5px;">
                     <span>🏭</span>
                     <span>Jami: <strong>${allSuppliersList.length} ta birja</strong></span>
                 </div>
                 <div class="market-summary-divider"></div>
-                <div class="market-summary-item">
+                <div class="market-summary-item" style="font-size:12.5px;">
                     <span>💳</span>
-                    <span>Bizning qarz: <strong style="color:${totalDebt > 0 ? '#FB7185' : '#34D399'};">${formatMoney(totalDebt)}</strong></span>
+                    <span>Qarzimiz: <strong style="color:${totalDebt > 0 ? '#FB7185' : '#34D399'}; font-variant-numeric:tabular-nums; white-space:nowrap;">${formatMoney(totalDebt)}</strong></span>
                 </div>
             </div>
 
@@ -4076,13 +4076,6 @@ function renderSupplierRows(suppliers) {
         const avatarColor = isDebt ? '#FB7185' : '#34D399';
         const avatarShadow = isDebt ? 'rgba(244, 63, 94, 0.28)' : 'rgba(52, 211, 153, 0.28)';
 
-        let debtBadgeHtml = '';
-        if (debt > 0) {
-            debtBadgeHtml = `<div class="ledger-row__amount amount--debt" style="font-size:13px; padding:6px 12px; font-weight:800; white-space:nowrap;">Bizning qarz: ${formatMoney(debt)}</div>`;
-        } else {
-            debtBadgeHtml = `<div class="ledger-row__amount amount--paid" style="font-size:12.5px; padding:5px 10px; white-space:nowrap;">Qarz yo'q (0 so'm)</div>`;
-        }
-
         const rawPhone = (supplier.phone || '').replace(/[^\d+]/g, '');
         const cleanPhone = (supplier.phone || '').replace(/[^\d]/g, '');
 
@@ -4097,22 +4090,36 @@ function renderSupplierRows(suppliers) {
                 --avatar-color: ${avatarColor};
                 --avatar-shadow: ${avatarShadow};
                 margin-bottom: 12px;
+                padding: 14px 16px;
             " onclick="showSupplierDetail(${supplier.id})">
-                <div class="shop-card__top">
+                <!-- 1-qator: Avatar, Ta'minotchi nomi va Telefon raqami (To'liq kenglikda) -->
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:11px;">
                     <div class="shop-card__avatar">
                         ${escHtml(initial)}
                     </div>
-                    <div class="shop-card__main">
-                        <div class="shop-card__title">${escHtml(supplier.name)}</div>
-                        <div class="shop-card__subtitle">
-                            ${supplier.phone ? `<span class="shop-card__meta">${Icons.phoneAction} ${escHtml(supplier.phone)}</span>` : '<span style="color:var(--color-ink-dim);">Telefon kiritilmagan</span>'}
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-family:var(--font-heading); font-size:16px; font-weight:700; color:#FFFFFF; letter-spacing:-0.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-transform:uppercase;">
+                            ${escHtml(supplier.name)}
+                        </div>
+                        <div style="font-size:12px; color:#94A3B8; margin-top:3px; display:flex; align-items:center; gap:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            ${supplier.phone ? `<span style="display:inline-flex; align-items:center; gap:4px; color:#38BDF8;">${Icons.phoneAction} <span>${escHtml(supplier.phone)}</span></span>` : '<span style="color:var(--color-ink-dim);">Telefon kiritilmagan</span>'}
                         </div>
                     </div>
-                    <div class="shop-card__badge-wrap">
-                        ${debtBadgeHtml}
-                        <span class="market-card__chevron">${Icons.chevronRight}</span>
+                    <span class="market-card__chevron" style="flex-shrink:0; opacity:0.65; margin-left:4px;">${Icons.chevronRight}</span>
+                </div>
+
+                <!-- 2-qator: Maxsus Qarz Ko'rsatkichi (To'liq alohida qator, hech qachon ism bilan to'qnashmaydi) -->
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(255,255,255,0.03); border:1px solid ${isDebt ? 'rgba(244,63,94,0.25)' : 'rgba(52,211,153,0.22)'}; border-radius:12px; padding:8px 12px; margin-bottom:11px;">
+                    <div style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--color-ink-dim);">
+                        <span style="font-size:11px;">${isDebt ? '🔴' : '🟢'}</span>
+                        <span>${isDebt ? 'Bizning qarzimiz:' : 'Qarzdorlik holati:'}</span>
+                    </div>
+                    <div style="font-size:14.5px; font-weight:800; color:${isDebt ? '#FB7185' : '#34D399'}; font-variant-numeric:tabular-nums; white-space:nowrap;">
+                        ${isDebt ? formatMoney(debt) : "Qarz yo'q (0 so'm)"}
                     </div>
                 </div>
+
+                <!-- 3-qator: Qo'ng'iroq, Telegram, Tahrirlash, O'chirish tugmalari -->
                 <div class="shop-card__actions" onclick="event.stopPropagation()">
                     <div class="shop-card__action-group">
                         ${rawPhone ? `
