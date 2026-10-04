@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=42">
+    <link rel="stylesheet" href="css/style.css?v=43">
 </head>
 <body>
 <div id="networkStatus" class="network-badge" style="display:none;">
@@ -84,12 +84,6 @@
         </span>
         <span>Mahsulotlar</span>
     </button>
-    <button class="bottom-nav__item" id="navTaminot" onclick="goToTab('taminot')">
-        <span class="bottom-nav__icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-        </span>
-        <span>Ta'minot</span>
-    </button>
     <button class="bottom-nav__item" id="navDashboard" onclick="goToTab('dashboard')">
         <span class="bottom-nav__icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
@@ -102,9 +96,15 @@
         </span>
         <span>Profil</span>
     </button>
+    <button class="bottom-nav__item" id="navTaminot" onclick="goToTab('taminot')">
+        <span class="bottom-nav__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+        </span>
+        <span>Ta'minot</span>
+    </button>
 </nav>
 
-<script src="js/app.js?v=42"></script>
+<script src="js/app.js?v=43"></script>
 
 <script>
     if ('serviceWorker' in navigator) {
