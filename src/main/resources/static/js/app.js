@@ -82,7 +82,9 @@ const Icons = {
     plus: `<svg class="svg-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
     phoneApp: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><path d="M12 7v6m-3-3l3 3 3-3"/></svg>`,
     storeFront: `<svg class="svg-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"></path><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"></path><path d="M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"></path><path d="M9 21v-7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"></path></svg>`,
-    shopBag: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-1px; margin-right:3px;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`
+    shopBag: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-1px; margin-right:3px;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
+    truck: `<svg class="svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>`,
+    scale: `<svg class="svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><rect x="4" y="7" width="16" height="2" rx="1"></rect><path d="M6 9l-3 7h6l-3-7z"></path><path d="M18 9l-3 7h6l-3-7z"></path></svg>`
 };
 
 // ==========================================
@@ -2498,6 +2500,7 @@ async function executePayment(shopId, amount, method) {
 function setActiveNav(tab) {
     document.getElementById('navBozorlar')?.classList.toggle('active', tab === 'bozorlar');
     document.getElementById('navMahsulotlar')?.classList.toggle('active', tab === 'mahsulotlar');
+    document.getElementById('navTaminot')?.classList.toggle('active', tab === 'taminot');
     document.getElementById('navDashboard')?.classList.toggle('active', tab === 'dashboard');
     document.getElementById('navProfil')?.classList.toggle('active', tab === 'profil');
 }
@@ -2509,6 +2512,9 @@ function goToTab(tab) {
     } else if (tab === 'mahsulotlar') {
         setActiveNav('mahsulotlar');
         showProducts();
+    } else if (tab === 'taminot') {
+        setActiveNav('taminot');
+        showSuppliers();
     } else if (tab === 'dashboard') {
         setActiveNav('dashboard');
         showDashboard();
@@ -3951,4 +3957,1313 @@ window.addEventListener('keydown', (e) => {
         closeStatementModal();
     }
 });
+
+// ==========================================
+// TA'MINOT (BIRJALAR VA TA'MINOTCHILAR MODULI)
+// ==========================================
+let currentSupplyCategory = 'SHAKAR';
+let allSuppliersList = [];
+let currentSupplierId = null;
+let currentSupplierLedgerData = null;
+let currentSupplierLedgerFilterMode = 'all'; // 'all' | 'day'
+let currentSupplierLedgerSelectedDate = getLocalDateString();
+let currentPurchaseUnit = 'QOP'; // 'QOP' | 'TONNA'
+let currentSupplyPaymentMethod = 'NAQD'; // 'NAQD' | 'KARTA' | 'BANK'
+
+async function showSuppliers(category = 'SHAKAR') {
+    currentSupplyCategory = category;
+    updateHeaderMeta('Ta\'minot', 'Ta\'minotchilar va birjalar qarz daftari', 'TA\'MINOT');
+    setRootScreen('taminot');
+    fabBtn.style.display = 'flex';
+    fabBtn.onclick = () => showAddSupplierForm();
+
+    contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    try {
+        const suppliers = await apiGet('/suppliers?category=' + encodeURIComponent(category));
+        allSuppliersList = Array.isArray(suppliers) ? suppliers : [];
+
+        const totalDebt = allSuppliersList.reduce((sum, s) => sum + (Number(s.currentDebt) || 0), 0);
+
+        let html = `
+            <!-- Kategoriya tablari (Shakar & Yog') -->
+            <div class="tab-bar" style="margin-bottom:14px;">
+                <button type="button" class="tab-btn ${currentSupplyCategory === 'SHAKAR' ? 'active' : ''}" onclick="showSuppliers('SHAKAR')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                    <span>🍚</span>
+                    <span>Shakar</span>
+                </button>
+                <button type="button" class="tab-btn" onclick="showToast('Yog\' ta\'minoti bo\'limi tez kunda ishga tushadi', 'info')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px; opacity:0.65; cursor:pointer;">
+                    <span>🛢️</span>
+                    <span>Yog'</span>
+                    <span style="font-size:10px; background:rgba(245,158,11,0.22); color:#FBBF24; border:1px solid rgba(245,158,11,0.35); padding:1px 6px; border-radius:6px; font-weight:700;">Tez kunda</span>
+                </button>
+            </div>
+
+            <!-- Sarhisob paneli -->
+            <div class="market-summary-bar">
+                <div class="market-summary-item">
+                    <span>🏭</span>
+                    <span>Jami: <strong>${allSuppliersList.length} ta birja</strong></span>
+                </div>
+                <div class="market-summary-divider"></div>
+                <div class="market-summary-item">
+                    <span>💳</span>
+                    <span>Bizning qarz: <strong style="color:${totalDebt > 0 ? '#FB7185' : '#34D399'};">${formatMoney(totalDebt)}</strong></span>
+                </div>
+            </div>
+
+            <!-- Qidiruv maydoni -->
+            <div class="form-group" style="padding-bottom:10px;">
+                <input type="text" class="form-input" id="supplierSearchInput" placeholder="Birja yoki ta'minotchi nomini qidirish..." oninput="filterSuppliers()">
+            </div>
+
+            <div id="suppliersListContainer"></div>
+        `;
+
+        contentEl.innerHTML = html;
+        renderSupplierRows(allSuppliersList);
+
+    } catch (err) {
+        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+    }
+}
+
+function filterSuppliers() {
+    const q = (document.getElementById('supplierSearchInput')?.value || '').toLowerCase().trim();
+    if (!q) {
+        renderSupplierRows(allSuppliersList);
+        return;
+    }
+    const filtered = allSuppliersList.filter(s => {
+        const nameMatch = (s.name || '').toLowerCase().includes(q);
+        const phoneMatch = (s.phone || '').toLowerCase().includes(q);
+        return nameMatch || phoneMatch;
+    });
+    renderSupplierRows(filtered);
+}
+
+function renderSupplierRows(suppliers) {
+    const container = document.getElementById('suppliersListContainer');
+    if (!container) return;
+
+    if (!suppliers || suppliers.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding: 36px 16px;">
+                <div style="font-size:36px; margin-bottom:10px;">🏭</div>
+                <div style="font-weight:700; color:#FFF; font-size:16px; margin-bottom:6px;">Hali birja yoki ta'minotchi yo'q</div>
+                <div style="font-size:13px; color:var(--color-ink-dim); max-width:280px; margin:0 auto 16px auto;">Pastdagi + tugmasini bosib shakar oladigan birja yoki ta'minotchilarni qo'shing.</div>
+                <button class="btn btn--primary" onclick="showAddSupplierForm()" style="display:inline-flex; align-items:center; gap:8px;">
+                    ${Icons.plus} Yangi birja qo'shish
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = suppliers.map(supplier => {
+        const debt = Number(supplier.currentDebt) || 0;
+        const initial = (supplier.name && supplier.name.trim().length > 0) ? supplier.name.trim()[0].toUpperCase() : 'B';
+        const isDebt = debt > 0;
+
+        const cardBorder = isDebt ? 'rgba(244, 63, 94, 0.32)' : 'rgba(52, 211, 153, 0.28)';
+        const cardBorderHover = isDebt ? 'rgba(244, 63, 94, 0.65)' : 'rgba(52, 211, 153, 0.65)';
+        const cardGlow = isDebt ? 'rgba(244, 63, 94, 0.2)' : 'rgba(52, 211, 153, 0.18)';
+        const cardGlowHover = isDebt ? 'rgba(244, 63, 94, 0.35)' : 'rgba(52, 211, 153, 0.32)';
+        const avatarBg = isDebt 
+            ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)'
+            : 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)';
+        const avatarBorder = isDebt ? 'rgba(244, 63, 94, 0.45)' : 'rgba(52, 211, 153, 0.45)';
+        const avatarColor = isDebt ? '#FB7185' : '#34D399';
+        const avatarShadow = isDebt ? 'rgba(244, 63, 94, 0.28)' : 'rgba(52, 211, 153, 0.28)';
+
+        let debtBadgeHtml = '';
+        if (debt > 0) {
+            debtBadgeHtml = `<div class="ledger-row__amount amount--debt" style="font-size:13px; padding:6px 12px; font-weight:800; white-space:nowrap;">Bizning qarz: ${formatMoney(debt)}</div>`;
+        } else {
+            debtBadgeHtml = `<div class="ledger-row__amount amount--paid" style="font-size:12.5px; padding:5px 10px; white-space:nowrap;">Qarz yo'q (0 so'm)</div>`;
+        }
+
+        const rawPhone = (supplier.phone || '').replace(/[^\d+]/g, '');
+        const cleanPhone = (supplier.phone || '').replace(/[^\d]/g, '');
+
+        return `
+            <div class="shop-card" 
+                 style="--card-border: ${cardBorder}; --card-border-hover: ${cardBorderHover}; --card-glow: ${cardGlow}; --card-glow-hover: ${cardGlowHover}; margin-bottom:12px;"
+                 onclick="showSupplierDetail(${supplier.id})">
+                <div class="shop-card__header">
+                    <div class="shop-card__avatar" style="background: ${avatarBg}; border-color: ${avatarBorder}; color: ${avatarColor}; box-shadow: 0 4px 14px ${avatarShadow};">
+                        ${escHtml(initial)}
+                    </div>
+                    <div class="shop-card__info" style="min-width:0;">
+                        <div class="shop-card__title" title="${escAttr(supplier.name)}" style="font-size:16px;">
+                            ${escHtml(supplier.name)}
+                        </div>
+                        <div class="shop-card__sub" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:3px;">
+                            <span style="font-size:11px; background:rgba(59,130,246,0.15); color:#60A5FA; border:1px solid rgba(59,130,246,0.3); padding:1px 6px; border-radius:6px; font-weight:700;">🍚 Shakar</span>
+                            ${supplier.phone ? `<span style="font-size:12px; color:var(--color-ink-dim);">${escHtml(supplier.phone)}</span>` : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0;">
+                        ${debtBadgeHtml}
+                        <span class="market-card__chevron">${Icons.chevronRight}</span>
+                    </div>
+                </div>
+
+                <div class="shop-card__actions" onclick="event.stopPropagation()">
+                    <div class="shop-card__action-group">
+                        ${rawPhone ? `
+                            <a href="tel:${escAttr(rawPhone)}" class="action-btn action-btn--phone" title="Qo'ng'iroq qilish">
+                                ${Icons.phoneAction}
+                                <span>Qo'ng'iroq</span>
+                            </a>
+                        ` : ''}
+                        ${cleanPhone ? `
+                            <a href="https://t.me/+${escAttr(cleanPhone)}" target="_blank" rel="noopener noreferrer" class="action-btn action-btn--tg" title="Telegram">
+                                ${Icons.tgAction}
+                                <span>Telegram</span>
+                            </a>
+                        ` : ''}
+                    </div>
+                    <div class="shop-card__action-group">
+                        <button class="action-btn action-btn--edit" title="Tahrirlash" onclick="showEditSupplierForm(${supplier.id})">
+                            ${Icons.edit}
+                        </button>
+                        <button class="action-btn action-btn--delete" title="O'chirish" onclick="deleteSupplier(${supplier.id}, '${escJs(supplier.name)}', ${debt})">
+                            ${Icons.trash}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function showAddSupplierForm() {
+    updateHeaderMeta('Yangi birja', 'Ta\'minotchi qo\'shish', 'QO\'SHISH');
+    setBackAction(() => showSuppliers(currentSupplyCategory), 'addSupplier');
+    fabBtn.style.display = 'none';
+
+    contentEl.innerHTML = `
+        <div class="form-card">
+            <div class="form-card__header">
+                <div class="form-card__icon" style="background: rgba(59, 130, 246, 0.15); color: #60A5FA;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7v14M21 7v14M6 11h12M6 15h12M9 7V3h6v4"/></svg>
+                </div>
+                <div>
+                    <div class="form-card__title">Yangi birja / ta'minotchi</div>
+                    <div class="form-card__desc">Shakar olinadigan firma yoki shaxs ma'lumotlari</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="supplierNameInput">
+                    <span class="label-icon">${Icons.storeFront}</span>
+                    <span>Nomi yoki Firma nomi *</span>
+                </label>
+                <input type="text" class="form-input" id="supplierNameInput" placeholder="Masalan: Xorazm Shakar Birja, Bekzod aka..." autofocus>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="supplierPhoneInput">
+                    <span class="label-icon">${Icons.phoneAction}</span>
+                    <span>Telefon raqami (ixtiyoriy)</span>
+                </label>
+                <input type="tel" inputmode="tel" class="form-input" id="supplierPhoneInput" placeholder="+998 90 123 45 67">
+            </div>
+
+            <div class="form-group" style="margin-top: 24px;">
+                <button class="btn btn--primary btn--full" id="submitSupplierBtn" onclick="submitSupplier()">
+                    ${Icons.check} Saqlash
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+async function showEditSupplierForm(supplierId) {
+    const supplier = allSuppliersList.find(s => s.id === supplierId);
+    if (!supplier) {
+        showToast("Ta'minotchi topilmadi", "error");
+        return;
+    }
+
+    updateHeaderMeta("Tahrirlash", supplier.name, "TAHRIR");
+    setBackAction(() => showSuppliers(currentSupplyCategory), 'editSupplier');
+    fabBtn.style.display = 'none';
+
+    contentEl.innerHTML = `
+        <div class="form-card">
+            <div class="form-card__header">
+                <div class="form-card__icon" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24;">
+                    ${Icons.edit}
+                </div>
+                <div>
+                    <div class="form-card__title">Birja ma'lumotlarini tahrirlash</div>
+                    <div class="form-card__desc">Nom va telefon raqamini o'zgartirish</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="supplierNameInput">
+                    <span class="label-icon">${Icons.storeFront}</span>
+                    <span>Nomi yoki Firma nomi *</span>
+                </label>
+                <input type="text" class="form-input" id="supplierNameInput" value="${escAttr(supplier.name)}" autofocus>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="supplierPhoneInput">
+                    <span class="label-icon">${Icons.phoneAction}</span>
+                    <span>Telefon raqami</span>
+                </label>
+                <input type="tel" inputmode="tel" class="form-input" id="supplierPhoneInput" value="${escAttr(supplier.phone || '')}">
+            </div>
+
+            <div class="form-group" style="margin-top: 24px;">
+                <button class="btn btn--primary btn--full" id="submitSupplierBtn" onclick="submitSupplier(${supplier.id})">
+                    ${Icons.check} O'zgarishlarni saqlash
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+async function submitSupplier(supplierId = null) {
+    const name = document.getElementById('supplierNameInput')?.value.trim();
+    const phone = document.getElementById('supplierPhoneInput')?.value.trim();
+
+    if (!name) {
+        showToast("Birja yoki ta'minotchi nomini kiriting", "error");
+        return;
+    }
+
+    const btn = document.getElementById('submitSupplierBtn');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Saqlanmoqda...';
+    }
+
+    try {
+        const payload = {
+            name: name,
+            phone: phone || null,
+            category: currentSupplyCategory || 'SHAKAR'
+        };
+
+        if (supplierId) {
+            await apiPut('/suppliers/' + supplierId, payload);
+            showToast("Ma'lumotlar muvaffaqiyatli yangilandi", "success");
+        } else {
+            await apiPost('/suppliers', payload);
+            showToast("Yangi ta'minotchi muvaffaqiyatli qo'shildi", "success");
+        }
+        showSuppliers(currentSupplyCategory);
+    } catch (err) {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} Saqlash`;
+        }
+        showToast("Xatolik: " + err.message, "error");
+    }
+}
+
+async function deleteSupplier(supplierId, name, currentDebt) {
+    if (Number(currentDebt) > 0) {
+        showToast(`Ushbu birjadan hali qarzimiz bor (${formatMoney(currentDebt)})! Qarz to'liq yopilmaguncha o'chirib bo'lmaydi.`, "error");
+        return;
+    }
+
+    showConfirmDialog({
+        title: "Birjani o'chirish",
+        message: "Rostdan ham ushbu birjani o'chirmoqchimisiz?",
+        itemName: name,
+        confirmText: "O'chirish",
+        isDanger: true,
+        onConfirm: async () => {
+            try {
+                await apiDelete('/suppliers/' + supplierId);
+                showToast("Birja o'chirildi", "success");
+                showSuppliers(currentSupplyCategory);
+            } catch (err) {
+                showToast("Xatolik: " + err.message, "error");
+            }
+        }
+    });
+}
+
+// ==========================================
+// TA'MINOTCHI TAFSILOTLARI VA DAFTAR
+// ==========================================
+async function showSupplierDetail(supplierId) {
+    currentSupplierId = supplierId;
+    updateHeaderMeta('Yuklanmoqda...', '', 'TA\'MINOT');
+    setBackAction(() => showSuppliers(currentSupplyCategory), 'supplierDetail');
+    fabBtn.style.display = 'none';
+
+    contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    try {
+        const ledger = await apiGet('/suppliers/' + supplierId + '/ledger');
+        currentSupplierLedgerData = ledger;
+
+        updateHeaderMeta(ledger.supplierName, "Ta'minotchi qarz daftari va amallar", 'TA\'MINOT');
+
+        const debt = Number(ledger.currentDebt) || 0;
+        const isDebt = debt > 0;
+        const debtLabel = isDebt ? "Bizning qarzimiz (Berishimiz kerak)" : "Hisob toza (Qarzdorlik yo'q)";
+        const debtValueText = formatMoney(debt);
+        const debtStyleColor = isDebt ? 'var(--color-debt)' : 'var(--color-paid)';
+        const lineGradient = isDebt ? 'linear-gradient(90deg, #F43F5E, #FB7185)' : 'linear-gradient(90deg, #10B981, #34D399)';
+        const debtGlowClass = isDebt ? 'stat-card--glow-rose' : 'stat-card--glow-emerald';
+
+        const rawPhone = (ledger.supplierPhone || '').replace(/[^\d+]/g, '');
+
+        contentEl.innerHTML = `
+            <!-- Top KPI Card: Bizning qarzimiz -->
+            <div class="stat-card ${debtGlowClass}" style="margin-bottom:16px; text-align:center; padding: 22px 18px; position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: ${lineGradient};"></div>
+                <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:var(--color-ink-dim);">${debtLabel}</div>
+                <div class="stat-card__value" style="color: ${debtStyleColor}; font-size: 28px; font-weight:800; margin-top:6px; font-variant-numeric: tabular-nums;">
+                    ${debtValueText}
+                </div>
+                ${rawPhone ? `
+                    <div style="margin-top:12px; display:flex; justify-content:center;">
+                        <a href="tel:${escAttr(rawPhone)}" class="action-chip" style="display:inline-flex; align-items:center; gap:7px; padding: 7px 16px; width:auto; border-radius: 12px; font-size: 13px; font-weight: 600; background:rgba(59,130,246,0.18); border:1px solid rgba(59,130,246,0.4); color:#60A5FA; text-decoration:none;">
+                            ${Icons.phoneAction}
+                            <span>${escHtml(ledger.supplierPhone)}</span>
+                        </a>
+                    </div>
+                ` : ''}
+            </div>
+
+            <!-- Action Buttons: Mahsulot olish & To'lov qilish -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;">
+                <button class="btn btn--primary" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius: 14px; padding: 14px; box-shadow: 0 4px 16px rgba(37,99,235,0.3);" onclick="showAddSupplyPurchaseForm(${supplierId}, '${escJs(ledger.supplierName)}')">
+                    ${Icons.truck}
+                    <span>Mahsulot olish</span>
+                </button>
+                <button class="btn" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.18) 100%); color: #34D399; border: 1.5px solid rgba(16,185,129,0.45); display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius: 14px; padding: 14px; font-weight: 700; box-shadow: 0 4px 16px rgba(16,185,129,0.2);" onclick="showAddSupplyPaymentForm(${supplierId}, '${escJs(ledger.supplierName)}', ${debt})">
+                    ${Icons.wallet}
+                    <span>To'lov qilish</span>
+                </button>
+            </div>
+
+            <!-- Section Title -->
+            <div class="section-title" style="margin-bottom:10px;">
+                Amallar tarixi
+            </div>
+
+            <div id="supplierLedgerSectionContainer"></div>
+        `;
+
+        renderSupplierLedgerSection();
+
+    } catch (err) {
+        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+    }
+}
+
+function setSupplierLedgerDateFilter(mode) {
+    if (mode === 'all') {
+        currentSupplierLedgerFilterMode = 'all';
+    } else if (mode === 'today') {
+        currentSupplierLedgerFilterMode = 'day';
+        currentSupplierLedgerSelectedDate = getLocalDateString();
+    } else if (mode === 'yesterday') {
+        currentSupplierLedgerFilterMode = 'day';
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        currentSupplierLedgerSelectedDate = getLocalDateString(d);
+    }
+    renderSupplierLedgerSection();
+}
+
+function onSupplierLedgerDatePicked(pickedDate) {
+    if (pickedDate) {
+        currentSupplierLedgerFilterMode = 'day';
+        currentSupplierLedgerSelectedDate = pickedDate;
+        renderSupplierLedgerSection();
+    }
+}
+
+function renderSupplierLedgerSection() {
+    const container = document.getElementById('supplierLedgerSectionContainer');
+    if (!container || !currentSupplierLedgerData) return;
+
+    const todayStr = getLocalDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = getLocalDateString(yesterday);
+
+    const isDayMode = currentSupplierLedgerFilterMode === 'day';
+    const isToday = isDayMode && currentSupplierLedgerSelectedDate === todayStr;
+    const isYesterday = isDayMode && currentSupplierLedgerSelectedDate === yesterdayStr;
+    const isAll = currentSupplierLedgerFilterMode === 'all';
+
+    const allEntries = currentSupplierLedgerData.entries ? currentSupplierLedgerData.entries.slice().reverse() : [];
+
+    let filteredEntries = [];
+    if (isDayMode) {
+        filteredEntries = allEntries.filter(e => getEntryDateString(e.date) === currentSupplierLedgerSelectedDate);
+    } else {
+        filteredEntries = allEntries;
+    }
+
+    let totalPurchases = 0;
+    let totalPayments = 0;
+    filteredEntries.forEach(e => {
+        if (!e.isCancelled) {
+            const amt = Number(e.amount) || 0;
+            if (e.type === 'KIRIM') {
+                totalPurchases += amt;
+            } else {
+                totalPayments += amt;
+            }
+        }
+    });
+
+    let entriesListHtml = '';
+    if (filteredEntries.length === 0) {
+        entriesListHtml = `
+            <div class="empty-state" style="padding:26px 16px; margin: 10px 0; background:rgba(255,255,255,0.02); border:1px dashed var(--color-line); border-radius:16px;">
+                <div style="font-size:26px; margin-bottom:8px;">📦</div>
+                <div style="font-weight:700; color:#FFF; font-size:15px; margin-bottom:4px;">Ushbu davrda amallar yo'q</div>
+                <div style="font-size:12.5px; color:var(--color-ink-dim); margin-bottom:14px;">Kirim yoki to'lov amallari amalga oshirilmagan.</div>
+                ${isDayMode ? `<button class="chip-btn" onclick="setSupplierLedgerDateFilter('all')">Barcha amallarni ko'rish</button>` : ''}
+            </div>
+        `;
+    } else {
+        entriesListHtml = filteredEntries.map(entry => renderSupplierLedgerEntryCard(entry, currentSupplierId)).join('');
+    }
+
+    container.innerHTML = `
+        <!-- Filter chips bar -->
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px;">
+            <button class="chip-btn ${isAll ? 'active' : ''}" onclick="setSupplierLedgerDateFilter('all')">
+                Barchasi (${allEntries.length})
+            </button>
+            <button class="chip-btn ${isToday ? 'active' : ''}" onclick="setSupplierLedgerDateFilter('today')">
+                Bugun
+            </button>
+            <button class="chip-btn ${isYesterday ? 'active' : ''}" onclick="setSupplierLedgerDateFilter('yesterday')">
+                Kecha
+            </button>
+            <div style="position:relative; display:inline-flex; align-items:center;">
+                <input type="date" 
+                       value="${currentSupplierLedgerSelectedDate}" 
+                       max="${todayStr}"
+                       onchange="onSupplierLedgerDatePicked(this.value)"
+                       style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:#F1F5F9; border-radius:999px; padding:6px 12px; font-size:12px; font-weight:600; outline:none; font-family:var(--font-body); cursor:pointer;">
+            </div>
+        </div>
+
+        <!-- Davr sarhisobi -->
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
+            <div style="background:rgba(244,63,94,0.08); border:1px solid rgba(244,63,94,0.22); border-radius:12px; padding:10px 12px;">
+                <div style="font-size:11px; font-weight:700; color:#FDA4AF; text-transform:uppercase;">Kirim (Tovar)</div>
+                <div style="font-size:15px; font-weight:800; color:#FB7185; margin-top:3px; font-variant-numeric:tabular-nums;">+${formatMoney(totalPurchases)}</div>
+            </div>
+            <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.22); border-radius:12px; padding:10px 12px;">
+                <div style="font-size:11px; font-weight:700; color:#6EE7B7; text-transform:uppercase;">To'lov (Chiqim)</div>
+                <div style="font-size:15px; font-weight:800; color:#34D399; margin-top:3px; font-variant-numeric:tabular-nums;">−${formatMoney(totalPayments)}</div>
+            </div>
+        </div>
+
+        <!-- Amallar ro'yxati -->
+        <div class="ledger-list">
+            ${entriesListHtml}
+        </div>
+    `;
+}
+
+function renderSupplierLedgerEntryCard(entry, supplierId) {
+    const isCancelled = Boolean(entry.isCancelled);
+    const isPurchase = entry.type === 'KIRIM';
+    const rowOpacity = isCancelled ? 'opacity: 0.65; background: rgba(239,68,68,0.04);' : '';
+    const titleStyle = isCancelled ? 'text-decoration: line-through; color: var(--color-ink-dim);' : '';
+    const amountClass = isCancelled 
+        ? 'amount--muted' 
+        : (isPurchase ? 'amount--debt' : 'amount--paid');
+    const amountText = (isPurchase ? '+' : '−') + formatMoney(entry.amount);
+
+    let cancelBadge = '';
+    if (isCancelled) {
+        cancelBadge = `
+            <div style="font-size:11.5px; color:#F87171; display:flex; flex-wrap:wrap; align-items:center; gap:6px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); padding:6px 10px; border-radius:8px;">
+                <span style="background:rgba(239,68,68,0.25); border:1px solid rgba(239,68,68,0.4); padding:1px 5px; border-radius:4px; font-weight:700; font-size:10px;">BEKOR QILINGAN</span>
+                <span>${escHtml(entry.cancelReason || '')}</span>
+                <span style="opacity:0.8;">(${escHtml(entry.cancelledBy || '')})</span>
+            </div>
+        `;
+    }
+
+    let actionBtn = '';
+    if (!isCancelled && entry.id) {
+        actionBtn = `
+            <button class="btn" onclick="promptCancelSupplierEntry('${entry.type}', ${entry.id}, ${supplierId}, '${escJs(entry.description || '')}', ${entry.amount})" 
+                    style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#F87171; padding:4px 8px; border-radius:8px; font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; gap:5px; cursor:pointer;" 
+                    title="Operatsiyani bekor qilish (Storno)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+                <span>Bekor qilish</span>
+            </button>
+        `;
+    }
+
+    const typeTitle = isPurchase 
+        ? `Kirim: ${escHtml(entry.productName || 'Mahsulot')}` 
+        : `To'lov (${escHtml(entry.paymentMethod || 'NAQD')})`;
+    const typeIcon = isPurchase ? Icons.box : Icons.wallet;
+    const iconColor = isPurchase ? '#F43F5E' : '#34D399';
+    const iconBg = isPurchase ? 'rgba(244,63,94,0.14)' : 'rgba(16,185,129,0.14)';
+
+    // Kirim tafsilotlari (Qop yoki Tonna, Birlik narxi)
+    let detailsHtml = '';
+    if (isPurchase) {
+        const unitLabel = entry.unit === 'TONNA' ? 'tonna' : 'qop';
+        const qtyFormatted = entry.unit === 'TONNA' ? Number(entry.quantity).toFixed(2) : Math.round(Number(entry.quantity));
+        detailsHtml = `
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:12.5px; font-weight:500; color:#F1F5F9; line-height:1.5; ${titleStyle}">
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                    <span style="color:var(--color-ink-dim);">Hajmi:</span>
+                    <strong style="color:#FFF;">${qtyFormatted} ${unitLabel}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color:var(--color-ink-dim);">1 ${unitLabel} narxi:</span>
+                    <span style="color:#60A5FA; font-weight:700;">${formatMoney(entry.unitPrice)}</span>
+                </div>
+                ${entry.description ? `
+                    <div style="margin-top:4px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.08); font-size:12px; color:var(--color-ink-dim);">
+                        Izoh: ${escHtml(entry.description)}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    } else if (entry.description) {
+        detailsHtml = `
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:12px; color:var(--color-ink-dim); ${titleStyle}">
+                Izoh: ${escHtml(entry.description)}
+            </div>
+        `;
+    }
+
+    return `
+    <div class="ledger-row" style="cursor:default; margin-bottom:10px; display:flex; flex-direction:column; align-items:stretch; gap:10px; padding:14px 15px; ${rowOpacity}">
+        <!-- 1-qator: Turi va Summa -->
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:${iconBg}; color:${iconColor}; flex-shrink:0;">
+                    ${typeIcon}
+                </div>
+                <span style="font-weight:700; font-size:14.5px; color:#FFFFFF; letter-spacing:-0.2px;">
+                    ${typeTitle}
+                </span>
+            </div>
+            <div class="ledger-row__amount ${amountClass}" style="font-size:14px; font-weight:800; padding:4px 12px; border-radius:999px; ${isCancelled ? 'text-decoration: line-through; opacity:0.6;' : ''}">
+                ${amountText}
+            </div>
+        </div>
+
+        <!-- 2-qator: Tafsilotlar -->
+        ${detailsHtml}
+
+        <!-- 3-qator: Sana & Qarz balansi -->
+        <div style="display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--color-ink-dim); flex-wrap:wrap; gap:6px;">
+            <span style="display:inline-flex; align-items:center; gap:4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                ${new Date(entry.date).toLocaleDateString('uz-UZ')}, ${new Date(entry.date).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}
+            </span>
+            <span style="font-weight:600; color:#94A3B8;">
+                Bizning qarz: <strong style="color:${Number(entry.balanceAfter) > 0 ? '#FB7185' : '#34D399'};">${formatMoney(entry.balanceAfter)}</strong>
+            </span>
+        </div>
+
+        ${cancelBadge}
+
+        <!-- 4-qator: Mas'ul xodim & Bekor qilish tugmasi -->
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.08); margin-top:2px;">
+            <div>
+                ${formatAdminBadge(entry.createdBy)}
+            </div>
+            <div>
+                ${actionBtn}
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+// ==========================================
+// MAHSULOT SOTIB OLISH (KIRIM) FORMASI
+// ==========================================
+function showAddSupplyPurchaseForm(supplierId, supplierName) {
+    currentPurchaseUnit = 'QOP';
+    updateHeaderMeta("Mahsulot olish", supplierName, "KIRIM");
+    setBackAction(() => showSupplierDetail(supplierId), 'addSupplyPurchase');
+    fabBtn.style.display = 'none';
+
+    const today = getLocalDateString();
+
+    contentEl.innerHTML = `
+        <div class="form-card">
+            <div class="form-card__header">
+                <div class="form-card__icon" style="background: rgba(37, 99, 235, 0.15); color: #60A5FA;">
+                    ${Icons.truck}
+                </div>
+                <div>
+                    <div class="form-card__title">Mahsulot sotib olish (Kirim)</div>
+                    <div class="form-card__desc">${escHtml(supplierName)} dan yuk qabul qilish</div>
+                </div>
+            </div>
+
+            <!-- 1. Mahsulot nomi va tezkor chiplar -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="purchaseProductNameInput">
+                    <span class="label-icon">${Icons.box}</span>
+                    <span>Mahsulot nomi *</span>
+                </label>
+                <input type="text" 
+                       class="form-input" 
+                       id="purchaseProductNameInput" 
+                       value="Shakar" 
+                       placeholder="Masalan: Shakar, Xorazm shakari...">
+                
+                <div class="quick-chips-row" style="margin-top:8px;">
+                    <button type="button" class="preset-chip" onclick="setPurchaseProductName('Xorazm shakari')">Xorazm shakari</button>
+                    <button type="button" class="preset-chip" onclick="setPurchaseProductName('Rossiya shakari')">Rossiya shakari</button>
+                    <button type="button" class="preset-chip" onclick="setPurchaseProductName('Angren shakari')">Angren shakari</button>
+                    <button type="button" class="preset-chip" onclick="setPurchaseProductName('Oq shakar')">Oq shakar</button>
+                </div>
+            </div>
+
+            <!-- 2. O'lchov birligi (Qop yoki Tonna) -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" style="margin-bottom:8px;">
+                    <span class="label-icon">${Icons.scale}</span>
+                    <span>O'lchov birligi *</span>
+                </label>
+                <div class="segmented-group">
+                    <button type="button" class="segmented-btn active" id="unitQopBtn" onclick="setPurchaseUnit('QOP')">
+                        📦 Qop
+                    </button>
+                    <button type="button" class="segmented-btn" id="unitTonnaBtn" onclick="setPurchaseUnit('TONNA')">
+                        ⚖️ Tonna
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. Miqdori (Stepper + Input) -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="purchaseQuantityInput">
+                    <span class="label-icon">${Icons.cart}</span>
+                    <span>Miqdori (Hajmi) *</span>
+                </label>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="btn" onclick="adjustPurchaseQuantity(currentPurchaseUnit === 'TONNA' ? -1 : -10)" style="width:44px; height:44px; padding:0; font-size:18px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF; flex-shrink:0;">−</button>
+                    <input type="number" 
+                           class="form-input" 
+                           id="purchaseQuantityInput" 
+                           step="1" 
+                           min="0.001" 
+                           placeholder="Masalan: 100" 
+                           style="text-align:center; font-size:17px; font-weight:700;"
+                           oninput="updateSupplyPurchaseTotal()">
+                    <button type="button" class="btn" onclick="adjustPurchaseQuantity(currentPurchaseUnit === 'TONNA' ? 1 : 10)" style="width:44px; height:44px; padding:0; font-size:18px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF; flex-shrink:0;">+</button>
+                </div>
+
+                <div class="quick-chips-row" id="purchaseQuantityChips" style="margin-top:8px;">
+                    <!-- Chiplar unitga qarab yangilanadi -->
+                </div>
+            </div>
+
+            <!-- 4. Birlik narxi -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="purchaseUnitPriceInput" id="purchaseUnitPriceLabel">
+                    <span class="label-icon">${Icons.money}</span>
+                    <span>1 ta qop narxi (so'm) *</span>
+                </label>
+                <div class="money-field-wrap">
+                    <div class="money-input-box">
+                        <input type="text" 
+                               inputmode="numeric" 
+                               class="form-input money-input" 
+                               id="purchaseUnitPriceInput" 
+                               placeholder="0" 
+                               oninput="onPurchasePriceChange(this)">
+                        <span class="money-suffix">so'm</span>
+                    </div>
+                </div>
+
+                <div class="quick-chips-row" style="margin-top:8px;">
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 10000); updateSupplyPurchaseTotal();">+10 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 50000); updateSupplyPurchaseTotal();">+50 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 100000); updateSupplyPurchaseTotal();">+100 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 500000); updateSupplyPurchaseTotal();">+500 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('purchaseUnitPriceInput', 1000000); updateSupplyPurchaseTotal();">+1 mln</button>
+                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('purchaseUnitPriceInput'); updateSupplyPurchaseTotal();">Tozalash</button>
+                </div>
+            </div>
+
+            <!-- 5. Kirim sanasi -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="purchaseDateInput">
+                    <span class="label-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    </span>
+                    <span>Kirim sanasi</span>
+                </label>
+                <input type="date" 
+                       class="form-input" 
+                       id="purchaseDateInput" 
+                       value="${today}" 
+                       max="${today}">
+            </div>
+
+            <!-- 6. Izoh (ixtiyoriy) -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="purchaseNoteInput">
+                    <span class="label-icon">${Icons.info}</span>
+                    <span>Izoh (ixtiyoriy)</span>
+                </label>
+                <input type="text" class="form-input" id="purchaseNoteInput" placeholder="Masalan: Fura raqami, yuk xati yoki vagon...">
+            </div>
+
+            <!-- 7. Avtomatik hisoblangan umumiy summa (Real-time Preview) -->
+            <div class="stat-card stat-card--glow-blue" id="purchaseTotalCard" style="margin-bottom:20px; padding:18px; text-align:center; position:relative; overflow:hidden;">
+                <div style="font-size:11.5px; font-weight:700; color:#93C5FD; text-transform:uppercase; letter-spacing:0.8px;">
+                    Jami hisoblangan summa
+                </div>
+                <div id="purchaseTotalValue" style="font-size:26px; font-weight:800; color:#60A5FA; margin-top:5px; font-variant-numeric:tabular-nums;">
+                    0 so'm
+                </div>
+                <div id="purchaseTotalWords" style="font-size:12px; color:var(--color-ink-dim); margin-top:3px; min-height:16px;">
+                </div>
+                <div style="margin-top:8px; font-size:11px; color:#94A3B8; background:rgba(255,255,255,0.04); border-radius:8px; padding:6px 10px;">
+                    ℹ️ Ushbu summa to'liqligicha ushbu birjadan bizning qarzimizga qo'shiladi
+                </div>
+            </div>
+
+            <!-- 8. Saqlash tugmasi -->
+            <div class="form-group" style="margin-top:10px;">
+                <button class="btn btn--primary btn--full" id="submitSupplyPurchaseBtn" onclick="submitSupplyPurchase(${supplierId})">
+                    ${Icons.check} Kirimni tasdiqlash va saqlash
+                </button>
+            </div>
+        </div>
+    `;
+
+    renderPurchaseQuickChips();
+    updateSupplyPurchaseTotal();
+}
+
+function setPurchaseUnit(unit) {
+    currentPurchaseUnit = unit;
+    const qopBtn = document.getElementById('unitQopBtn');
+    const tonnaBtn = document.getElementById('unitTonnaBtn');
+    if (qopBtn && tonnaBtn) {
+        qopBtn.classList.toggle('active', unit === 'QOP');
+        tonnaBtn.classList.toggle('active', unit === 'TONNA');
+    }
+
+    const priceLabel = document.getElementById('purchaseUnitPriceLabel');
+    if (priceLabel) {
+        priceLabel.innerHTML = `<span class="label-icon">${Icons.money}</span><span>${unit === 'TONNA' ? '1 tonna narxi (so\'m) *' : '1 ta qop narxi (so\'m) *'}</span>`;
+    }
+
+    const qtyInput = document.getElementById('purchaseQuantityInput');
+    if (qtyInput) {
+        qtyInput.step = unit === 'TONNA' ? '0.01' : '1';
+        qtyInput.placeholder = unit === 'TONNA' ? 'Masalan: 10.5' : 'Masalan: 100';
+    }
+
+    renderPurchaseQuickChips();
+    updateSupplyPurchaseTotal();
+}
+
+function renderPurchaseQuickChips() {
+    const container = document.getElementById('purchaseQuantityChips');
+    if (!container) return;
+
+    if (currentPurchaseUnit === 'TONNA') {
+        container.innerHTML = `
+            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(5)">5 tonna</button>
+            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(10)">10 tonna</button>
+            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(20)">20 tonna</button>
+            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(25)">25 tonna</button>
+            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(50)">50 tonna</button>
+        `;
+    } else {
+        container.innerHTML = `
+            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(50)">50 qop</button>
+            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(100)">100 qop</button>
+            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(200)">200 qop</button>
+            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(500)">500 qop</button>
+            <button type="button" class="preset-chip" onclick="setPurchaseQuantityValue(1000)">1 000 qop</button>
+        `;
+    }
+}
+
+function setPurchaseProductName(name) {
+    const input = document.getElementById('purchaseProductNameInput');
+    if (input) {
+        input.value = name;
+        input.focus();
+    }
+}
+
+function adjustPurchaseQuantity(delta) {
+    const qtyInput = document.getElementById('purchaseQuantityInput');
+    if (!qtyInput) return;
+    let cur = parseFloat(qtyInput.value) || 0;
+    cur = Math.max(0, cur + delta);
+    if (currentPurchaseUnit === 'TONNA') {
+        qtyInput.value = parseFloat(cur.toFixed(2));
+    } else {
+        qtyInput.value = Math.round(cur);
+    }
+    updateSupplyPurchaseTotal();
+}
+
+function setPurchaseQuantityValue(val) {
+    const qtyInput = document.getElementById('purchaseQuantityInput');
+    if (qtyInput) {
+        qtyInput.value = val;
+        updateSupplyPurchaseTotal();
+    }
+}
+
+function onPurchasePriceChange(input) {
+    const pos = input.selectionStart;
+    const oldLen = input.value.length;
+    const num = parseMoney(input.value);
+
+    if (num > 0) {
+        input.value = formatNumberWithSpaces(num);
+        const newLen = input.value.length;
+        const newPos = Math.max(0, pos + (newLen - oldLen));
+        try { input.setSelectionRange(newPos, newPos); } catch (e) {}
+    } else if (input.value.trim() === '') {
+        input.value = '';
+    }
+
+    updateSupplyPurchaseTotal();
+}
+
+function updateSupplyPurchaseTotal() {
+    const qty = parseFloat(document.getElementById('purchaseQuantityInput')?.value) || 0;
+    const price = parseMoney(document.getElementById('purchaseUnitPriceInput')?.value) || 0;
+    const total = qty * price;
+
+    const totalEl = document.getElementById('purchaseTotalValue');
+    const wordsEl = document.getElementById('purchaseTotalWords');
+    if (totalEl) {
+        totalEl.textContent = formatMoney(total);
+    }
+    if (wordsEl) {
+        wordsEl.textContent = total > 0 ? formatMoneyWords(total) : '';
+    }
+}
+
+async function submitSupplyPurchase(supplierId) {
+    const productName = document.getElementById('purchaseProductNameInput')?.value.trim();
+    const quantity = parseFloat(document.getElementById('purchaseQuantityInput')?.value);
+    const unitPrice = parseMoney(document.getElementById('purchaseUnitPriceInput')?.value);
+    const purchaseDate = document.getElementById('purchaseDateInput')?.value || null;
+    const note = document.getElementById('purchaseNoteInput')?.value.trim() || null;
+    const today = getLocalDateString();
+
+    if (!productName) {
+        showToast("Mahsulot nomini kiriting", "error");
+        return;
+    }
+
+    if (!quantity || quantity <= 0) {
+        showToast("Miqdori (hajmini) to'g'ri kiriting", "error");
+        return;
+    }
+
+    if (!unitPrice || unitPrice <= 0) {
+        showToast("Birlik narxini to'g'ri kiriting", "error");
+        return;
+    }
+
+    if (purchaseDate && purchaseDate > today) {
+        showToast("Kirim sanasi kelajak sanada bo'lishi mumkin emas", "error");
+        return;
+    }
+
+    const btn = document.getElementById('submitSupplyPurchaseBtn');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Kirim saqlanmoqda...';
+    }
+
+    try {
+        const payload = {
+            productName: productName,
+            unit: currentPurchaseUnit,
+            quantity: quantity,
+            unitPrice: unitPrice,
+            purchaseDate: purchaseDate,
+            note: note,
+            category: currentSupplyCategory || 'SHAKAR'
+        };
+
+        await apiPost('/suppliers/' + supplierId + '/purchases', payload);
+        showToast("Mahsulot kirimi muvaffaqiyatli saqlandi!", "success");
+        if (purchaseDate) {
+            currentSupplierLedgerSelectedDate = purchaseDate;
+            currentSupplierLedgerFilterMode = 'day';
+        }
+        showSupplierDetail(supplierId);
+    } catch (err) {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} Kirimni tasdiqlash va saqlash`;
+        }
+        showToast("Xatolik: " + err.message, "error");
+    }
+}
+
+// ==========================================
+// TA'MINOTCHIGA TO'LOV QILISH FORMASI
+// ==========================================
+function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0) {
+    currentSupplyPaymentMethod = 'NAQD';
+    updateHeaderMeta("To'lov qilish", supplierName, "TO'LOV");
+    setBackAction(() => showSupplierDetail(supplierId), 'addSupplyPayment');
+    fabBtn.style.display = 'none';
+
+    const today = getLocalDateString();
+    const debtVal = Number(currentDebt) || 0;
+
+    contentEl.innerHTML = `
+        <!-- Joriy qarzimiz balansi -->
+        <div class="stat-card stat-card--glow-rose" style="margin-bottom:14px; text-align:center; padding: 18px 16px; position:relative; overflow:hidden;">
+            <div style="position: absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #F43F5E, #FB7185);"></div>
+            <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11px; font-weight:700; color:#FDA4AF;">
+                Bizning joriy qarzimiz
+            </div>
+            <div class="stat-card__value" style="color: #FB7185; font-size: 26px; font-weight:800; margin-top:4px; font-variant-numeric: tabular-nums;">
+                ${formatMoney(debtVal)}
+            </div>
+        </div>
+
+        <div class="form-card">
+            <div class="form-card__header">
+                <div class="form-card__icon" style="background: rgba(16, 185, 129, 0.15); color: #34D399;">
+                    ${Icons.wallet}
+                </div>
+                <div>
+                    <div class="form-card__title">Birjaga to'lov qilish</div>
+                    <div class="form-card__desc">To'lov sanasi, summasi va usulini tasdiqlang</div>
+                </div>
+            </div>
+
+            <!-- 1. To'lov sanasi -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="supplyPaymentDateInput">
+                    <span class="label-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    </span>
+                    <span>To'lov sanasi</span>
+                </label>
+                <input type="date" 
+                       class="form-input" 
+                       id="supplyPaymentDateInput" 
+                       value="${today}" 
+                       max="${today}">
+            </div>
+
+            <!-- 2. To'lov summasi -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="supplyPaymentAmountInput">
+                    <span class="label-icon">${Icons.money}</span>
+                    <span>To'lov summasi *</span>
+                </label>
+                <div class="money-field-wrap">
+                    <div class="money-input-box">
+                        <input type="text" 
+                               inputmode="numeric" 
+                               class="form-input money-input" 
+                               id="supplyPaymentAmountInput" 
+                               placeholder="0" 
+                               autofocus
+                               oninput="onSupplyPaymentAmountChange(this, ${debtVal})">
+                        <span class="money-suffix">so'm</span>
+                    </div>
+                </div>
+
+                <div class="quick-chips-row" style="margin-top:8px;">
+                    ${debtVal > 0 ? `
+                        <button type="button" class="preset-chip preset-chip--accent" onclick="setSupplyPaymentPreset(${debtVal}, ${debtVal})">To'liq qarz (${formatMoney(debtVal)})</button>
+                    ` : ''}
+                    <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(1000000, ${debtVal})">+1 mln</button>
+                    <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(5000000, ${debtVal})">+5 mln</button>
+                    <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(10000000, ${debtVal})">+10 mln</button>
+                    <button type="button" class="preset-chip" onclick="addSupplyPaymentAmount(50000000, ${debtVal})">+50 mln</button>
+                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearSupplyPaymentAmount(${debtVal})">Tozalash</button>
+                </div>
+            </div>
+
+            <!-- 3. Qarzdan chegirish va qoldiq kartasi (Live preview) -->
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px 14px; margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:12.5px; color:var(--color-ink-dim);">To'lovdan keyingi qarzimiz:</span>
+                    <strong id="supplyPaymentRemainingDebt" style="font-size:14px; color:${debtVal > 0 ? '#FB7185' : '#34D399'}; font-variant-numeric:tabular-nums;">
+                        ${formatMoney(debtVal)}
+                    </strong>
+                </div>
+                <div id="supplyPaymentWarning" style="display:none; margin-top:8px; font-size:11.5px; color:#F87171; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:8px; padding:6px 10px;">
+                    ⚠️ Kiritilgan summa joriy qarzdan ortiq bo'lmasligi lozim!
+                </div>
+            </div>
+
+            <!-- 4. To'lov usuli (Segmented) -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" style="margin-bottom:8px;">
+                    <span class="label-icon">${Icons.wallet}</span>
+                    <span>To'lov usuli *</span>
+                </label>
+                <div class="segmented-group">
+                    <button type="button" class="segmented-btn segmented-btn--emerald active" id="supplyPayNaqdBtn" onclick="setSupplyPaymentType('NAQD')">
+                        💵 NAQD
+                    </button>
+                    <button type="button" class="segmented-btn segmented-btn--sky" id="supplyPayKartaBtn" onclick="setSupplyPaymentType('KARTA')">
+                        💳 KARTA
+                    </button>
+                    <button type="button" class="segmented-btn" id="supplyPayBankBtn" onclick="setSupplyPaymentType('BANK')">
+                        🏛️ BANK
+                    </button>
+                </div>
+            </div>
+
+            <!-- 5. Izoh -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="supplyPaymentNoteInput">
+                    <span class="label-icon">${Icons.info}</span>
+                    <span>Izoh (ixtiyoriy)</span>
+                </label>
+                <input type="text" class="form-input" id="supplyPaymentNoteInput" placeholder="Masalan: Kvitansiya raqami yoki eslatma...">
+            </div>
+
+            <!-- 6. Saqlash tugmasi -->
+            <div class="form-group" style="margin-top: 22px;">
+                <button class="btn btn--full" id="submitSupplyPaymentBtn" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(52, 211, 153, 0.4); color: #FFFFFF; font-size:15px; font-weight: 800; padding: 15px; border-radius: 14px; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);" onclick="submitSupplyPayment(${supplierId}, ${debtVal})">
+                    ${Icons.check} To'lovni tasdiqlash va saqlash
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function setSupplyPaymentType(method) {
+    currentSupplyPaymentMethod = method;
+    document.getElementById('supplyPayNaqdBtn')?.classList.toggle('active', method === 'NAQD');
+    document.getElementById('supplyPayKartaBtn')?.classList.toggle('active', method === 'KARTA');
+    document.getElementById('supplyPayBankBtn')?.classList.toggle('active', method === 'BANK');
+}
+
+function onSupplyPaymentAmountChange(input, currentDebt) {
+    const pos = input.selectionStart;
+    const oldLen = input.value.length;
+    const num = parseMoney(input.value);
+
+    if (num > 0) {
+        input.value = formatNumberWithSpaces(num);
+        const newLen = input.value.length;
+        const newPos = Math.max(0, pos + (newLen - oldLen));
+        try { input.setSelectionRange(newPos, newPos); } catch (e) {}
+    } else if (input.value.trim() === '') {
+        input.value = '';
+    }
+
+    updateSupplyPaymentRemainingDebt(currentDebt);
+}
+
+function updateSupplyPaymentRemainingDebt(currentDebt) {
+    const amount = parseMoney(document.getElementById('supplyPaymentAmountInput')?.value) || 0;
+    const remaining = Math.max(0, currentDebt - amount);
+    const remEl = document.getElementById('supplyPaymentRemainingDebt');
+    const warnEl = document.getElementById('supplyPaymentWarning');
+
+    if (remEl) {
+        remEl.textContent = formatMoney(remaining);
+        remEl.style.color = remaining > 0 ? '#FB7185' : '#34D399';
+    }
+
+    if (warnEl) {
+        if (currentDebt > 0 && amount > currentDebt) {
+            warnEl.style.display = 'block';
+        } else {
+            warnEl.style.display = 'none';
+        }
+    }
+}
+
+function setSupplyPaymentPreset(amount, currentDebt) {
+    const input = document.getElementById('supplyPaymentAmountInput');
+    if (input) {
+        input.value = formatNumberWithSpaces(amount);
+        updateSupplyPaymentRemainingDebt(currentDebt);
+    }
+}
+
+function addSupplyPaymentAmount(delta, currentDebt) {
+    const input = document.getElementById('supplyPaymentAmountInput');
+    if (input) {
+        const cur = parseMoney(input.value) || 0;
+        input.value = formatNumberWithSpaces(cur + delta);
+        updateSupplyPaymentRemainingDebt(currentDebt);
+    }
+}
+
+function clearSupplyPaymentAmount(currentDebt) {
+    const input = document.getElementById('supplyPaymentAmountInput');
+    if (input) {
+        input.value = '';
+        updateSupplyPaymentRemainingDebt(currentDebt);
+    }
+}
+
+async function submitSupplyPayment(supplierId, currentDebt = 0) {
+    const paymentDate = document.getElementById('supplyPaymentDateInput')?.value || null;
+    const amount = parseMoney(document.getElementById('supplyPaymentAmountInput')?.value);
+    const note = document.getElementById('supplyPaymentNoteInput')?.value.trim() || null;
+    const today = getLocalDateString();
+
+    if (!amount || amount <= 0) {
+        showToast("To'g'ri to'lov summasini kiriting", "error");
+        return;
+    }
+
+    if (currentDebt > 0 && amount > currentDebt) {
+        showToast(`To'lov summasi (${formatMoney(amount)}) joriy qarzdan (${formatMoney(currentDebt)}) oshib ketmasligi lozim!`, "error");
+        return;
+    }
+
+    if (paymentDate && paymentDate > today) {
+        showToast("To'lov sanasi kelajak sanada bo'lishi mumkin emas", "error");
+        return;
+    }
+
+    const btn = document.getElementById('submitSupplyPaymentBtn');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'To\'lov saqlanmoqda...';
+    }
+
+    try {
+        const payload = {
+            amount: amount,
+            paymentMethod: currentSupplyPaymentMethod || 'NAQD',
+            paymentDate: paymentDate,
+            note: note
+        };
+
+        await apiPost('/suppliers/' + supplierId + '/payments', payload);
+        showToast("To'lov muvaffaqiyatli saqlandi!", "success");
+        if (paymentDate) {
+            currentSupplierLedgerSelectedDate = paymentDate;
+            currentSupplierLedgerFilterMode = 'day';
+        }
+        showSupplierDetail(supplierId);
+    } catch (err) {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `${Icons.check} To'lovni tasdiqlash va saqlash`;
+        }
+        showToast("Xatolik: " + err.message, "error");
+    }
+}
+
+// ==========================================
+// OPERATSIYANI BEKOR QILISH (STORNO)
+// ==========================================
+function promptCancelSupplierEntry(type, id, supplierId, description, amount) {
+    const isPurchase = type === 'KIRIM';
+    
+    showBottomSheet(`
+        <div style="text-align:left;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                <div style="width:42px; height:42px; border-radius:12px; background:rgba(239,68,68,0.15); color:#F87171; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+                </div>
+                <div>
+                    <div style="font-size:16px; font-weight:800; color:#FFF;">Operatsiyani bekor qilish (Storno)</div>
+                    <div style="font-size:12.5px; color:var(--color-ink-dim);">Ushbu amal birja qarz balansini avtomatik to'g'irlaydi</div>
+                </div>
+            </div>
+
+            <div style="background:var(--color-paper-dim); border:1px solid var(--color-line); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.6;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span style="color:var(--color-ink-dim);">Amal turi:</span>
+                    <strong style="color:#FFF;">${isPurchase ? 'Kirim #' + id : 'To\'lov #' + id}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span style="color:var(--color-ink-dim);">Summa:</span>
+                    <strong style="color:#60A5FA;">${formatMoney(amount)}</strong>
+                </div>
+                ${description ? `
+                    <div style="color:var(--color-ink-dim); font-size:12px; margin-top:4px; padding-top:4px; border-top:1px dashed var(--color-line);">
+                        ${escHtml(description)}
+                    </div>
+                ` : ''}
+            </div>
+
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="cancelSupplierReasonInput">
+                    <span class="label-icon">${Icons.alertTriangle}</span>
+                    <span>Bekor qilish sababi *</span>
+                </label>
+                <input type="text" class="form-input" id="cancelSupplierReasonInput" placeholder="Masalan: Adashib kiritilgan yoki qaytarilgan..." autofocus>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn" style="flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF;" onclick="closeBottomSheet()">
+                    Bekor qilmaslik
+                </button>
+                <button type="button" class="btn btn--danger" id="confirmCancelSupplierBtn" style="flex:1; background:linear-gradient(135deg, #EF4444, #DC2626); color:#FFF; font-weight:700;" onclick="executeCancelSupplierEntry('${type}', ${id}, ${supplierId})">
+                    Ha, bekor qilish
+                </button>
+            </div>
+        </div>
+    `);
+}
+
+async function executeCancelSupplierEntry(type, id, supplierId) {
+    const reasonInput = document.getElementById('cancelSupplierReasonInput');
+    const reason = reasonInput ? reasonInput.value.trim() : '';
+
+    if (!reason) {
+        showToast("Iltimos, bekor qilish sababini yozing", "error");
+        return;
+    }
+
+    const btn = document.getElementById('confirmCancelSupplierBtn');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = 'Bekor qilinmoqda...';
+    }
+
+    try {
+        await apiPost('/suppliers/' + supplierId + '/cancel-entry', {
+            type: type,
+            entryId: id,
+            cancelReason: reason
+        });
+        closeBottomSheet();
+        showToast("Operatsiya bekor qilindi (qarz to'g'irlandi)", "success");
+        showSupplierDetail(supplierId);
+    } catch (err) {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = 'Ha, bekor qilish';
+        }
+        showToast("Xatolik: " + err.message, "error");
+    }
+}
 
