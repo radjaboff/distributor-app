@@ -512,32 +512,34 @@ body {
 /* Do'kon kartochkasi (Fintech Premium Style) */
 .shop-card {
     position: relative;
-    padding: 13px 16px;
-    margin-bottom: 12px;
-    border-radius: 20px;
-    background: linear-gradient(135deg, rgba(17, 24, 39, 0.88) 0%, rgba(15, 23, 42, 0.78) 100%);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    border-radius: 18px;
+    background: linear-gradient(145deg, rgba(23, 33, 54, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid var(--card-border, rgba(56, 189, 248, 0.28));
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-left: 4px solid var(--card-accent, rgba(56, 189, 248, 0.6));
     box-shadow: 
-        0 8px 24px -4px rgba(0, 0, 0, 0.4),
+        0 8px 24px -4px rgba(0, 0, 0, 0.55),
         0 0 18px -4px var(--card-glow, rgba(56, 189, 248, 0.18)),
-        inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
     cursor: pointer;
     transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     flex-direction: column;
-    gap: 11px;
+    gap: 0;
     -webkit-tap-highlight-color: transparent;
 }
 
 .shop-card:hover {
     transform: translateY(-2px);
-    border-color: var(--card-border-hover, rgba(56, 189, 248, 0.65));
+    border-color: rgba(255, 255, 255, 0.2);
+    border-left-color: var(--card-accent, rgba(56, 189, 248, 0.9));
     box-shadow: 
-        0 12px 30px -4px rgba(0, 0, 0, 0.5),
+        0 12px 30px -4px rgba(0, 0, 0, 0.65),
         0 0 26px -2px var(--card-glow-hover, rgba(56, 189, 248, 0.32)),
-        inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .shop-card:active {

@@ -957,8 +957,44 @@ const MARKET_THEMES = [
         badgeBg: 'rgba(99, 102, 241, 0.12)',
         badgeBorder: 'rgba(99, 102, 241, 0.25)',
         badgeText: '#A5B4FC'
+    },
+    {
+        border: 'rgba(20, 184, 166, 0.28)',
+        borderHover: 'rgba(20, 184, 166, 0.65)',
+        glow: 'rgba(20, 184, 166, 0.18)',
+        glowHover: 'rgba(20, 184, 166, 0.35)',
+        avatarBg: 'linear-gradient(135deg, rgba(20, 184, 166, 0.22) 0%, rgba(13, 148, 136, 0.16) 100%)',
+        avatarBorder: 'rgba(20, 184, 166, 0.45)',
+        avatarColor: '#2DD4BF',
+        avatarShadow: 'rgba(20, 184, 166, 0.3)',
+        badgeBg: 'rgba(20, 184, 166, 0.12)',
+        badgeBorder: 'rgba(20, 184, 166, 0.25)',
+        badgeText: '#5EEAD4'
+    },
+    {
+        border: 'rgba(249, 115, 22, 0.28)',
+        borderHover: 'rgba(249, 115, 22, 0.65)',
+        glow: 'rgba(249, 115, 22, 0.18)',
+        glowHover: 'rgba(249, 115, 22, 0.35)',
+        avatarBg: 'linear-gradient(135deg, rgba(249, 115, 22, 0.22) 0%, rgba(194, 65, 12, 0.16) 100%)',
+        avatarBorder: 'rgba(249, 115, 22, 0.45)',
+        avatarColor: '#FB923C',
+        avatarShadow: 'rgba(249, 115, 22, 0.3)',
+        badgeBg: 'rgba(249, 115, 22, 0.12)',
+        badgeBorder: 'rgba(249, 115, 22, 0.25)',
+        badgeText: '#FDBA74'
     }
 ];
+
+function getShopTheme(id, name) {
+    let hash = 0;
+    const str = (name || '') + (id || 0);
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return MARKET_THEMES[Math.abs(hash) % MARKET_THEMES.length];
+}
 
 let allMarketGroupsList = [];
 
@@ -1233,67 +1269,101 @@ function renderShopRows(shops) {
     container.innerHTML = shops.map(shop => {
         const debt = Number(shop.currentDebt) || 0;
         const initial = (shop.name && shop.name.trim().length > 0) ? shop.name.trim()[0].toUpperCase() : 'D';
+        const theme = getShopTheme(shop.id, shop.name);
 
-        // Qarzga qarab rang mavzusi
         const isDebt = debt > 0;
-        const cardBorder = isDebt ? 'rgba(244, 63, 94, 0.32)' : 'rgba(52, 211, 153, 0.28)';
-        const cardBorderHover = isDebt ? 'rgba(244, 63, 94, 0.65)' : 'rgba(52, 211, 153, 0.65)';
-        const cardGlow = isDebt ? 'rgba(244, 63, 94, 0.2)' : 'rgba(52, 211, 153, 0.18)';
-        const cardGlowHover = isDebt ? 'rgba(244, 63, 94, 0.35)' : 'rgba(52, 211, 153, 0.32)';
-        const avatarBg = isDebt 
-            ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)'
-            : 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)';
-        const avatarBorder = isDebt ? 'rgba(244, 63, 94, 0.45)' : 'rgba(52, 211, 153, 0.45)';
-        const avatarColor = isDebt ? '#FB7185' : '#34D399';
-        const avatarShadow = isDebt ? 'rgba(244, 63, 94, 0.28)' : 'rgba(52, 211, 153, 0.28)';
+        const isCredit = debt < 0;
 
-        let debtBadgeHtml = '';
-        if (debt > 0) {
-            debtBadgeHtml = `<div class="ledger-row__amount amount--debt" style="font-size:13.5px; padding:6px 12px; font-weight:800;">${formatMoney(debt)}</div>`;
-        } else if (debt < 0) {
-            debtBadgeHtml = `<div class="ledger-row__amount amount--credit" style="font-size:13px; padding:5px 10px;">Haqdor: ${formatMoney(Math.abs(debt))}</div>`;
-        } else {
-            debtBadgeHtml = `<div class="ledger-row__amount amount--paid" style="font-size:13px; padding:5px 10px;">Toza ${Icons.check}</div>`;
+        // Holatga qarab qirra va yoritish
+        const statusAccent = isDebt ? '#F43F5E' : (isCredit ? '#0EA5E9' : '#10B981');
+        const cardGlow = isDebt ? 'rgba(244, 63, 94, 0.18)' : (isCredit ? 'rgba(14, 165, 233, 0.18)' : 'rgba(16, 185, 129, 0.15)');
+        const cardGlowHover = isDebt ? 'rgba(244, 63, 94, 0.35)' : (isCredit ? 'rgba(14, 165, 233, 0.35)' : 'rgba(16, 185, 129, 0.3)');
+
+        // 2-qator: Maxsus Do'kon Qarzi Paneli
+        let statusIcon = '🔴';
+        let statusLabel = "Do'kon qarzi:";
+        let statusColor = '#FB7185';
+        let statusBgBorder = 'rgba(244, 63, 94, 0.25)';
+        let statusText = formatMoney(debt);
+
+        if (isCredit) {
+            statusIcon = '🔵';
+            statusLabel = "Haqdorlik (Avans):";
+            statusColor = '#38BDF8';
+            statusBgBorder = 'rgba(56, 189, 248, 0.25)';
+            statusText = formatMoney(Math.abs(debt));
+        } else if (!isDebt) {
+            statusIcon = '🟢';
+            statusLabel = "Hisob holati:";
+            statusColor = '#34D399';
+            statusBgBorder = 'rgba(52, 211, 153, 0.25)';
+            statusText = "Qarz yo'q (0 so'm)";
         }
 
         let subtitleParts = [];
         if (shop.ownerName && shop.ownerName !== shop.name) {
-            subtitleParts.push(`<span class="shop-card__meta">${Icons.user} ${escHtml(shop.ownerName)}</span>`);
+            subtitleParts.push(`<span class="shop-card__meta">${Icons.user} <span>${escHtml(shop.ownerName)}</span></span>`);
         }
         if (shop.phone) {
-            subtitleParts.push(`<span class="shop-card__meta">${escHtml(shop.phone)}</span>`);
+            subtitleParts.push(`<span class="shop-card__meta" style="color:#38BDF8;">${Icons.phoneAction} <span>${escHtml(shop.phone)}</span></span>`);
         }
+
+        const rawPhone = (shop.phone || '').replace(/[^\d+]/g, '');
+        const cleanPhone = (shop.phone || '').replace(/[^\d]/g, '');
 
         return `
             <div class="shop-card" style="
-                --card-border: ${cardBorder};
-                --card-border-hover: ${cardBorderHover};
+                --card-accent: ${statusAccent};
                 --card-glow: ${cardGlow};
                 --card-glow-hover: ${cardGlowHover};
-                --avatar-bg: ${avatarBg};
-                --avatar-border: ${avatarBorder};
-                --avatar-color: ${avatarColor};
-                --avatar-shadow: ${avatarShadow};
+                margin-bottom: 13px;
+                padding: 14px 16px;
             " onclick="showShopDetail(${shop.id})">
-                <div class="shop-card__top">
-                    <div class="shop-card__avatar">
+                <!-- 1-qator: Avatar, Do'kon nomi va Egasi/Telefon (To'liq kenglikda) -->
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:11px;">
+                    <div class="shop-card__avatar" style="
+                        background: ${theme.avatarBg};
+                        border: 1.5px solid ${theme.avatarBorder};
+                        color: ${theme.avatarColor};
+                        box-shadow: 0 4px 14px ${theme.avatarShadow};
+                    ">
                         ${escHtml(initial)}
                     </div>
-                    <div class="shop-card__main">
-                        <div class="shop-card__title">${escHtml(shop.name)}</div>
-                        ${subtitleParts.length > 0 ? `<div class="shop-card__subtitle">${subtitleParts.join('<span style="opacity:0.4;">·</span>')}</div>` : ''}
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-family:var(--font-heading); font-size:16px; font-weight:700; color:#FFFFFF; letter-spacing:-0.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-transform:uppercase;">
+                            ${escHtml(shop.name)}
+                        </div>
+                        <div style="font-size:12px; color:#94A3B8; margin-top:3px; display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            ${subtitleParts.length > 0 ? subtitleParts.join('<span style="opacity:0.35;">·</span>') : '<span style="color:var(--color-ink-dim);">Ma\'lumot kiritilmagan</span>'}
+                        </div>
                     </div>
-                    <div class="shop-card__badge-wrap">
-                        ${debtBadgeHtml}
-                        <span class="market-card__chevron">${Icons.chevronRight}</span>
+                    <span class="market-card__chevron" style="flex-shrink:0; opacity:0.65; margin-left:4px;">${Icons.chevronRight}</span>
+                </div>
+
+                <!-- 2-qator: Maxsus Do'kon Qarzi Paneli (To'liq alohida qator, hech qachon ism bilan to'qnashmaydi) -->
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(0,0,0,0.25); border:1px solid ${statusBgBorder}; border-radius:12px; padding:8px 12px; margin-bottom:11px;">
+                    <div style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--color-ink-dim);">
+                        <span style="font-size:11px;">${statusIcon}</span>
+                        <span>${statusLabel}</span>
+                    </div>
+                    <div style="font-size:14.5px; font-weight:800; color:${statusColor}; font-variant-numeric:tabular-nums; white-space:nowrap;">
+                        ${statusText}
                     </div>
                 </div>
+
+                <!-- 3-qator: Qo'ng'iroq, Telegram, Tahrirlash, O'chirish -->
                 <div class="shop-card__actions" onclick="event.stopPropagation()">
                     <div class="shop-card__action-group">
-                        ${shop.phone ? `
-                            <a href="tel:${escAttr(shop.phone)}" class="action-chip action-chip--call" title="Qo'ng'iroq qilish">
+                        ${rawPhone ? `
+                            <a href="tel:${escAttr(rawPhone)}" class="action-chip action-chip--call" title="Qo'ng'iroq qilish">
                                 ${Icons.phoneAction}
                                 <span>Qo'ng'iroq</span>
+                            </a>
+                        ` : ''}
+                        ${cleanPhone ? `
+                            <a href="https://t.me/+${escAttr(cleanPhone)}" target="_blank" rel="noopener noreferrer" class="action-chip action-chip--telegram" title="Telegram">
+                                ${Icons.tgAction}
+                                <span>Telegram</span>
                             </a>
                         ` : ''}
                     </div>
@@ -3411,40 +3481,64 @@ async function showDebtorShopsList() {
             ${debtors.map(shop => {
                 const debt = Number(shop.currentDebt) || 0;
                 const initial = (shop.name && shop.name.trim().length > 0) ? shop.name.trim()[0].toUpperCase() : 'D';
+                const theme = getShopTheme(shop.id, shop.name);
+                const rawPhone = (shop.phone || '').replace(/[^\d+]/g, '');
+                const cleanPhone = (shop.phone || '').replace(/[^\d]/g, '');
 
                 return `
                     <div class="shop-card" style="
-                        --card-border: rgba(244, 63, 94, 0.35);
-                        --card-border-hover: rgba(244, 63, 94, 0.65);
+                        --card-accent: #F43F5E;
                         --card-glow: rgba(244, 63, 94, 0.2);
                         --card-glow-hover: rgba(244, 63, 94, 0.35);
-                        --avatar-bg: linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%);
-                        --avatar-border: rgba(244, 63, 94, 0.45);
-                        --avatar-color: #FB7185;
-                        --avatar-shadow: rgba(244, 63, 94, 0.28);
+                        margin-bottom: 13px;
+                        padding: 14px 16px;
                     " onclick="currentGroupId=${shop.marketGroupId}; currentGroupName='${escJs(shop.marketGroupName || '')}'; showShopDetail(${shop.id})">
-                        <div class="shop-card__top">
-                            <div class="shop-card__avatar">
+                        <!-- 1-qator: Avatar, Do'kon nomi va Bozor/Telefon (To'liq kenglikda) -->
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:11px;">
+                            <div class="shop-card__avatar" style="
+                                background: ${theme.avatarBg};
+                                border: 1.5px solid ${theme.avatarBorder};
+                                color: ${theme.avatarColor};
+                                box-shadow: 0 4px 14px ${theme.avatarShadow};
+                            ">
                                 ${escHtml(initial)}
                             </div>
-                            <div class="shop-card__main">
-                                <div class="shop-card__title">${escHtml(shop.name)}</div>
-                                <div class="shop-card__subtitle">
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-family:var(--font-heading); font-size:16px; font-weight:700; color:#FFFFFF; letter-spacing:-0.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-transform:uppercase;">
+                                    ${escHtml(shop.name)}
+                                </div>
+                                <div style="font-size:12px; color:#94A3B8; margin-top:3px; display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                                     <span class="shop-card__meta">${escHtml(shop.marketGroupName || '')}</span>
-                                    ${shop.phone ? `<span style="opacity:0.4;">·</span><span class="shop-card__meta">${escHtml(shop.phone)}</span>` : ''}
+                                    ${shop.phone ? `<span style="opacity:0.35;">·</span><span class="shop-card__meta" style="color:#38BDF8;">${Icons.phoneAction} <span>${escHtml(shop.phone)}</span></span>` : ''}
                                 </div>
                             </div>
-                            <div class="shop-card__badge-wrap">
-                                <div class="ledger-row__amount amount--debt" style="font-size:13.5px; padding:6px 12px; font-weight:800;">${formatMoney(debt)}</div>
-                                <span class="market-card__chevron">${Icons.chevronRight}</span>
+                            <span class="market-card__chevron" style="flex-shrink:0; opacity:0.65; margin-left:4px;">${Icons.chevronRight}</span>
+                        </div>
+
+                        <!-- 2-qator: Maxsus Do'kon Qarzi Paneli -->
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(0,0,0,0.25); border:1px solid rgba(244,63,94,0.25); border-radius:12px; padding:8px 12px; margin-bottom:11px;">
+                            <div style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--color-ink-dim);">
+                                <span style="font-size:11px;">🔴</span>
+                                <span>Do'kon qarzi:</span>
+                            </div>
+                            <div style="font-size:14.5px; font-weight:800; color:#FB7185; font-variant-numeric:tabular-nums; white-space:nowrap;">
+                                ${formatMoney(debt)}
                             </div>
                         </div>
+
+                        <!-- 3-qator: Qo'ng'iroq va Telegram -->
                         <div class="shop-card__actions" onclick="event.stopPropagation()">
                             <div class="shop-card__action-group">
-                                ${shop.phone ? `
-                                    <a href="tel:${escAttr(shop.phone)}" class="action-chip action-chip--call" title="Qo'ng'iroq qilish">
+                                ${rawPhone ? `
+                                    <a href="tel:${escAttr(rawPhone)}" class="action-chip action-chip--call" title="Qo'ng'iroq qilish">
                                         ${Icons.phoneAction}
                                         <span>Qo'ng'iroq</span>
+                                    </a>
+                                ` : ''}
+                                ${cleanPhone ? `
+                                    <a href="https://t.me/+${escAttr(cleanPhone)}" target="_blank" rel="noopener noreferrer" class="action-chip action-chip--telegram" title="Telegram">
+                                        ${Icons.tgAction}
+                                        <span>Telegram</span>
                                     </a>
                                 ` : ''}
                             </div>
@@ -4065,36 +4159,26 @@ function renderSupplierRows(suppliers) {
         const initial = (supplier.name && supplier.name.trim().length > 0) ? supplier.name.trim()[0].toUpperCase() : 'B';
         const isDebt = debt > 0;
 
-        const cardBorder = isDebt ? 'rgba(244, 63, 94, 0.32)' : 'rgba(52, 211, 153, 0.28)';
-        const cardBorderHover = isDebt ? 'rgba(244, 63, 94, 0.65)' : 'rgba(52, 211, 153, 0.65)';
-        const cardGlow = isDebt ? 'rgba(244, 63, 94, 0.2)' : 'rgba(52, 211, 153, 0.18)';
-        const cardGlowHover = isDebt ? 'rgba(244, 63, 94, 0.35)' : 'rgba(52, 211, 153, 0.32)';
-        const avatarBg = isDebt 
-            ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)'
-            : 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)';
-        const avatarBorder = isDebt ? 'rgba(244, 63, 94, 0.45)' : 'rgba(52, 211, 153, 0.45)';
-        const avatarColor = isDebt ? '#FB7185' : '#34D399';
-        const avatarShadow = isDebt ? 'rgba(244, 63, 94, 0.28)' : 'rgba(52, 211, 153, 0.28)';
-
+        const theme = getShopTheme(supplier.id, supplier.name);
         const rawPhone = (supplier.phone || '').replace(/[^\d+]/g, '');
         const cleanPhone = (supplier.phone || '').replace(/[^\d]/g, '');
 
         return `
             <div class="shop-card" style="
-                --card-border: ${cardBorder};
-                --card-border-hover: ${cardBorderHover};
-                --card-glow: ${cardGlow};
-                --card-glow-hover: ${cardGlowHover};
-                --avatar-bg: ${avatarBg};
-                --avatar-border: ${avatarBorder};
-                --avatar-color: ${avatarColor};
-                --avatar-shadow: ${avatarShadow};
-                margin-bottom: 12px;
+                --card-accent: ${isDebt ? '#F43F5E' : '#10B981'};
+                --card-glow: ${isDebt ? 'rgba(244, 63, 94, 0.2)' : 'rgba(52, 211, 153, 0.18)'};
+                --card-glow-hover: ${isDebt ? 'rgba(244, 63, 94, 0.35)' : 'rgba(52, 211, 153, 0.32)'};
+                margin-bottom: 13px;
                 padding: 14px 16px;
             " onclick="showSupplierDetail(${supplier.id})">
                 <!-- 1-qator: Avatar, Ta'minotchi nomi va Telefon raqami (To'liq kenglikda) -->
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:11px;">
-                    <div class="shop-card__avatar">
+                    <div class="shop-card__avatar" style="
+                        background: ${theme.avatarBg};
+                        border: 1.5px solid ${theme.avatarBorder};
+                        color: ${theme.avatarColor};
+                        box-shadow: 0 4px 14px ${theme.avatarShadow};
+                    ">
                         ${escHtml(initial)}
                     </div>
                     <div style="flex:1; min-width:0;">
