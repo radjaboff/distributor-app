@@ -33,14 +33,30 @@ public class MarketGroupServiceImpl implements MarketGroupService {
 
     @Override
     public List<MarketGroupResponse> getAll() {
-        return marketGroupRepository.findByIsDeletedFalse().stream()
-                .map(MarketGroupMapper::toResponse)
+        List<MarketGroup> groups = marketGroupRepository.findByIsDeletedFalse();
+        List<Object[]> counts = shopRepository.countActiveShopsByMarketGroup();
+        java.util.Map<Long, Integer> countMap = new java.util.HashMap<>();
+        for (Object[] row : counts) {
+            if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+                countMap.put((Long) row[0], ((Number) row[1]).intValue());
+            }
+        }
+        return groups.stream()
+                .map(mg -> {
+                    MarketGroupResponse resp = MarketGroupMapper.toResponse(mg);
+                    resp.setShopCount(countMap.getOrDefault(mg.getId(), 0));
+                    return resp;
+                })
                 .toList();
     }
 
     @Override
     public MarketGroupResponse getById(Long id) {
-        return MarketGroupMapper.toResponse(findEntityById(id));
+        MarketGroup mg = findEntityById(id);
+        MarketGroupResponse resp = MarketGroupMapper.toResponse(mg);
+        long count = shopRepository.countByMarketGroupIdAndIsDeletedFalse(id);
+        resp.setShopCount((int) count);
+        return resp;
     }
 
     @Override

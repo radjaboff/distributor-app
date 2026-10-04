@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 public class MarketGroupResponse {
     private Long id;
     private String name;
+    private Integer shopCount = 0;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

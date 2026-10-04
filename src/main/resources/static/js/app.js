@@ -80,7 +80,9 @@ const Icons = {
     badgeDebt: `<svg class="svg-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
     wallet: `<svg class="svg-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path></svg>`,
     plus: `<svg class="svg-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
-    phoneApp: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><path d="M12 7v6m-3-3l3 3 3-3"/></svg>`
+    phoneApp: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><path d="M12 7v6m-3-3l3 3 3-3"/></svg>`,
+    storeFront: `<svg class="svg-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"></path><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"></path><path d="M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"></path><path d="M9 21v-7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"></path></svg>`,
+    shopBag: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-1px; margin-right:3px;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`
 };
 
 // ==========================================
@@ -872,6 +874,92 @@ async function apiDelete(path) {
     return response.ok;
 }
 
+// ==========================================
+// BOZORLAR (MARKET GROUPS - Variant 2 Fintech)
+// ==========================================
+const MARKET_THEMES = [
+    {
+        border: 'rgba(56, 189, 248, 0.28)',
+        borderHover: 'rgba(56, 189, 248, 0.65)',
+        glow: 'rgba(56, 189, 248, 0.18)',
+        glowHover: 'rgba(56, 189, 248, 0.35)',
+        avatarBg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.16) 100%)',
+        avatarBorder: 'rgba(56, 189, 248, 0.45)',
+        avatarColor: '#38BDF8',
+        avatarShadow: 'rgba(56, 189, 248, 0.3)',
+        badgeBg: 'rgba(56, 189, 248, 0.12)',
+        badgeBorder: 'rgba(56, 189, 248, 0.25)',
+        badgeText: '#7DD3FC'
+    },
+    {
+        border: 'rgba(52, 211, 153, 0.28)',
+        borderHover: 'rgba(52, 211, 153, 0.65)',
+        glow: 'rgba(52, 211, 153, 0.18)',
+        glowHover: 'rgba(52, 211, 153, 0.35)',
+        avatarBg: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)',
+        avatarBorder: 'rgba(52, 211, 153, 0.45)',
+        avatarColor: '#34D399',
+        avatarShadow: 'rgba(52, 211, 153, 0.3)',
+        badgeBg: 'rgba(52, 211, 153, 0.12)',
+        badgeBorder: 'rgba(52, 211, 153, 0.25)',
+        badgeText: '#6EE7B7'
+    },
+    {
+        border: 'rgba(168, 85, 247, 0.28)',
+        borderHover: 'rgba(168, 85, 247, 0.65)',
+        glow: 'rgba(168, 85, 247, 0.18)',
+        glowHover: 'rgba(168, 85, 247, 0.35)',
+        avatarBg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(124, 58, 237, 0.16) 100%)',
+        avatarBorder: 'rgba(168, 85, 247, 0.45)',
+        avatarColor: '#C084FC',
+        avatarShadow: 'rgba(168, 85, 247, 0.3)',
+        badgeBg: 'rgba(168, 85, 247, 0.12)',
+        badgeBorder: 'rgba(168, 85, 247, 0.25)',
+        badgeText: '#D8B4FE'
+    },
+    {
+        border: 'rgba(251, 191, 36, 0.28)',
+        borderHover: 'rgba(251, 191, 36, 0.65)',
+        glow: 'rgba(251, 191, 36, 0.18)',
+        glowHover: 'rgba(251, 191, 36, 0.35)',
+        avatarBg: 'linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(217, 119, 6, 0.16) 100%)',
+        avatarBorder: 'rgba(251, 191, 36, 0.45)',
+        avatarColor: '#FBBF24',
+        avatarShadow: 'rgba(251, 191, 36, 0.3)',
+        badgeBg: 'rgba(251, 191, 36, 0.12)',
+        badgeBorder: 'rgba(251, 191, 36, 0.25)',
+        badgeText: '#FDE68A'
+    },
+    {
+        border: 'rgba(244, 63, 94, 0.28)',
+        borderHover: 'rgba(244, 63, 94, 0.65)',
+        glow: 'rgba(244, 63, 94, 0.18)',
+        glowHover: 'rgba(244, 63, 94, 0.35)',
+        avatarBg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)',
+        avatarBorder: 'rgba(244, 63, 94, 0.45)',
+        avatarColor: '#FB7185',
+        avatarShadow: 'rgba(244, 63, 94, 0.3)',
+        badgeBg: 'rgba(244, 63, 94, 0.12)',
+        badgeBorder: 'rgba(244, 63, 94, 0.25)',
+        badgeText: '#FDA4AF'
+    },
+    {
+        border: 'rgba(99, 102, 241, 0.28)',
+        borderHover: 'rgba(99, 102, 241, 0.65)',
+        glow: 'rgba(99, 102, 241, 0.18)',
+        glowHover: 'rgba(99, 102, 241, 0.35)',
+        avatarBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(79, 70, 229, 0.16) 100%)',
+        avatarBorder: 'rgba(99, 102, 241, 0.45)',
+        avatarColor: '#818CF8',
+        avatarShadow: 'rgba(99, 102, 241, 0.3)',
+        badgeBg: 'rgba(99, 102, 241, 0.12)',
+        badgeBorder: 'rgba(99, 102, 241, 0.25)',
+        badgeText: '#A5B4FC'
+    }
+];
+
+let allMarketGroupsList = [];
+
 // Toifalar (Bozorlar) ro'yxatini ko'rsatish
 async function showMarketGroups() {
     updateHeaderMeta('Bozorlar', "Do'konlar va savdo nuqtalari", 'PRO');
@@ -883,34 +971,99 @@ async function showMarketGroups() {
 
     try {
         const groups = await apiGet('/market-groups');
+        allMarketGroupsList = Array.isArray(groups) ? groups : [];
 
-        if (groups.length === 0) {
-            contentEl.innerHTML = '<div class="empty-state">Hali toifa qo\'shilmagan.<br>Pastdagi + tugmasi orqali yangi bozor qo\'shing.</div>';
+        if (allMarketGroupsList.length === 0) {
+            contentEl.innerHTML = '<div class="empty-state">Hali bozor qo\'shilmagan.<br>Pastdagi + tugmasi orqali yangi bozor qo\'shing.</div>';
             return;
         }
 
-        contentEl.innerHTML = groups.map(group => `
-    <div class="ledger-row" onclick="showShops(${group.id}, '${escJs(group.name)}')">
-        <div class="ledger-row__main" style="display:flex; flex-direction:row; align-items:center; gap:12px;">
-            <div class="ledger-avatar ledger-avatar--market">
-                ${Icons.market}
+        const totalShops = allMarketGroupsList.reduce((sum, g) => sum + (Number(g.shopCount) || 0), 0);
+
+        let html = `
+            <div class="market-summary-bar">
+                <div class="market-summary-item">
+                    <span>🏪</span>
+                    <span>Jami: <strong>${allMarketGroupsList.length} ta bozor</strong></span>
+                </div>
+                <div class="market-summary-divider"></div>
+                <div class="market-summary-item">
+                    <span>🏬</span>
+                    <span><strong>${totalShops} ta do'kon</strong></span>
+                </div>
             </div>
-            <div>
-                <div class="ledger-row__title">${escHtml(group.name)}</div>
-                <div class="ledger-row__subtitle">Do'konlarni ko'rish</div>
-            </div>
-        </div>
-        <div class="ledger-row__right">
-            <button class="icon-btn" onclick="event.stopPropagation(); showEditMarketGroupForm(${group.id}, '${escJs(group.name)}')" title="Tahrirlash">${Icons.edit}</button>
-            <button class="icon-btn icon-btn--danger" onclick="event.stopPropagation(); deleteMarketGroup(${group.id}, '${escJs(group.name)}')" title="O'chirish">${Icons.trash}</button>
-            <span class="chevron">${Icons.chevronRight}</span>
-        </div>
-    </div>
-`).join('');
+        `;
+
+        if (allMarketGroupsList.length >= 4) {
+            html += `
+                <div class="form-group" style="padding-bottom:10px;">
+                    <input type="text" class="form-input" id="marketSearchInput" placeholder="Bozor nomini qidirish..." oninput="filterMarketGroups()">
+                </div>
+            `;
+        }
+
+        html += `<div id="marketCardsContainer">`;
+        html += renderMarketCardsHtml(allMarketGroupsList);
+        html += `</div>`;
+
+        contentEl.innerHTML = html;
 
     } catch (err) {
         contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
     }
+}
+
+function renderMarketCardsHtml(groups) {
+    if (!groups || groups.length === 0) {
+        return '<div class="empty-state" style="padding:20px 0;">Bozor topilmadi.</div>';
+    }
+
+    return groups.map((group, index) => {
+        const t = MARKET_THEMES[index % MARKET_THEMES.length];
+        const count = Number(group.shopCount) || 0;
+
+        return `
+            <div class="market-card" style="
+                --card-border: ${t.border};
+                --card-border-hover: ${t.borderHover};
+                --card-glow: ${t.glow};
+                --card-glow-hover: ${t.glowHover};
+                --avatar-bg: ${t.avatarBg};
+                --avatar-border: ${t.avatarBorder};
+                --avatar-color: ${t.avatarColor};
+                --avatar-shadow: ${t.avatarShadow};
+            " onclick="showShops(${group.id}, '${escJs(group.name)}')">
+                <div class="market-card__avatar">
+                    ${Icons.storeFront || Icons.market}
+                </div>
+                <div class="market-card__info">
+                    <div class="market-card__title">${escHtml(group.name)}</div>
+                    <div class="market-card__badge" style="background:${t.badgeBg}; border:1px solid ${t.badgeBorder}; color:${t.badgeText};">
+                        <span class="market-card__badge-icon">${Icons.shopBag}</span>
+                        <span class="market-card__badge-count">${count} ta do'kon</span>
+                    </div>
+                </div>
+                <div class="market-card__actions" onclick="event.stopPropagation()">
+                    <button class="market-action-btn" onclick="showEditMarketGroupForm(${group.id}, '${escJs(group.name)}')" title="Tahrirlash">${Icons.edit}</button>
+                    <button class="market-action-btn market-action-btn--danger" onclick="deleteMarketGroup(${group.id}, '${escJs(group.name)}')" title="O'chirish">${Icons.trash}</button>
+                    <span class="market-card__chevron">${Icons.chevronRight}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterMarketGroups() {
+    const input = document.getElementById('marketSearchInput');
+    const container = document.getElementById('marketCardsContainer');
+    if (!container) return;
+    const query = input ? input.value.trim().toLowerCase() : '';
+    if (!query) {
+        container.innerHTML = renderMarketCardsHtml(allMarketGroupsList);
+        return;
+    }
+    const filtered = allMarketGroupsList.filter(g => g.name && g.name.toLowerCase().includes(query));
+    container.innerHTML = renderMarketCardsHtml(filtered);
 }
 
 // Boshlang'ich sahifa

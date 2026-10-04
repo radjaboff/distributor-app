@@ -20,6 +20,12 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
     @Query("SELECT s FROM Shop s WHERE s.marketGroup.id = :marketGroupId AND (s.isDeleted = false OR s.isDeleted IS NULL)")
     List<Shop> findByMarketGroupIdAndIsDeletedFalse(@Param("marketGroupId") Long marketGroupId);
 
+    @Query("SELECT s.marketGroup.id, COUNT(s.id) FROM Shop s WHERE s.isDeleted = false OR s.isDeleted IS NULL GROUP BY s.marketGroup.id")
+    List<Object[]> countActiveShopsByMarketGroup();
+
+    @Query("SELECT COUNT(s) FROM Shop s WHERE s.marketGroup.id = :marketGroupId AND (s.isDeleted = false OR s.isDeleted IS NULL)")
+    long countByMarketGroupIdAndIsDeletedFalse(@Param("marketGroupId") Long marketGroupId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Shop s WHERE s.id = :id AND (s.isDeleted = false OR s.isDeleted IS NULL)")
     Optional<Shop> findByIdWithLock(@Param("id") Long id);
