@@ -4343,7 +4343,7 @@ async function showEditSupplierForm(supplierId) {
             </div>
 
             <div class="form-group" style="margin-top: 24px;">
-                <button class="btn btn--primary btn--full" id="submitSupplierBtn" onclick="submitSupplier(${supplier.id})">
+                <button class="btn btn--primary btn--full" id="submitSupplierBtn" onclick="submitSupplier(${supplier.id}, '${escJs(supplier.category || currentSupplyCategory || 'SHAKAR')}')">
                     ${Icons.check} O'zgarishlarni saqlash
                 </button>
             </div>
@@ -4351,7 +4351,7 @@ async function showEditSupplierForm(supplierId) {
     `;
 }
 
-async function submitSupplier(supplierId = null) {
+async function submitSupplier(supplierId = null, category = null) {
     const name = document.getElementById('supplierNameInput')?.value.trim();
     const phone = document.getElementById('supplierPhoneInput')?.value.trim();
 
@@ -4371,7 +4371,7 @@ async function submitSupplier(supplierId = null) {
         const payload = {
             name: name,
             phone: phone || null,
-            category: currentSupplyCategory || 'SHAKAR'
+            category: category || currentSupplyCategory || 'SHAKAR'
         };
 
         if (supplierId) {
@@ -4747,7 +4747,7 @@ function renderSupplierLedgerEntryCard(entry, supplierId) {
                 ${new Date(entry.date).toLocaleDateString('uz-UZ')}, ${new Date(entry.date).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}
             </span>
             <span style="font-weight:600; color:#94A3B8;">
-                Bizning qarz: <strong style="color:${Number(entry.balanceAfter) > 0 ? '#FB7185' : '#34D399'};">${formatMoney(entry.balanceAfter)}</strong>
+                Bizning qarz: <strong style="color:${Number(entry.balanceAfter) > 0 ? '#FB7185' : '#34D399'};">${isOil ? formatDollar(entry.balanceAfter) : formatMoney(entry.balanceAfter)}</strong>
             </span>
         </div>
 
@@ -5415,10 +5415,13 @@ function updateOilPurchaseTotal() {
     const boxesInput = document.getElementById('oilBoxesCountInput');
     const priceInput = document.getElementById('oilPricePerLiterInput');
 
-    const litersPerItem = parseFloat(literInput?.value) || 0;
+    const literRaw = (literInput?.value || '').toString().replace(',', '.');
+    const priceRaw = (priceInput?.value || '').toString().replace(',', '.');
+
+    const litersPerItem = parseFloat(literRaw) || 0;
     const itemsPerBox = parseInt(itemsInput?.value, 10) || 0;
     const boxesCount = parseInt(boxesInput?.value, 10) || 0;
-    const pricePerLiter = parseFloat(priceInput?.value) || 0;
+    const pricePerLiter = parseFloat(priceRaw) || 0;
 
     const boxLiters = (litersPerItem > 0 && itemsPerBox > 0) ? (litersPerItem * itemsPerBox) : 0;
     const totalLiters = (boxLiters > 0 && boxesCount > 0) ? (boxesCount * boxLiters) : 0;
@@ -5447,10 +5450,12 @@ function updateOilPurchaseTotal() {
 
 async function submitOilSupplyPurchase(supplierId) {
     const productName = document.getElementById('oilProductNameInput')?.value.trim();
-    const litersPerItem = parseFloat(document.getElementById('oilLiterPerItemInput')?.value);
+    const literRaw = (document.getElementById('oilLiterPerItemInput')?.value || '').toString().replace(',', '.');
+    const litersPerItem = parseFloat(literRaw);
     const itemsPerBox = parseInt(document.getElementById('oilItemsPerBoxInput')?.value, 10);
     const boxesCount = parseInt(document.getElementById('oilBoxesCountInput')?.value, 10);
-    const pricePerLiter = parseFloat(document.getElementById('oilPricePerLiterInput')?.value);
+    const priceRaw = (document.getElementById('oilPricePerLiterInput')?.value || '').toString().replace(',', '.');
+    const pricePerLiter = parseFloat(priceRaw);
     const purchaseDate = document.getElementById('oilPurchaseDateInput')?.value || null;
     const note = document.getElementById('oilPurchaseNoteInput')?.value.trim() || null;
     const today = getLocalDateString();
@@ -5675,7 +5680,8 @@ function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0, cat
 }
 
 function onSupplyPaymentDollarChange(input, currentDebt) {
-    const val = parseFloat(input.value) || 0;
+    const raw = (input.value || '').toString().replace(',', '.');
+    const val = parseFloat(raw) || 0;
     const remaining = Math.max(0, currentDebt - val);
     const remEl = document.getElementById('supplyPaymentRemainingDebt');
     const warnEl = document.getElementById('supplyPaymentWarning');
@@ -5785,14 +5791,20 @@ function clearSupplyPaymentAmount(currentDebt) {
 async function submitSupplyPayment(supplierId, currentDebt = 0, category = 'SHAKAR') {
     const isOil = category === 'YOG' || currentSupplierLedgerData?.category === 'YOG' || currentSupplyCategory === 'YOG';
     const paymentDate = document.getElementById('supplyPaymentDateInput')?.value || null;
+    const rawVal = (document.getElementById('supplyPaymentAmountInput')?.value || '').toString().replace(',', '.');
     const amount = isOil 
-        ? parseFloat(document.getElementById('supplyPaymentAmountInput')?.value) 
-        : parseMoney(document.getElementById('supplyPaymentAmountInput')?.value);
+        ? parseFloat(rawVal) 
+        : parseMoney(rawVal);
     const note = document.getElementById('supplyPaymentNoteInput')?.value.trim() || null;
     const today = getLocalDateString();
 
     if (!amount || amount <= 0) {
         showToast("To'g'ri to'lov summasini kiriting", "error");
+        return;
+    }
+
+    if (currentDebt <= 0) {
+        showToast("Ta'minotchida qarzdorlik mavjud emas!", "warning");
         return;
     }
 
@@ -5915,6 +5927,7 @@ async function executeCancelSupplierEntry(type, id, supplierId) {
         await apiPost('/suppliers/' + supplierId + '/cancel-entry', {
             type: type,
             entryId: id,
+            reason: reason,
             cancelReason: reason
         });
         closeBottomSheet();

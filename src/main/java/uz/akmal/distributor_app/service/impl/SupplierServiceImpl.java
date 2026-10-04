@@ -101,7 +101,10 @@ public class SupplierServiceImpl implements SupplierService {
                 .orElseThrow(() -> new ResourceNotFoundException("Ta'minotchi topilmadi"));
         
         if (supplier.getCurrentDebt() != null && supplier.getCurrentDebt().compareTo(BigDecimal.ZERO) > 0) {
-            throw new InvalidPaymentException("Ushbu ta'minotchida " + supplier.getCurrentDebt() + " so'm qarz mavjud! Avval hisob-kitobni to'liq yoping.");
+            String debtStr = "YOG".equalsIgnoreCase(supplier.getCategory())
+                    ? "$" + supplier.getCurrentDebt()
+                    : supplier.getCurrentDebt() + " so'm";
+            throw new InvalidPaymentException("Ushbu ta'minotchida " + debtStr + " qarz mavjud! Avval hisob-kitobni to'liq yoping.");
         }
 
         supplier.setActive(false);

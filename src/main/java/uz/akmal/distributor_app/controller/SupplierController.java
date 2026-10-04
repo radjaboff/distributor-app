@@ -64,7 +64,7 @@ public class SupplierController {
     public void cancelEntry(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         String type = (String) body.get("type");
         Long entryId = Long.valueOf(body.get("entryId").toString());
-        String reason = (String) body.get("reason");
+        String reason = body.get("cancelReason") != null ? (String) body.get("cancelReason") : (String) body.get("reason");
         supplierService.cancelEntry(id, type, entryId, reason);
     }
 }
