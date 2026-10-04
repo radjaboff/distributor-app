@@ -1714,8 +1714,10 @@ async function showShopDetail(shopId) {
             lineGradient = 'linear-gradient(90deg, #10B981, #34D399)';
         }
 
+        const debtGlowClass = debt > 0 ? 'stat-card--glow-rose' : 'stat-card--glow-emerald';
+
         contentEl.innerHTML = `
-            <div class="stat-card" style="margin-bottom:16px; text-align:center; padding: 22px 18px; background: linear-gradient(135deg, #131B2E 0%, #0F172A 100%); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); position: relative; overflow: hidden;">
+            <div class="stat-card ${debtGlowClass}" style="margin-bottom:16px; text-align:center; padding: 22px 18px; position: relative; overflow: hidden;">
                 <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: ${lineGradient};"></div>
                 <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:var(--color-ink-dim);">${debtLabel}</div>
                 <div class="stat-card__value" style="color: ${debtStyleColor}; font-size: 28px; font-weight:800; margin-top:6px; font-variant-numeric: tabular-nums;">
@@ -1730,10 +1732,10 @@ async function showShopDetail(shopId) {
             </div>
 
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;">
-                <button class="btn btn--primary" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius: 14px; padding: 14px;" onclick="showAddSaleForm(${shopId})">
+                <button class="btn btn--primary" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius: 14px; padding: 14px; box-shadow: 0 4px 16px rgba(37,99,235,0.3);" onclick="showAddSaleForm(${shopId})">
                     ${Icons.plus} Yangi sotuv
                 </button>
-                <button class="btn" style="background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16,185,129,0.35); display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius: 14px; padding: 14px; font-weight: 700;" onclick="showAddPaymentForm(${shopId}, ${debt})">
+                <button class="btn" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.18) 100%); color: #34D399; border: 1.5px solid rgba(16,185,129,0.45); display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius: 14px; padding: 14px; font-weight: 700; box-shadow: 0 4px 16px rgba(16,185,129,0.2);" onclick="showAddPaymentForm(${shopId}, ${debt})">
                     ${Icons.wallet} To'lov olish
                 </button>
             </div>
@@ -1882,7 +1884,7 @@ async function showAddSaleForm(shopId) {
                         <span class="label-icon">${Icons.box}</span>
                         <span>Mahsulotni tanlang</span>
                     </label>
-                    <select class="form-select" id="productSelect">
+                    <select class="form-select" id="productSelect" onchange="onProductSelectChanged(this.value)">
                         <option value="">— Mahsulot tanlang —</option>
                         ${products.map(p => `
                             <option value="${p.id}">
@@ -1897,10 +1899,12 @@ async function showAddSaleForm(shopId) {
                         <span class="label-icon">${Icons.box}</span>
                         <span>Miqdori (soni / qop / karobka)</span>
                     </label>
-                    <div class="quantity-input-box">
-                        <input type="number" inputmode="numeric" class="form-input" id="packageCountInput" placeholder="Masalan: 10" min="1" oninput="updateItemLineTotalPreview()">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button type="button" class="action-chip" style="width:46px; height:46px; padding:0; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF; flex-shrink:0;" onclick="stepQty('packageCountInput', -1)">−</button>
+                        <input type="number" inputmode="numeric" class="form-input" id="packageCountInput" placeholder="Masalan: 10" min="1" style="text-align:center; font-size:18px; font-weight:700; flex:1;" oninput="updateItemLineTotalPreview()">
+                        <button type="button" class="action-chip" style="width:46px; height:46px; padding:0; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; border-radius:12px; background:rgba(37,99,235,0.22); border:1px solid rgba(59,130,246,0.45); color:#60A5FA; flex-shrink:0;" onclick="stepQty('packageCountInput', 1)">+</button>
                     </div>
-                    <div class="quick-chips-row">
+                    <div class="quick-chips-row" style="margin-top:8px;">
                         <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 1); updateItemLineTotalPreview()">+1</button>
                         <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 2); updateItemLineTotalPreview()">+2</button>
                         <button type="button" class="preset-chip" onclick="addQtyToInput('packageCountInput', 5); updateItemLineTotalPreview()">+5</button>
@@ -1935,13 +1939,13 @@ async function showAddSaleForm(shopId) {
                     </div>
                 </div>
 
-                <div id="itemLineTotalBox" style="display:none; margin: 12px 0 16px 0; padding: 12px 14px; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div id="itemLineTotalBox" style="display:none; margin: 12px 0 16px 0; padding: 13px 16px; background: rgba(56, 189, 248, 0.12); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 14px rgba(56,189,248,0.15);">
                     <span style="font-size: 13px; color: #93C5FD; font-weight: 600;">Jami tovar summasi:</span>
-                    <span id="itemLineTotalVal" style="font-size: 16px; color: #60A5FA; font-weight: 800; font-variant-numeric: tabular-nums;">0 so'm</span>
+                    <span id="itemLineTotalVal" style="font-size: 17px; color: #38BDF8; font-weight: 800; font-variant-numeric: tabular-nums;">0 so'm</span>
                 </div>
 
                 <div class="form-group" style="margin-top: 14px;">
-                    <button class="btn btn--full" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.35); color: #60A5FA; display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:700;" onclick="addSaleItem()">
+                    <button class="btn btn--full" style="background: linear-gradient(135deg, rgba(37,99,235,0.3) 0%, rgba(59,130,246,0.2) 100%); border: 1.5px solid rgba(59, 130, 246, 0.45); color: #60A5FA; display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:700; padding:14px; border-radius:14px; box-shadow: 0 4px 16px rgba(37,99,235,0.25);" onclick="addSaleItem()">
                         ${Icons.plus} Mahsulotni ro'yxatga qo'shish
                     </button>
                 </div>
@@ -1986,19 +1990,27 @@ async function showAddSaleForm(shopId) {
                 </div>
 
                 <div class="form-group" id="paymentMethodGroup" style="display:none;">
-                    <label class="form-label" for="paymentMethodSelect">
+                    <label class="form-label" style="margin-bottom:8px;">
                         <span class="label-icon">${Icons.wallet}</span>
                         <span>To'lov usuli</span>
                     </label>
-                    <select class="form-select" id="paymentMethodSelect">
-                        <option value="NAQD">NAQD (qo'lma-qo'l)</option>
+                    <div class="segmented-group">
+                        <button type="button" class="segmented-btn segmented-btn--emerald active" id="saleMethodNaqdBtn" onclick="setSalePaymentMethod('NAQD')">
+                            💵 NAQD (qo'lma-qo'l)
+                        </button>
+                        <button type="button" class="segmented-btn segmented-btn--sky" id="saleMethodKartaBtn" onclick="setSalePaymentMethod('KARTA')">
+                            💳 KARTA (Click / Plastik)
+                        </button>
+                    </div>
+                    <select class="form-select" id="paymentMethodSelect" style="display:none;">
+                        <option value="NAQD" selected>NAQD (qo'lma-qo'l)</option>
                         <option value="KARTA">KARTA (Click / Plastik karta)</option>
                     </select>
                 </div>
             </div>
 
             <div class="form-group" style="margin-top: 18px;">
-                <button class="btn btn--primary btn--full" id="submitSaleBtn" onclick="submitSale(${shopId})">
+                <button class="btn btn--primary btn--full" id="submitSaleBtn" style="padding:15px; border-radius:14px; font-size:15px; font-weight:800; box-shadow: 0 6px 20px rgba(37,99,235,0.4);" onclick="submitSale(${shopId})">
                     ${Icons.check} Sotuvni rasmiylashtirish
                 </button>
             </div>
@@ -2006,6 +2018,40 @@ async function showAddSaleForm(shopId) {
     } catch (err) {
         contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
     }
+}
+
+function onProductSelectChanged(productId) {
+    if (!productId || !window.allProducts) return;
+    const product = window.allProducts.find(p => p.id == productId);
+    if (!product) return;
+
+    if (product.sellPrice && Number(product.sellPrice) > 0) {
+        setMoneyInputValue('itemPriceInput', product.sellPrice, 'itemPriceLive');
+    }
+
+    const countInput = document.getElementById('packageCountInput');
+    if (countInput && (!countInput.value || parseInt(countInput.value) <= 0)) {
+        countInput.value = '1';
+    }
+
+    updateItemLineTotalPreview();
+}
+
+function stepQty(inputId, delta) {
+    const el = document.getElementById(inputId);
+    if (!el) return;
+    let val = parseInt(el.value) || 0;
+    val += delta;
+    if (val < 1) val = 1;
+    el.value = val;
+    updateItemLineTotalPreview();
+}
+
+function setSalePaymentMethod(method) {
+    const select = document.getElementById('paymentMethodSelect');
+    if (select) select.value = method;
+    document.getElementById('saleMethodNaqdBtn')?.classList.toggle('active', method === 'NAQD');
+    document.getElementById('saleMethodKartaBtn')?.classList.toggle('active', method === 'KARTA');
 }
 
 function updateItemLineTotalPreview() {
@@ -2082,20 +2128,29 @@ function renderSaleItemsList() {
     if (paymentSection) paymentSection.style.display = 'block';
 
     listEl.innerHTML = `
-        <div style="background:var(--color-paper); border:1px solid var(--color-line); border-radius:var(--radius); padding:14px; margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span style="font-size:12px; color:var(--color-ink-dim); font-weight:600; text-transform:uppercase;">Tanlangan mahsulotlar:</span>
-                <span style="font-size:15px; font-weight:800; color:var(--color-accent); font-variant-numeric:tabular-nums;">${formatMoney(total)}</span>
+        <div style="background: linear-gradient(135deg, rgba(17, 24, 39, 0.88) 0%, rgba(15, 23, 42, 0.78) 100%); border: 1.5px solid rgba(59, 130, 246, 0.35); border-radius: 20px; padding: 16px; margin-bottom: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.35), 0 0 20px rgba(37,99,235,0.15);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">🛒</span>
+                    <span style="font-size:13px; color:#94A3B8; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Tanlangan mahsulotlar (${saleItems.length})</span>
+                </div>
+                <span style="font-size:16px; font-weight:800; color:#38BDF8; font-variant-numeric:tabular-nums;">${formatMoney(total)}</span>
             </div>
             ${saleItems.map((item, index) => `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--color-line);">
-                    <div>
-                        <div style="font-weight:700; color:#FFF; font-size:14.5px;">${escHtml(item.productName)}</div>
-                        <div style="font-size:12.5px; color:var(--color-ink-dim);">${item.packageCount} ta × ${formatMoney(item.price)}</div>
+                <div class="sale-basket-item">
+                    <div style="min-width:0; flex:1;">
+                        <div style="font-weight:700; color:#FFFFFF; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml(item.productName)}</div>
+                        <div style="font-size:12px; color:#94A3B8; margin-top:2px;">
+                            <span style="background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:6px; font-weight:600; color:#CBD5E1;">${item.packageCount} ta</span>
+                            <span style="margin: 0 4px; opacity:0.4;">×</span>
+                            <span>${formatMoney(item.price)}</span>
+                        </div>
                     </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="font-variant-numeric: tabular-nums; font-weight:700; color:var(--color-ink); font-size:14px;">${formatMoney(item.packageCount * item.price)}</span>
-                        <button onclick="removeSaleItem(${index})" style="background:rgba(244,63,94,0.15); border:none; color:var(--color-debt); width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;" title="O'chirish">×</button>
+                    <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
+                        <span style="font-variant-numeric: tabular-nums; font-weight:800; color:#F8FAFC; font-size:14px;">${formatMoney(item.packageCount * item.price)}</span>
+                        <button onclick="removeSaleItem(${index})" class="market-action-btn market-action-btn--danger" style="width:30px; height:30px; border-radius:8px;" title="O'chirish">
+                            ${Icons.trash}
+                        </button>
                     </div>
                 </div>
             `).join('')}
@@ -2266,6 +2321,14 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
     }
 
     contentEl.innerHTML = `
+        <div class="stat-card stat-card--glow-rose" style="margin-bottom:14px; text-align:center; padding: 18px 16px; position:relative; overflow:hidden;">
+            <div style="position: absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #F43F5E, #FB7185);"></div>
+            <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11px; font-weight:700; color:#FDA4AF;">Joriy qarzdorlik balansi</div>
+            <div class="stat-card__value" style="color: #FB7185; font-size: 26px; font-weight:800; margin-top:4px; font-variant-numeric: tabular-nums;">
+                ${formatMoney(currentDebt)}
+            </div>
+        </div>
+
         <div class="form-card">
             <div class="form-card__header">
                 <div class="form-card__icon" style="background: rgba(16, 185, 129, 0.15); color: #34D399;">
@@ -2273,7 +2336,7 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
                 </div>
                 <div>
                     <div class="form-card__title">To'lov qabul qilish</div>
-                    <div class="form-card__desc">${currentDebt > 0 ? `Joriy qarz: <strong style="color:var(--color-debt); font-variant-numeric:tabular-nums;">${formatMoney(currentDebt)}</strong>` : 'Qarzdorlik yo\'q'}</div>
+                    <div class="form-card__desc">Sana, to'lov summasi va usulini tasdiqlang</div>
                 </div>
             </div>
 
@@ -2327,23 +2390,38 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="paymentMethodInput">
+                <label class="form-label" style="margin-bottom:8px;">
                     <span class="label-icon">${Icons.wallet}</span>
                     <span>To'lov usuli</span>
                 </label>
-                <select class="form-select" id="paymentMethodInput">
-                    <option value="NAQD">NAQD (qo'lma-qo'l)</option>
+                <div class="segmented-group">
+                    <button type="button" class="segmented-btn segmented-btn--emerald active" id="payMethodNaqdBtn" onclick="setPaymentMethodType('NAQD')">
+                        💵 NAQD (qo'lma-qo'l)
+                    </button>
+                    <button type="button" class="segmented-btn segmented-btn--sky" id="payMethodKartaBtn" onclick="setPaymentMethodType('KARTA')">
+                        💳 KARTA (Click / Plastik)
+                    </button>
+                </div>
+                <select class="form-select" id="paymentMethodInput" style="display:none;">
+                    <option value="NAQD" selected>NAQD (qo'lma-qo'l)</option>
                     <option value="KARTA">KARTA (Click / Plastik karta)</option>
                 </select>
             </div>
 
             <div class="form-group" style="margin-top: 22px;">
-                <button class="btn btn--primary btn--full" id="submitPaymentBtn" onclick="submitPayment(${shopId}, ${currentDebt})">
+                <button class="btn btn--full" id="submitPaymentBtn" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(52, 211, 153, 0.4); color: #FFFFFF; font-size:15px; font-weight: 800; padding: 15px; border-radius: 14px; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);" onclick="submitPayment(${shopId}, ${currentDebt})">
                     ${Icons.check} To'lovni saqlash
                 </button>
             </div>
         </div>
     `;
+}
+
+function setPaymentMethodType(method) {
+    const select = document.getElementById('paymentMethodInput');
+    if (select) select.value = method;
+    document.getElementById('payMethodNaqdBtn')?.classList.toggle('active', method === 'NAQD');
+    document.getElementById('payMethodKartaBtn')?.classList.toggle('active', method === 'KARTA');
 }
 
 function setPaymentPreset(amount) {
@@ -2665,11 +2743,13 @@ function renderSummaryHtml(summary, overdueShops) {
     let lowStockHtml = '';
     if (summary.lowStockProducts && summary.lowStockProducts.length > 0) {
         lowStockHtml = `
-      <div class="section-title">${Icons.alertTriangle} Kam qolgan mahsulotlar</div>
+      <div class="section-title" style="color: #FBBF24;">${Icons.alertTriangle} Kam qolgan mahsulotlar</div>
       ${summary.lowStockProducts.map(p => `
-        <div class="ledger-row" style="cursor:default;">
-          <div class="ledger-row__main"><div class="ledger-row__title">${escHtml(p.productName)}</div></div>
-          <div class="ledger-row__amount amount--debt">${p.stockQuantity} ta</div>
+        <div class="sale-basket-item" style="border-color: rgba(245, 158, 11, 0.25);">
+          <div style="min-width:0; flex:1;">
+            <div style="font-weight:700; color:#FFFFFF; font-size:14.5px;">${escHtml(p.productName)}</div>
+          </div>
+          <div class="ledger-row__amount" style="background:rgba(245, 158, 11, 0.15); border:1px solid rgba(245, 158, 11, 0.35); color:#FBBF24; font-weight:800; font-size:13px; padding:4px 10px;">${p.stockQuantity} ta qoldi</div>
         </div>
       `).join('')}
     `;
@@ -2678,48 +2758,56 @@ function renderSummaryHtml(summary, overdueShops) {
     let overdueHtml = '';
     if (overdueShops && overdueShops.length > 0) {
         overdueHtml = `
-      <div class="section-title" style="color: var(--color-debt);">${Icons.badgeDebt} Uzoq to'lamagan do'konlar</div>
+      <div class="section-title" style="color: #FB7185;">${Icons.badgeDebt} Uzoq to'lamagan do'konlar</div>
       ${overdueShops.map(s => `
-        <div class="ledger-row" onclick="currentGroupId=null; currentGroupName=''; showShopDetail(${s.shopId})">
-          <div class="ledger-row__main">
-            <div class="ledger-row__title">${escHtml(s.shopName)}</div>
-            <div class="ledger-row__subtitle">${s.daysSinceLastPayment} kundan beri to'lanmagan</div>
+        <div class="sale-basket-item" style="border-color: rgba(244, 63, 94, 0.3); cursor:pointer;" onclick="currentGroupId=null; currentGroupName=''; showShopDetail(${s.shopId})">
+          <div style="min-width:0; flex:1;">
+            <div style="font-weight:700; color:#FFFFFF; font-size:14.5px;">${escHtml(s.shopName)}</div>
+            <div style="font-size:12px; color:#FB7185; margin-top:2px; font-weight:600;">⏳ ${s.daysSinceLastPayment} kundan beri to'lanmagan</div>
           </div>
-          <div class="ledger-row__amount amount--debt">${formatMoney(s.currentDebt)}</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="ledger-row__amount amount--debt" style="font-size:13.5px; padding:6px 12px; font-weight:800;">${formatMoney(s.currentDebt)}</div>
+            <span class="market-card__chevron">${Icons.chevronRight}</span>
+          </div>
         </div>
       `).join('')}
     `;
     }
 
     return `
-    <div class="stat-card" style="margin-bottom: 10px; text-align:center; padding:20px;">
-      <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.5px; font-size:12px;">Jami umumiy qarz</div>
-      <div class="stat-card__value" style="color: var(--color-debt); font-size: 28px; margin-top:4px;">${formatMoney(summary.totalDebtAllShops || 0)}</div>
+    <div class="stat-card stat-card--glow-rose" style="margin-bottom: 12px; text-align:center; padding:22px 18px; position:relative; overflow:hidden;">
+      <div style="position: absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #F43F5E, #FB7185);"></div>
+      <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:12px; font-weight:700; color:#FDA4AF;">Jami umumiy qarz</div>
+      <div class="stat-card__value" style="color: #FB7185; font-size: 30px; font-weight:800; margin-top:6px; font-variant-numeric:tabular-nums;">${formatMoney(summary.totalDebtAllShops || 0)}</div>
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 12px;">
-      <div class="stat-card" style="padding:14px 10px; text-align:center;">
-        <div class="stat-card__label" style="font-size:11px; color:var(--color-ink-dim); text-transform:uppercase;">Bugungi savdo</div>
-        <div class="stat-card__value" style="color: #60A5FA; font-size:16px; font-weight:700; margin-top:4px;">${formatMoney(summary.todaysSalesTotal || 0)}</div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 14px;">
+      <div class="stat-card stat-card--glow-blue" style="padding:16px 12px; text-align:center;">
+        <div class="stat-card__label" style="font-size:11.5px; color:#93C5FD; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">Bugungi savdo</div>
+        <div class="stat-card__value" style="color: #38BDF8; font-size:18px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums;">${formatMoney(summary.todaysSalesTotal || 0)}</div>
       </div>
-      <div class="stat-card" style="padding:14px 10px; text-align:center;">
-        <div class="stat-card__label" style="font-size:11px; color:var(--color-ink-dim); text-transform:uppercase;">Bugungi tushum (kassa)</div>
-        <div class="stat-card__value" style="color: var(--color-paid); font-size:16px; font-weight:700; margin-top:4px;">${formatMoney(summary.todaysPaymentsTotal || 0)}</div>
+      <div class="stat-card stat-card--glow-emerald" style="padding:16px 12px; text-align:center;">
+        <div class="stat-card__label" style="font-size:11.5px; color:#A7F3D0; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">Bugungi tushum (kassa)</div>
+        <div class="stat-card__value" style="color: #34D399; font-size:18px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums;">${formatMoney(summary.todaysPaymentsTotal || 0)}</div>
       </div>
     </div>
 
     <div class="form-group" style="margin-bottom: 16px;">
-      <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="showDebtorShopsList()">${Icons.wallet} Qarzdor do'konlar</button>
+      <button class="btn btn--full" style="background: linear-gradient(135deg, rgba(168,85,247,0.3) 0%, rgba(126,34,206,0.2) 100%); border: 1.5px solid rgba(168,85,247,0.45); color: #C084FC; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px; border-radius:14px; font-weight:700; box-shadow:0 4px 16px rgba(168,85,247,0.2);" onclick="showDebtorShopsList()">${Icons.wallet} Qarzdor do'konlar ro'yxati</button>
     </div>
     ${overdueHtml}
+    ${lowStockHtml}
   `;
 }
 
 function renderDailyPicker(el) {
     const today = getLocalDateString();
     el.innerHTML = `
-    <div class="form-group">
-      <label class="form-label">Sanani tanlang</label>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label" style="display:flex; align-items:center; gap:6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <span>Sanani tanlang</span>
+      </label>
       <input type="date" class="form-input" id="dailyDateInput" value="${today}" max="${today}" onchange="loadDailyReport()">
     </div>
     <div id="dailyReportResult"></div>
@@ -2746,65 +2834,65 @@ function renderDailyReportHtml(report) {
         : (report.sales || []).reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
 
     const salesHtml = report.sales.length ? report.sales.map(s => `
-    <div class="ledger-row" style="cursor:default;">
-      <div class="ledger-row__main">
-        <div class="ledger-row__title" style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
-          <span>${escHtml(s.shopName)}</span>
+    <div class="sale-basket-item" style="cursor:default;">
+      <div style="min-width:0; flex:1;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+          <span style="font-weight:700; color:#FFFFFF; font-size:14.5px;">${escHtml(s.shopName)}</span>
           ${formatAdminBadge(s.createdBy)}
         </div>
-        <div class="ledger-row__subtitle">${s.paymentType}</div>
+        <div style="font-size:12px; color:#94A3B8; margin-top:3px;">${s.paymentType}</div>
       </div>
-      <div class="ledger-row__amount amount--debt">${formatMoney(s.amount)}</div>
+      <div class="ledger-row__amount amount--debt" style="font-size:13.5px; padding:6px 12px; font-weight:800; margin-left:10px;">${formatMoney(s.amount)}</div>
     </div>
   `).join('') : '<div class="empty-state">Bu kuni sotuv bo\'lmagan</div>';
 
     const paymentsHtml = report.payments.length ? report.payments.map(p => `
-    <div class="ledger-row" style="cursor:default;">
-      <div class="ledger-row__main">
-        <div class="ledger-row__title" style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
-          <span>${escHtml(p.shopName)}</span>
+    <div class="sale-basket-item" style="cursor:default;">
+      <div style="min-width:0; flex:1;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+          <span style="font-weight:700; color:#FFFFFF; font-size:14.5px;">${escHtml(p.shopName)}</span>
           ${formatAdminBadge(p.createdBy)}
         </div>
-        <div class="ledger-row__subtitle">To'lov qabul qilindi</div>
+        <div style="font-size:12px; color:#34D399; margin-top:3px; font-weight:600;">To'lov qabul qilindi</div>
       </div>
-      <div class="ledger-row__amount amount--paid">${formatMoney(p.amount)}</div>
+      <div class="ledger-row__amount amount--paid" style="font-size:13.5px; padding:6px 12px; font-weight:800; margin-left:10px;">${formatMoney(p.amount)}</div>
     </div>
   `).join('') : '<div class="empty-state">Bu kuni to\'lov bo\'lmagan</div>';
 
     return `
-    <div class="form-group">
-      <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="downloadDailyExcel()">${Icons.download} Excel'ga yuklab olish</button>
+    <div class="form-group" style="margin-bottom:14px;">
+      <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:12px;" onclick="downloadDailyExcel()">${Icons.download} Excel'ga yuklab olish</button>
     </div>
 
-    <div class="stat-card" style="margin-bottom:12px;">
-      <div class="stat-card__label">Kunlik savdo</div>
-      <div class="stat-card__value" style="font-size:24px; font-weight:800; color:#60A5FA; margin-top:4px;">${formatMoney(totalSalesForDay)}</div>
+    <div class="stat-card stat-card--glow-blue" style="margin-bottom:12px; padding:18px 16px;">
+      <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:#93C5FD;">Kunlik savdo</div>
+      <div class="stat-card__value" style="font-size:26px; font-weight:800; color:#38BDF8; margin-top:4px;">${formatMoney(totalSalesForDay)}</div>
     </div>
 
-    <div class="stat-card" style="margin-bottom:12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <div class="stat-card__label" style="font-weight:700; color:var(--color-paid);">Kassaga tushgan to'lovlar</div>
-        <span style="font-size:14px; font-weight:700; color:var(--color-paid);">${formatMoney((Number(revenue.NAQD) || 0) + (Number(revenue.KARTA) || 0))}</span>
+    <div class="stat-card stat-card--glow-emerald" style="margin-bottom:12px; padding:18px 16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.08);">
+        <div class="stat-card__label" style="font-weight:700; color:#34D399; margin:0; text-transform:uppercase; letter-spacing:0.5px; font-size:11.5px;">Kassaga tushgan to'lovlar</div>
+        <span style="font-size:16px; font-weight:800; color:#34D399; font-variant-numeric:tabular-nums;">${formatMoney((Number(revenue.NAQD) || 0) + (Number(revenue.KARTA) || 0))}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--color-line); font-size:13px;">
-        <span>Naqd to'lov:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NAQD || 0)}</span>
+      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px;">
+        <span style="color:#94A3B8;">💵 Naqd to'lov:</span><span style="font-variant-numeric:tabular-nums; font-weight:700; color:#FFFFFF;">${formatMoney(revenue.NAQD || 0)}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:5px 0; font-size:13px;">
-        <span>Karta orqali:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.KARTA || 0)}</span>
+      <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:13px;">
+        <span style="color:#94A3B8;">💳 Karta orqali:</span><span style="font-variant-numeric:tabular-nums; font-weight:700; color:#FFFFFF;">${formatMoney(revenue.KARTA || 0)}</span>
       </div>
     </div>
 
-    <div class="stat-card" style="margin-bottom:12px;">
+    <div class="stat-card stat-card--glow-amber" style="margin-bottom:16px; padding:16px;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="stat-card__label" style="color:var(--color-debt); font-weight:700;">Nasiyaga berilgan savdo</div>
-        <span style="font-size:14px; font-weight:700; color:var(--color-debt);">${formatMoney(revenue.NASIYA || 0)}</span>
+        <div class="stat-card__label" style="color:#FBBF24; font-weight:700; margin:0; font-size:12.5px;">Nasiyaga berilgan savdo</div>
+        <span style="font-size:15px; font-weight:800; color:#FBBF24; font-variant-numeric:tabular-nums;">${formatMoney(revenue.NASIYA || 0)}</span>
       </div>
     </div>
 
     <div class="section-title">${Icons.box} Kimga sotildi</div>
     ${salesHtml}
 
-    <div class="section-title">${Icons.money} Kimdan olindi</div>
+    <div class="section-title" style="margin-top:16px;">${Icons.money} Kimdan olindi</div>
     ${paymentsHtml}
   `;
 }
@@ -2837,39 +2925,41 @@ function renderMonthlyReportHtml(report) {
     const revenue = report.revenueByType || {};
 
     const productVolHtml = report.productSalesVolume.length ? report.productSalesVolume.map(p => `
-    <div class="ledger-row" style="cursor:default;">
-      <div class="ledger-row__main"><div class="ledger-row__title">${escHtml(p.productName)}</div></div>
-      <div class="ledger-row__amount amount--neutral">${p.totalPackagesSold} ta</div>
+    <div class="sale-basket-item" style="cursor:default;">
+      <div style="min-width:0; flex:1;">
+        <div style="font-weight:700; color:#FFFFFF; font-size:14.5px;">${escHtml(p.productName)}</div>
+      </div>
+      <div class="ledger-row__amount" style="background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.35); color:#38BDF8; font-weight:800; font-size:13px; padding:4px 12px;">${p.totalPackagesSold} ta sotildi</div>
     </div>
   `).join('') : '<div class="empty-state">Ma\'lumot yo\'q</div>';
 
     return `
-    <div class="form-group">
-      <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="downloadMonthlyExcel()">${Icons.download} Excel'ga yuklab olish</button>
+    <div class="form-group" style="margin-bottom:14px;">
+      <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:12px;" onclick="downloadMonthlyExcel()">${Icons.download} Excel'ga yuklab olish</button>
     </div>
 
-    <div class="stat-card" style="margin-bottom:12px;">
-      <div class="stat-card__label">Oylik savdo</div>
-      <div class="stat-card__value" style="font-size:24px; font-weight:800; color:#60A5FA; margin-top:4px;">${formatMoney(report.totalSalesAmount)}</div>
+    <div class="stat-card stat-card--glow-blue" style="margin-bottom:12px; padding:18px 16px;">
+      <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:#93C5FD;">Oylik savdo</div>
+      <div class="stat-card__value" style="font-size:26px; font-weight:800; color:#38BDF8; margin-top:4px;">${formatMoney(report.totalSalesAmount)}</div>
     </div>
     
-    <div class="stat-card" style="margin-bottom:12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <div class="stat-card__label" style="font-weight:700; color:var(--color-paid);">Kassaga tushgan to'lovlar</div>
-        <span style="font-size:14px; font-weight:700; color:var(--color-paid);">${formatMoney((Number(revenue.NAQD) || 0) + (Number(revenue.KARTA) || 0))}</span>
+    <div class="stat-card stat-card--glow-emerald" style="margin-bottom:12px; padding:18px 16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.08);">
+        <div class="stat-card__label" style="font-weight:700; color:#34D399; margin:0; text-transform:uppercase; letter-spacing:0.5px; font-size:11.5px;">Kassaga tushgan to'lovlar</div>
+        <span style="font-size:16px; font-weight:800; color:#34D399; font-variant-numeric:tabular-nums;">${formatMoney((Number(revenue.NAQD) || 0) + (Number(revenue.KARTA) || 0))}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--color-line); font-size:13px;">
-        <span>Naqd to'lov:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NAQD || 0)}</span>
+      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px;">
+        <span style="color:#94A3B8;">💵 Naqd to'lov:</span><span style="font-variant-numeric:tabular-nums; font-weight:700; color:#FFFFFF;">${formatMoney(revenue.NAQD || 0)}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:5px 0; font-size:13px;">
-        <span>Karta orqali:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.KARTA || 0)}</span>
+      <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:13px;">
+        <span style="color:#94A3B8;">💳 Karta orqali:</span><span style="font-variant-numeric:tabular-nums; font-weight:700; color:#FFFFFF;">${formatMoney(revenue.KARTA || 0)}</span>
       </div>
     </div>
 
-    <div class="stat-card" style="margin-bottom:12px;">
+    <div class="stat-card stat-card--glow-amber" style="margin-bottom:16px; padding:16px;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="stat-card__label" style="color:var(--color-debt); font-weight:700;">Nasiyaga berilgan savdo</div>
-        <span style="font-size:14px; font-weight:700; color:var(--color-debt);">${formatMoney(revenue.NASIYA || 0)}</span>
+        <div class="stat-card__label" style="color:#FBBF24; font-weight:700; margin:0; font-size:12.5px;">Nasiyaga berilgan savdo</div>
+        <span style="font-size:15px; font-weight:800; color:#FBBF24; font-variant-numeric:tabular-nums;">${formatMoney(revenue.NASIYA || 0)}</span>
       </div>
     </div>
 
@@ -3206,53 +3296,58 @@ function renderRangeReportHtml(report) {
 
 
     const stockInVolHtml = report.stockInVolume && report.stockInVolume.length ? report.stockInVolume.map(s => `
-  <div class="ledger-row" style="cursor:default;">
-    <div class="ledger-row__main"><div class="ledger-row__title">${escHtml(s.productName)}</div></div>
-    <div class="ledger-row__amount amount--debt">${s.totalPackagesReceived} ta</div>
+  <div class="sale-basket-item" style="cursor:default;">
+    <div style="min-width:0; flex:1;">
+      <div style="font-weight:700; color:#FFFFFF; font-size:14.5px;">${escHtml(s.productName)}</div>
+    </div>
+    <div class="ledger-row__amount amount--paid" style="font-size:13px; font-weight:800; padding:4px 12px;">+${s.totalPackagesReceived} ta qabul</div>
   </div>
 `).join('') : '<div class="empty-state">Ma\'lumot yo\'q</div>';
 
-
-
     const productVolHtml = report.productSalesVolume.length ? report.productSalesVolume.map(p => `
-    <div class="ledger-row" style="cursor:default;">
-      <div class="ledger-row__main"><div class="ledger-row__title">${escHtml(p.productName)}</div></div>
-      <div class="ledger-row__amount amount--neutral">${p.totalPackagesSold} ta</div>
+    <div class="sale-basket-item" style="cursor:default;">
+      <div style="min-width:0; flex:1;">
+        <div style="font-weight:700; color:#FFFFFF; font-size:14.5px;">${escHtml(p.productName)}</div>
+      </div>
+      <div class="ledger-row__amount" style="background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.35); color:#38BDF8; font-weight:800; font-size:13px; padding:4px 12px;">${p.totalPackagesSold} ta sotildi</div>
     </div>
   `).join('') : '<div class="empty-state">Ma\'lumot yo\'q</div>';
 
     return `
-    <div class="form-group">
-      <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;" onclick="downloadRangeExcel()">${Icons.download} Excel'ga yuklab olish</button>
+    <div class="form-group" style="margin-bottom:14px;">
+      <button class="btn btn--primary btn--full" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:12px;" onclick="downloadRangeExcel()">${Icons.download} Excel'ga yuklab olish</button>
     </div>
 
-    <div class="stat-card" style="margin-bottom:12px;">
-      <div class="stat-card__label">Umumiy savdo</div>
-      <div class="stat-card__value" style="font-size:24px; font-weight:800; color:#60A5FA; margin-top:4px;">${formatMoney(report.totalSalesAmount)}</div>
+    <div class="stat-card stat-card--glow-blue" style="margin-bottom:12px; padding:18px 16px;">
+      <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:#93C5FD;">Umumiy savdo</div>
+      <div class="stat-card__value" style="font-size:26px; font-weight:800; color:#38BDF8; margin-top:4px;">${formatMoney(report.totalSalesAmount)}</div>
     </div>
 
-    <div class="stat-card" style="margin-bottom:12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <div class="stat-card__label" style="font-weight:700; color:var(--color-paid);">Kassaga tushgan to'lovlar</div>
-        <span style="font-size:14px; font-weight:700; color:var(--color-paid);">${formatMoney((Number(revenue.NAQD) || 0) + (Number(revenue.KARTA) || 0))}</span>
+    <div class="stat-card stat-card--glow-emerald" style="margin-bottom:12px; padding:18px 16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.08);">
+        <div class="stat-card__label" style="font-weight:700; color:#34D399; margin:0; text-transform:uppercase; letter-spacing:0.5px; font-size:11.5px;">Kassaga tushgan to'lovlar</div>
+        <span style="font-size:16px; font-weight:800; color:#34D399; font-variant-numeric:tabular-nums;">${formatMoney((Number(revenue.NAQD) || 0) + (Number(revenue.KARTA) || 0))}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--color-line); font-size:13px;">
-        <span>Naqd to'lov:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.NAQD || 0)}</span>
+      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px;">
+        <span style="color:#94A3B8;">💵 Naqd to'lov:</span><span style="font-variant-numeric:tabular-nums; font-weight:700; color:#FFFFFF;">${formatMoney(revenue.NAQD || 0)}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; padding:5px 0; font-size:13px;">
-        <span>Karta orqali:</span><span style="font-variant-numeric:tabular-nums; font-weight:600;">${formatMoney(revenue.KARTA || 0)}</span>
+      <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:13px;">
+        <span style="color:#94A3B8;">💳 Karta orqali:</span><span style="font-variant-numeric:tabular-nums; font-weight:700; color:#FFFFFF;">${formatMoney(revenue.KARTA || 0)}</span>
       </div>
     </div>
 
-    <div class="stat-card" style="margin-bottom:12px;">
+    <div class="stat-card stat-card--glow-amber" style="margin-bottom:16px; padding:16px;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="stat-card__label" style="color:var(--color-debt); font-weight:700;">Nasiyaga berilgan savdo</div>
-        <span style="font-size:14px; font-weight:700; color:var(--color-debt);">${formatMoney(revenue.NASIYA || 0)}</span>
+        <div class="stat-card__label" style="color:#FBBF24; font-weight:700; margin:0; font-size:12.5px;">Nasiyaga berilgan savdo</div>
+        <span style="font-size:15px; font-weight:800; color:#FBBF24; font-variant-numeric:tabular-nums;">${formatMoney(revenue.NASIYA || 0)}</span>
       </div>
     </div>
 
     <div class="section-title">${Icons.chart} Mahsulot bo'yicha sotuv</div>
     ${productVolHtml}
+
+    <div class="section-title" style="margin-top:16px;">${Icons.box} Mahsulot kirimi</div>
+    ${stockInVolHtml}
   `;
 }
 
@@ -3275,6 +3370,7 @@ function downloadRangeExcel() {
     }
     window.location.href = `${API_BASE}/reports/range/export?start=${start}&end=${end}`;
 }
+
 async function showDebtorShopsList() {
     updateHeaderMeta('Qarzdor do\'konlar', 'Muddati o\'tgan va joriy qarzlar', 'QARZ');
     setBackAction(() => { dashboardTab = 'umumiy'; showDashboard(); }, 'debtorShops');
@@ -3292,36 +3388,65 @@ async function showDebtorShopsList() {
             return;
         }
 
-        contentEl.innerHTML = debtors.map(shop => {
-            const debt = Number(shop.currentDebt) || 0;
-            return `
-                <div class="shop-card" onclick="currentGroupId=${shop.marketGroupId}; currentGroupName='${escJs(shop.marketGroupName)}'; showShopDetail(${shop.id})">
-                    <div class="shop-card__top">
-                        <div class="shop-card__main">
-                            <div class="shop-card__title">${escHtml(shop.name)}</div>
-                            <div class="shop-card__subtitle">
-                                <span class="shop-card__meta">${escHtml(shop.marketGroupName || '')}</span>
-                                ${shop.phone ? `<span style="opacity:0.4;">·</span><span class="shop-card__meta">${escHtml(shop.phone)}</span>` : ''}
+        const totalDebtorsDebt = debtors.reduce((sum, s) => sum + (Number(s.currentDebt) || 0), 0);
+
+        contentEl.innerHTML = `
+            <div class="market-summary-bar">
+                <div class="market-summary-item">
+                    <span>⚠️</span>
+                    <span>Qarzdorlar: <strong>${debtors.length} ta do'kon</strong></span>
+                </div>
+                <div class="market-summary-divider"></div>
+                <div class="market-summary-item">
+                    <span>💳</span>
+                    <span>Jami qarz: <strong style="color:#F87171;">${formatMoney(totalDebtorsDebt)}</strong></span>
+                </div>
+            </div>
+            ${debtors.map(shop => {
+                const debt = Number(shop.currentDebt) || 0;
+                const initial = (shop.name && shop.name.trim().length > 0) ? shop.name.trim()[0].toUpperCase() : 'D';
+
+                return `
+                    <div class="shop-card" style="
+                        --card-border: rgba(244, 63, 94, 0.35);
+                        --card-border-hover: rgba(244, 63, 94, 0.65);
+                        --card-glow: rgba(244, 63, 94, 0.2);
+                        --card-glow-hover: rgba(244, 63, 94, 0.35);
+                        --avatar-bg: linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%);
+                        --avatar-border: rgba(244, 63, 94, 0.45);
+                        --avatar-color: #FB7185;
+                        --avatar-shadow: rgba(244, 63, 94, 0.28);
+                    " onclick="currentGroupId=${shop.marketGroupId}; currentGroupName='${escJs(shop.marketGroupName || '')}'; showShopDetail(${shop.id})">
+                        <div class="shop-card__top">
+                            <div class="shop-card__avatar">
+                                ${escHtml(initial)}
+                            </div>
+                            <div class="shop-card__main">
+                                <div class="shop-card__title">${escHtml(shop.name)}</div>
+                                <div class="shop-card__subtitle">
+                                    <span class="shop-card__meta">${escHtml(shop.marketGroupName || '')}</span>
+                                    ${shop.phone ? `<span style="opacity:0.4;">·</span><span class="shop-card__meta">${escHtml(shop.phone)}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="shop-card__badge-wrap">
+                                <div class="ledger-row__amount amount--debt" style="font-size:13.5px; padding:6px 12px; font-weight:800;">${formatMoney(debt)}</div>
+                                <span class="market-card__chevron">${Icons.chevronRight}</span>
                             </div>
                         </div>
-                        <div class="shop-card__badge-wrap">
-                            <div class="ledger-row__amount amount--debt">${formatMoney(debt)}</div>
-                            <span class="chevron">${Icons.chevronRight}</span>
+                        <div class="shop-card__actions" onclick="event.stopPropagation()">
+                            <div class="shop-card__action-group">
+                                ${shop.phone ? `
+                                    <a href="tel:${escAttr(shop.phone)}" class="action-chip action-chip--call" title="Qo'ng'iroq qilish">
+                                        ${Icons.phoneAction}
+                                        <span>Qo'ng'iroq</span>
+                                    </a>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
-                    <div class="shop-card__actions" onclick="event.stopPropagation()">
-                        <div class="shop-card__action-group">
-                            ${shop.phone ? `
-                                <a href="tel:${escAttr(shop.phone)}" class="action-chip action-chip--call" title="Qo'ng'iroq qilish">
-                                    ${Icons.phoneAction}
-                                    <span>Qo'ng'iroq</span>
-                                </a>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+                `;
+            }).join('')}
+        `;
 
     } catch (err) {
         contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
