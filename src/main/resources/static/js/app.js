@@ -5180,9 +5180,8 @@ function showAddOilPurchaseForm(supplierId, supplierName) {
                 </div>
                 <div class="quick-chips-row" style="margin-top:8px;">
                     <button type="button" class="preset-chip" onclick="setOilLiterPreset(1)">1 L</button>
-                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(1.8)">1.8 L</button>
-                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(2)">2 L</button>
-                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(4.5)">4.5 L</button>
+                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(1.5)">1.5 L</button>
+                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(3)">3 L</button>
                     <button type="button" class="preset-chip" onclick="setOilLiterPreset(5)">5 L</button>
                 </div>
             </div>
@@ -5206,9 +5205,10 @@ function showAddOilPurchaseForm(supplierId, supplierName) {
                     <button type="button" class="btn" onclick="adjustOilItemsPerBox(1)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">+</button>
                 </div>
                 <div class="quick-chips-row" style="margin-top:8px;">
-                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(3)">3 dona (5L)</button>
-                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(6)">6 dona (2L)</button>
-                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(12)">12 dona (1L)</button>
+                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(3)">3 dona</button>
+                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(4)">4 dona</button>
+                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(6)">6 dona</button>
+                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(12)">12 dona</button>
                     <button type="button" class="preset-chip" onclick="setOilItemsPreset(15)">15 dona</button>
                 </div>
             </div>
@@ -5260,10 +5260,16 @@ function showAddOilPurchaseForm(supplierId, supplierName) {
                     </div>
                 </div>
                 <div class="quick-chips-row" style="margin-top:8px;">
+                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.50)">$1.50</button>
+                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.60)">$1.60</button>
+                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.70)">$1.70</button>
+                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.75)">$1.75</button>
+                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.80)">$1.80</button>
+                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.85)">$1.85</button>
+                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.90)">$1.90</button>
+                    <button type="button" class="preset-chip" onclick="setOilPricePreset(2.00)">$2.00</button>
+                    <button type="button" class="preset-chip" onclick="addOilPrice(0.01)">+$0.01</button>
                     <button type="button" class="preset-chip" onclick="addOilPrice(0.05)">+$0.05</button>
-                    <button type="button" class="preset-chip" onclick="addOilPrice(0.10)">+$0.10</button>
-                    <button type="button" class="preset-chip" onclick="addOilPrice(0.50)">+$0.50</button>
-                    <button type="button" class="preset-chip" onclick="addOilPrice(1.00)">+$1.00</button>
                     <button type="button" class="preset-chip preset-chip--clear" onclick="clearOilPrice()">Tozalash</button>
                 </div>
             </div>
@@ -5389,6 +5395,14 @@ function clearOilBoxesCount() {
     const el = document.getElementById('oilBoxesCountInput');
     if (el) {
         el.value = '';
+        updateOilPurchaseTotal();
+    }
+}
+
+function setOilPricePreset(price) {
+    const el = document.getElementById('oilPricePerLiterInput');
+    if (el) {
+        el.value = Number(price).toFixed(2);
         updateOilPurchaseTotal();
     }
 }
