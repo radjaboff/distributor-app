@@ -27,6 +27,9 @@ public class BackupData {
     private List<StockInDto> stockIns;
     private List<SaleDto> sales;
     private List<PaymentDto> payments;
+    private List<SupplierDto> suppliers;
+    private List<SupplyPurchaseDto> supplyPurchases;
+    private List<SupplyPaymentDto> supplyPayments;
 
     @Data
     @Builder
@@ -139,5 +142,67 @@ public class BackupData {
         private String cancelReason;
         private LocalDateTime cancelledAt;
         private String cancelledBy;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SupplierDto {
+        private Long id;
+        private String name;
+        private String phone;
+        private String category;
+        private BigDecimal currentDebt;
+        private Boolean active;
+        private LocalDateTime createdAt;
+        private String createdBy;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SupplyPurchaseDto {
+        private Long id;
+        private Long supplierId;
+        private String category;
+        private String productName;
+        private String unit;
+        private BigDecimal quantity;
+        private BigDecimal unitPrice;
+        private BigDecimal totalAmount;
+        private LocalDateTime purchaseDate;
+        private String note;
+        private BigDecimal litersPerItem;
+        private Integer itemsPerBox;
+        private Integer boxesCount;
+        private BigDecimal pricePerLiter;
+        private BigDecimal totalLiters;
+        private Boolean isCancelled;
+        private String cancelReason;
+        private String cancelledBy;
+        private LocalDateTime cancelledAt;
+        private LocalDateTime createdAt;
+        private String createdBy;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SupplyPaymentDto {
+        private Long id;
+        private Long supplierId;
+        private BigDecimal amount;
+        private String paymentMethod;
+        private LocalDateTime paymentDate;
+        private String note;
+        private Boolean isCancelled;
+        private String cancelReason;
+        private String cancelledBy;
+        private LocalDateTime cancelledAt;
+        private LocalDateTime createdAt;
+        private String createdBy;
     }
 }

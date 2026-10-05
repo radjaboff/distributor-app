@@ -10,4 +10,5 @@ import java.util.List;
 public interface SupplyPaymentRepository extends JpaRepository<SupplyPayment, Long> {
     List<SupplyPayment> findBySupplierIdOrderByPaymentDateAsc(Long supplierId);
     List<SupplyPayment> findBySupplierIdAndIsCancelledFalse(Long supplierId);
+    boolean existsBySupplierId(Long supplierId);
 }

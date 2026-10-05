@@ -31,6 +31,9 @@ public class BackupServiceImpl implements BackupService {
     private final StockInRepository stockInRepository;
     private final SaleRepository saleRepository;
     private final PaymentRepository paymentRepository;
+    private final SupplierRepository supplierRepository;
+    private final SupplyPurchaseRepository supplyPurchaseRepository;
+    private final SupplyPaymentRepository supplyPaymentRepository;
     private final EntityManager entityManager;
 
     @Override
@@ -144,6 +147,66 @@ public class BackupServiceImpl implements BackupService {
                         .build()
         ).toList();
 
+        List<Supplier> suppliers = supplierRepository.findAll();
+        List<SupplyPurchase> supplyPurchases = supplyPurchaseRepository.findAll();
+        List<SupplyPayment> supplyPayments = supplyPaymentRepository.findAll();
+
+        List<BackupData.SupplierDto> supplierDtos = suppliers.stream().map(s ->
+                BackupData.SupplierDto.builder()
+                        .id(s.getId())
+                        .name(s.getName())
+                        .phone(s.getPhone())
+                        .category(s.getCategory())
+                        .currentDebt(s.getCurrentDebt())
+                        .active(s.getActive())
+                        .createdAt(s.getCreatedAt())
+                        .createdBy(s.getCreatedBy())
+                        .build()
+        ).toList();
+
+        List<BackupData.SupplyPurchaseDto> supplyPurchaseDtos = supplyPurchases.stream().map(p ->
+                BackupData.SupplyPurchaseDto.builder()
+                        .id(p.getId())
+                        .supplierId(p.getSupplier() != null ? p.getSupplier().getId() : null)
+                        .category(p.getCategory())
+                        .productName(p.getProductName())
+                        .unit(p.getUnit())
+                        .quantity(p.getQuantity())
+                        .unitPrice(p.getUnitPrice())
+                        .totalAmount(p.getTotalAmount())
+                        .purchaseDate(p.getPurchaseDate())
+                        .note(p.getNote())
+                        .litersPerItem(p.getLitersPerItem())
+                        .itemsPerBox(p.getItemsPerBox())
+                        .boxesCount(p.getBoxesCount())
+                        .pricePerLiter(p.getPricePerLiter())
+                        .totalLiters(p.getTotalLiters())
+                        .isCancelled(p.getIsCancelled())
+                        .cancelReason(p.getCancelReason())
+                        .cancelledBy(p.getCancelledBy())
+                        .cancelledAt(p.getCancelledAt())
+                        .createdAt(p.getCreatedAt())
+                        .createdBy(p.getCreatedBy())
+                        .build()
+        ).toList();
+
+        List<BackupData.SupplyPaymentDto> supplyPaymentDtos = supplyPayments.stream().map(p ->
+                BackupData.SupplyPaymentDto.builder()
+                        .id(p.getId())
+                        .supplierId(p.getSupplier() != null ? p.getSupplier().getId() : null)
+                        .amount(p.getAmount())
+                        .paymentMethod(p.getPaymentMethod())
+                        .paymentDate(p.getPaymentDate())
+                        .note(p.getNote())
+                        .isCancelled(p.getIsCancelled())
+                        .cancelReason(p.getCancelReason())
+                        .cancelledBy(p.getCancelledBy())
+                        .cancelledAt(p.getCancelledAt())
+                        .createdAt(p.getCreatedAt())
+                        .createdBy(p.getCreatedBy())
+                        .build()
+        ).toList();
+
         BackupData backupData = BackupData.builder()
                 .appName("Bozor Distributor")
                 .version("1.0")
@@ -155,10 +218,14 @@ public class BackupServiceImpl implements BackupService {
                 .stockIns(stockInDtos)
                 .sales(saleDtos)
                 .payments(paymentDtos)
+                .suppliers(supplierDtos)
+                .supplyPurchases(supplyPurchaseDtos)
+                .supplyPayments(supplyPaymentDtos)
                 .build();
 
-        log.info("Baza zaxira nusxasi tayyorlandi: {} bozor, {} do'kon, {} mahsulot, {} sotuv, {} to'lov",
-                mgDtos.size(), shopDtos.size(), productDtos.size(), saleDtos.size(), paymentDtos.size());
+        log.info("Baza zaxira nusxasi tayyorlandi: {} bozor, {} do'kon, {} mahsulot, {} sotuv, {} to'lov, {} ta'minotchi, {} kirim, {} ta'minot to'lovi",
+                mgDtos.size(), shopDtos.size(), productDtos.size(), saleDtos.size(), paymentDtos.size(),
+                supplierDtos.size(), supplyPurchaseDtos.size(), supplyPaymentDtos.size());
 
         return backupData;
     }
@@ -279,10 +346,35 @@ public class BackupServiceImpl implements BackupService {
             }
         }
 
-        // 5. Barcha tekshiruvlar 100% muvaffaqiyatli o'tgandan so'nggina
-        //
-        // jadvallarni tozalash
-        entityManager.createNativeQuery("TRUNCATE TABLE sale_items, sales, payments, stock_ins, shops, products, market_groups RESTART IDENTITY CASCADE").executeUpdate();
+        // Ta'minotchi bog'liqliklarini tekshirish
+        java.util.Set<Long> supplierIds = new java.util.HashSet<>();
+        if (data.getSuppliers() != null) {
+            for (BackupData.SupplierDto s : data.getSuppliers()) {
+                if (s.getId() == null || s.getName() == null || s.getName().trim().isEmpty()) {
+                    throw new IllegalArgumentException("Zaxira faylidagi ta'minotchi ma'lumoti buzilgan (ID yoki nom yo'q).");
+                }
+                supplierIds.add(s.getId());
+            }
+        }
+
+        if (data.getSupplyPurchases() != null) {
+            for (BackupData.SupplyPurchaseDto p : data.getSupplyPurchases()) {
+                if (p.getSupplierId() != null && !supplierIds.contains(p.getSupplierId())) {
+                    throw new IllegalArgumentException("Kirim yozuvi (ID=" + p.getId() + ") faylda mavjud bo'lmagan ta'minotchiga (ID=" + p.getSupplierId() + ") bog'langan!");
+                }
+            }
+        }
+
+        if (data.getSupplyPayments() != null) {
+            for (BackupData.SupplyPaymentDto pay : data.getSupplyPayments()) {
+                if (pay.getSupplierId() != null && !supplierIds.contains(pay.getSupplierId())) {
+                    throw new IllegalArgumentException("Ta'minot to'lovi yozuvi (ID=" + pay.getId() + ") faylda mavjud bo'lmagan ta'minotchiga (ID=" + pay.getSupplierId() + ") bog'langan!");
+                }
+            }
+        }
+
+        // 5. Barcha tekshiruvlar 100% muvaffaqiyatli o'tgandan so'nggina jadvallarni tozalash
+        entityManager.createNativeQuery("TRUNCATE TABLE supply_purchases, supply_payments, suppliers, sale_items, sales, payments, stock_ins, shops, products, market_groups RESTART IDENTITY CASCADE").executeUpdate();
 
         // 2. Bozorlarni tiklash
         if (data.getMarketGroups() != null) {
@@ -436,7 +528,78 @@ public class BackupServiceImpl implements BackupService {
             }
         }
 
-        // 8. PostgreSQL sekvenslarini yangilash (keyingi yangi IDlar to'g'ri ishlashi uchun)
+        // 8. Ta'minotchilarni tiklash
+        if (data.getSuppliers() != null) {
+            for (BackupData.SupplierDto s : data.getSuppliers()) {
+                entityManager.createNativeQuery(
+                        "INSERT INTO suppliers (id, name, phone, category, current_debt, active, created_at, updated_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                        .setParameter(1, s.getId())
+                        .setParameter(2, s.getName())
+                        .setParameter(3, s.getPhone())
+                        .setParameter(4, s.getCategory() != null ? s.getCategory() : "SHAKAR")
+                        .setParameter(5, s.getCurrentDebt() != null ? s.getCurrentDebt() : BigDecimal.ZERO)
+                        .setParameter(6, s.getActive() != null ? s.getActive() : true)
+                        .setParameter(7, s.getCreatedAt() != null ? s.getCreatedAt() : LocalDateTime.now())
+                        .setParameter(8, LocalDateTime.now())
+                        .setParameter(9, s.getCreatedBy() != null ? s.getCreatedBy() : "admin")
+                        .executeUpdate();
+            }
+        }
+
+        // 9. Ta'minot kirimlarini tiklash
+        if (data.getSupplyPurchases() != null) {
+            for (BackupData.SupplyPurchaseDto p : data.getSupplyPurchases()) {
+                entityManager.createNativeQuery(
+                        "INSERT INTO supply_purchases (id, supplier_id, category, product_name, unit, quantity, unit_price, total_amount, purchase_date, note, liters_per_item, items_per_box, boxes_count, price_per_liter, total_liters, is_cancelled, cancel_reason, cancelled_by, cancelled_at, created_at, updated_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                        .setParameter(1, p.getId())
+                        .setParameter(2, p.getSupplierId())
+                        .setParameter(3, p.getCategory() != null ? p.getCategory() : "SHAKAR")
+                        .setParameter(4, p.getProductName())
+                        .setParameter(5, p.getUnit() != null ? p.getUnit() : "QOP")
+                        .setParameter(6, p.getQuantity() != null ? p.getQuantity() : BigDecimal.ONE)
+                        .setParameter(7, p.getUnitPrice() != null ? p.getUnitPrice() : BigDecimal.ZERO)
+                        .setParameter(8, p.getTotalAmount() != null ? p.getTotalAmount() : BigDecimal.ZERO)
+                        .setParameter(9, p.getPurchaseDate() != null ? p.getPurchaseDate() : LocalDateTime.now())
+                        .setParameter(10, p.getNote())
+                        .setParameter(11, p.getLitersPerItem())
+                        .setParameter(12, p.getItemsPerBox())
+                        .setParameter(13, p.getBoxesCount())
+                        .setParameter(14, p.getPricePerLiter())
+                        .setParameter(15, p.getTotalLiters())
+                        .setParameter(16, Boolean.TRUE.equals(p.getIsCancelled()))
+                        .setParameter(17, p.getCancelReason())
+                        .setParameter(18, p.getCancelledBy())
+                        .setParameter(19, p.getCancelledAt())
+                        .setParameter(20, p.getCreatedAt() != null ? p.getCreatedAt() : LocalDateTime.now())
+                        .setParameter(21, LocalDateTime.now())
+                        .setParameter(22, p.getCreatedBy() != null ? p.getCreatedBy() : "admin")
+                        .executeUpdate();
+            }
+        }
+
+        // 10. Ta'minot to'lovlarini tiklash
+        if (data.getSupplyPayments() != null) {
+            for (BackupData.SupplyPaymentDto pay : data.getSupplyPayments()) {
+                entityManager.createNativeQuery(
+                        "INSERT INTO supply_payments (id, supplier_id, amount, payment_method, payment_date, note, is_cancelled, cancel_reason, cancelled_by, cancelled_at, created_at, updated_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                        .setParameter(1, pay.getId())
+                        .setParameter(2, pay.getSupplierId())
+                        .setParameter(3, pay.getAmount() != null ? pay.getAmount() : BigDecimal.ZERO)
+                        .setParameter(4, pay.getPaymentMethod() != null ? pay.getPaymentMethod() : "NAQD")
+                        .setParameter(5, pay.getPaymentDate() != null ? pay.getPaymentDate() : LocalDateTime.now())
+                        .setParameter(6, pay.getNote())
+                        .setParameter(7, Boolean.TRUE.equals(pay.getIsCancelled()))
+                        .setParameter(8, pay.getCancelReason())
+                        .setParameter(9, pay.getCancelledBy())
+                        .setParameter(10, pay.getCancelledAt())
+                        .setParameter(11, pay.getCreatedAt() != null ? pay.getCreatedAt() : LocalDateTime.now())
+                        .setParameter(12, LocalDateTime.now())
+                        .setParameter(13, pay.getCreatedBy() != null ? pay.getCreatedBy() : "admin")
+                        .executeUpdate();
+            }
+        }
+
+        // 11. PostgreSQL sekvenslarini yangilash (keyingi yangi IDlar to'g'ri ishlashi uchun)
         try {
             entityManager.createNativeQuery("SELECT setval(pg_get_serial_sequence('market_groups', 'id'), coalesce(max(id), 1)) FROM market_groups").getSingleResult();
             entityManager.createNativeQuery("SELECT setval(pg_get_serial_sequence('products', 'id'), coalesce(max(id), 1)) FROM products").getSingleResult();
@@ -445,6 +608,9 @@ public class BackupServiceImpl implements BackupService {
             entityManager.createNativeQuery("SELECT setval(pg_get_serial_sequence('sales', 'id'), coalesce(max(id), 1)) FROM sales").getSingleResult();
             entityManager.createNativeQuery("SELECT setval(pg_get_serial_sequence('sale_items', 'id'), coalesce(max(id), 1)) FROM sale_items").getSingleResult();
             entityManager.createNativeQuery("SELECT setval(pg_get_serial_sequence('payments', 'id'), coalesce(max(id), 1)) FROM payments").getSingleResult();
+            entityManager.createNativeQuery("SELECT setval(pg_get_serial_sequence('suppliers', 'id'), coalesce(max(id), 1)) FROM suppliers").getSingleResult();
+            entityManager.createNativeQuery("SELECT setval(pg_get_serial_sequence('supply_purchases', 'id'), coalesce(max(id), 1)) FROM supply_purchases").getSingleResult();
+            entityManager.createNativeQuery("SELECT setval(pg_get_serial_sequence('supply_payments', 'id'), coalesce(max(id), 1)) FROM supply_payments").getSingleResult();
         } catch (Exception e) {
             log.warn("Sequence yangilashda ogohlantirish (baza yangi bo'lsa normal): {}", e.getMessage());
         }
@@ -464,6 +630,9 @@ public class BackupServiceImpl implements BackupService {
         List<StockIn> stockIns = stockInRepository.findAll();
         List<Sale> sales = saleRepository.findAll();
         List<Payment> payments = paymentRepository.findAll();
+        List<Supplier> suppliers = supplierRepository.findAll();
+        List<SupplyPurchase> supplyPurchases = supplyPurchaseRepository.findAll();
+        List<SupplyPayment> supplyPayments = supplyPaymentRepository.findAll();
 
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
         DateTimeFormatter df = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -481,10 +650,14 @@ public class BackupServiceImpl implements BackupService {
             headerStyle.setAlignment(HorizontalAlignment.CENTER);
             headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
-            // Money Style
+            // Money Style (so'm)
             CellStyle moneyStyle = workbook.createCellStyle();
             DataFormat format = workbook.createDataFormat();
             moneyStyle.setDataFormat(format.getFormat("#,##0"));
+
+            // Dollar Style ($)
+            CellStyle dollarStyle = workbook.createCellStyle();
+            dollarStyle.setDataFormat(format.getFormat("$#,##0.00"));
 
             // 1-VARAQ: UMUMIY XULOSA
             Sheet summarySheet = workbook.createSheet("Umumiy Xulosa");
@@ -515,12 +688,31 @@ public class BackupServiceImpl implements BackupService {
             long activeShopsCount = shops.stream().filter(s -> !Boolean.TRUE.equals(s.getIsDeleted())).count();
             long activeProductsCount = products.stream().filter(p -> !Boolean.TRUE.equals(p.getIsDeleted())).count();
 
+            long activeSugarSuppliers = suppliers.stream().filter(s -> Boolean.TRUE.equals(s.getActive()) && "SHAKAR".equalsIgnoreCase(s.getCategory())).count();
+            long activeOilSuppliers = suppliers.stream().filter(s -> Boolean.TRUE.equals(s.getActive()) && "YOG".equalsIgnoreCase(s.getCategory())).count();
+
+            BigDecimal totalSugarDebt = suppliers.stream()
+                    .filter(s -> Boolean.TRUE.equals(s.getActive()) && "SHAKAR".equalsIgnoreCase(s.getCategory()) && s.getCurrentDebt() != null)
+                    .map(Supplier::getCurrentDebt)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalOilDebt = suppliers.stream()
+                    .filter(s -> Boolean.TRUE.equals(s.getActive()) && "YOG".equalsIgnoreCase(s.getCategory()) && s.getCurrentDebt() != null)
+                    .map(Supplier::getCurrentDebt)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             sRow++;
             summarySheet.createRow(sRow++).createCell(0).setCellValue("Do'konlar soni (faol): " + activeShopsCount + " ta");
             summarySheet.createRow(sRow++).createCell(0).setCellValue("Barcha do'konlarning umumiy qarzi: " + totalDebt + " so'm");
             summarySheet.createRow(sRow++).createCell(0).setCellValue("Jami amalga oshirilgan savdolar: " + totalSales + " so'm");
             summarySheet.createRow(sRow++).createCell(0).setCellValue("Jami qabul qilingan to'lovlar: " + totalPayments + " so'm");
             summarySheet.createRow(sRow++).createCell(0).setCellValue("Mahsulot turlari soni (faol): " + activeProductsCount + " xil");
+            sRow++;
+            summarySheet.createRow(sRow++).createCell(0).setCellValue("--- TA'MINOT BO'LIMI ---");
+            summarySheet.createRow(sRow++).createCell(0).setCellValue("Shakar ta'minotchilari soni: " + activeSugarSuppliers + " ta");
+            summarySheet.createRow(sRow++).createCell(0).setCellValue("Shakar bo'yicha joriy qarzimiz: " + totalSugarDebt + " so'm");
+            summarySheet.createRow(sRow++).createCell(0).setCellValue("Yog' ta'minotchilari soni: " + activeOilSuppliers + " ta");
+            summarySheet.createRow(sRow++).createCell(0).setCellValue("Yog' bo'yicha joriy qarzimiz: $" + totalOilDebt);
             summarySheet.autoSizeColumn(0);
 
             // 2-VARAQ: DO'KONLAR VA QARZLAR
@@ -636,6 +828,98 @@ public class BackupServiceImpl implements BackupService {
                 row.createCell(5).setCellValue(p.getCreatedBy() != null ? p.getCreatedBy() : "admin");
             }
             for (int i = 0; i < payCols.length; i++) paySheet.autoSizeColumn(i);
+
+            // 6-VARAQ: TA'MINOTCHILAR VA QARZLAR
+            Sheet supSheet = workbook.createSheet("Ta'minotchilar va Qarzlar");
+            Row supHeader = supSheet.createRow(0);
+            String[] supCols = {"№", "Nomi", "Telefon", "Kategoriya", "Joriy Qarz", "Valyuta", "Holati", "Qo'shilgan sana"};
+            for (int i = 0; i < supCols.length; i++) {
+                Cell c = supHeader.createCell(i);
+                c.setCellValue(supCols[i]);
+                c.setCellStyle(headerStyle);
+            }
+            rIdx = 1;
+            for (Supplier sup : suppliers) {
+                Row row = supSheet.createRow(rIdx);
+                row.createCell(0).setCellValue(rIdx);
+                row.createCell(1).setCellValue(sup.getName() != null ? sup.getName() : "");
+                row.createCell(2).setCellValue(sup.getPhone() != null ? sup.getPhone() : "");
+                boolean isOil = "YOG".equalsIgnoreCase(sup.getCategory());
+                row.createCell(3).setCellValue(isOil ? "Yog'" : "Shakar");
+
+                Cell debtCell = row.createCell(4);
+                debtCell.setCellValue(sup.getCurrentDebt() != null ? sup.getCurrentDebt().doubleValue() : 0.0);
+                debtCell.setCellStyle(isOil ? dollarStyle : moneyStyle);
+
+                row.createCell(5).setCellValue(isOil ? "$" : "so'm");
+                row.createCell(6).setCellValue(Boolean.TRUE.equals(sup.getActive()) ? "Faol" : "Arxivlangan");
+                row.createCell(7).setCellValue(sup.getCreatedAt() != null ? sup.getCreatedAt().format(df) : "");
+                rIdx++;
+            }
+            for (int i = 0; i < supCols.length; i++) supSheet.autoSizeColumn(i);
+
+            // 7-VARAQ: TA'MINOT KIRIMLARI
+            Sheet supPurchasesSheet = workbook.createSheet("Ta'minot Kirimlari");
+            Row spHeader = supPurchasesSheet.createRow(0);
+            String[] spCols = {"ID", "Sana va vaqt", "Ta'minotchi", "Kategoriya", "Mahsulot", "Miqdor", "Birlik", "Birlik narxi", "Jami summa", "Bekor qilinganmi", "Izoh"};
+            for (int i = 0; i < spCols.length; i++) {
+                Cell c = spHeader.createCell(i);
+                c.setCellValue(spCols[i]);
+                c.setCellStyle(headerStyle);
+            }
+            rIdx = 1;
+            for (SupplyPurchase p : supplyPurchases) {
+                Row row = supPurchasesSheet.createRow(rIdx++);
+                row.createCell(0).setCellValue(p.getId());
+                row.createCell(1).setCellValue(p.getPurchaseDate() != null ? p.getPurchaseDate().format(dtf) : "");
+                row.createCell(2).setCellValue(p.getSupplier() != null ? p.getSupplier().getName() : "");
+                boolean isOil = "YOG".equalsIgnoreCase(p.getCategory());
+                row.createCell(3).setCellValue(isOil ? "Yog'" : "Shakar");
+                row.createCell(4).setCellValue(p.getProductName() != null ? p.getProductName() : "");
+                row.createCell(5).setCellValue(p.getQuantity() != null ? p.getQuantity().doubleValue() : 0.0);
+                row.createCell(6).setCellValue(p.getUnit() != null ? p.getUnit() : "");
+
+                Cell priceCell = row.createCell(7);
+                priceCell.setCellValue(p.getUnitPrice() != null ? p.getUnitPrice().doubleValue() : 0.0);
+                priceCell.setCellStyle(isOil ? dollarStyle : moneyStyle);
+
+                Cell totalCell = row.createCell(8);
+                totalCell.setCellValue(p.getTotalAmount() != null ? p.getTotalAmount().doubleValue() : 0.0);
+                totalCell.setCellStyle(isOil ? dollarStyle : moneyStyle);
+
+                row.createCell(9).setCellValue(Boolean.TRUE.equals(p.getIsCancelled()) ? "HA (" + (p.getCancelReason() != null ? p.getCancelReason() : "") + ")" : "YO'Q");
+                row.createCell(10).setCellValue(p.getNote() != null ? p.getNote() : "");
+            }
+            for (int i = 0; i < spCols.length; i++) supPurchasesSheet.autoSizeColumn(i);
+
+            // 8-VARAQ: TA'MINOT TO'LOVLARI
+            Sheet supPaySheet = workbook.createSheet("Ta'minot To'lovlari");
+            Row sppHeader = supPaySheet.createRow(0);
+            String[] sppCols = {"ID", "Sana va vaqt", "Ta'minotchi", "Kategoriya", "To'lov summasi", "To'lov usuli", "Bekor qilinganmi", "Izoh", "Kim qabul qildi"};
+            for (int i = 0; i < sppCols.length; i++) {
+                Cell c = sppHeader.createCell(i);
+                c.setCellValue(sppCols[i]);
+                c.setCellStyle(headerStyle);
+            }
+            rIdx = 1;
+            for (SupplyPayment sp : supplyPayments) {
+                Row row = supPaySheet.createRow(rIdx++);
+                row.createCell(0).setCellValue(sp.getId());
+                row.createCell(1).setCellValue(sp.getPaymentDate() != null ? sp.getPaymentDate().format(dtf) : "");
+                row.createCell(2).setCellValue(sp.getSupplier() != null ? sp.getSupplier().getName() : "");
+                boolean isOil = sp.getSupplier() != null && "YOG".equalsIgnoreCase(sp.getSupplier().getCategory());
+                row.createCell(3).setCellValue(isOil ? "Yog'" : "Shakar");
+
+                Cell amtCell = row.createCell(4);
+                amtCell.setCellValue(sp.getAmount() != null ? sp.getAmount().doubleValue() : 0.0);
+                amtCell.setCellStyle(isOil ? dollarStyle : moneyStyle);
+
+                row.createCell(5).setCellValue(sp.getPaymentMethod() != null ? sp.getPaymentMethod() : "NAQD");
+                row.createCell(6).setCellValue(Boolean.TRUE.equals(sp.getIsCancelled()) ? "HA (" + (sp.getCancelReason() != null ? sp.getCancelReason() : "") + ")" : "YO'Q");
+                row.createCell(7).setCellValue(sp.getNote() != null ? sp.getNote() : "");
+                row.createCell(8).setCellValue(sp.getCreatedBy() != null ? sp.getCreatedBy() : "admin");
+            }
+            for (int i = 0; i < sppCols.length; i++) supPaySheet.autoSizeColumn(i);
 
             workbook.write(out);
             log.info("Baza to'liq Excel (.xlsx) fayli muvaffaqiyatli shakllantirildi.");

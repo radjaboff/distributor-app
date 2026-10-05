@@ -88,7 +88,16 @@ public class SupplierServiceImpl implements SupplierService {
             supplier.setPhone(request.getPhone().trim());
         }
         if (request.getCategory() != null && !request.getCategory().trim().isEmpty()) {
-            supplier.setCategory(request.getCategory().trim().toUpperCase());
+            String newCat = request.getCategory().trim().toUpperCase();
+            if (!newCat.equalsIgnoreCase(supplier.getCategory())) {
+                boolean hasDebt = supplier.getCurrentDebt() != null && supplier.getCurrentDebt().compareTo(BigDecimal.ZERO) != 0;
+                boolean hasPurchases = purchaseRepository.existsBySupplierId(id);
+                boolean hasPayments = paymentRepository.existsBySupplierId(id);
+                if (hasDebt || hasPurchases || hasPayments) {
+                    throw new InvalidPaymentException("Ta'minotchi kategoriyasini (" + supplier.getCategory() + " -> " + newCat + ") o'zgartirib bo'lmaydi! Chunki ushbu ta'minotchida avvalgi kirimlar, to'lovlar yoki qarz mavjud.");
+                }
+                supplier.setCategory(newCat);
+            }
         }
         Supplier updated = supplierRepository.save(supplier);
         return mapToResponse(updated);
@@ -124,17 +133,42 @@ public class SupplierServiceImpl implements SupplierService {
             throw new InvalidPaymentException("Kirim sanasi kelajak sanada bo'lishi mumkin emas!");
         }
 
-        if (request.getQuantity() == null || request.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidPaymentException("Miqdori 0 dan katta bo'lishi kerak!");
-        }
-        if (request.getUnitPrice() == null || request.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidPaymentException("Birlik narxi 0 dan katta bo'lishi kerak!");
-        }
-
         BigDecimal totalAmount;
-        if (request.getTotalLiters() != null && request.getPricePerLiter() != null && request.getTotalLiters().compareTo(BigDecimal.ZERO) > 0) {
-            totalAmount = request.getTotalLiters().multiply(request.getPricePerLiter()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal finalQuantity = request.getQuantity();
+        BigDecimal finalUnitPrice = request.getUnitPrice();
+        BigDecimal finalTotalLiters = request.getTotalLiters();
+        String finalUnit = request.getUnit() != null ? request.getUnit().trim().toUpperCase() : "QOP";
+
+        boolean isOilSupplier = "YOG".equalsIgnoreCase(supplier.getCategory());
+        boolean hasBoxDetails = request.getBoxesCount() != null || request.getPricePerLiter() != null;
+
+        if (isOilSupplier || hasBoxDetails) {
+            if (request.getBoxesCount() == null || request.getBoxesCount() <= 0) {
+                throw new InvalidPaymentException("Karobkalar soni 0 dan katta bo'lishi kerak!");
+            }
+            if (request.getItemsPerBox() == null || request.getItemsPerBox() <= 0) {
+                throw new InvalidPaymentException("Karobka ichidagi dona soni 0 dan katta bo'lishi kerak!");
+            }
+            if (request.getLitersPerItem() == null || request.getLitersPerItem().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new InvalidPaymentException("1 dona idish hajmi (litr) 0 dan katta bo'lishi kerak!");
+            }
+            if (request.getPricePerLiter() == null || request.getPricePerLiter().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new InvalidPaymentException("1 litr narxi ($) 0 dan katta bo'lishi kerak!");
+            }
+
+            BigDecimal boxLiters = request.getLitersPerItem().multiply(BigDecimal.valueOf(request.getItemsPerBox()));
+            finalTotalLiters = boxLiters.multiply(BigDecimal.valueOf(request.getBoxesCount())).setScale(2, RoundingMode.HALF_UP);
+            totalAmount = finalTotalLiters.multiply(request.getPricePerLiter()).setScale(2, RoundingMode.HALF_UP);
+            finalQuantity = BigDecimal.valueOf(request.getBoxesCount());
+            finalUnitPrice = request.getPricePerLiter();
+            finalUnit = "KAROPKA";
         } else {
+            if (request.getQuantity() == null || request.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new InvalidPaymentException("Miqdori 0 dan katta bo'lishi kerak!");
+            }
+            if (request.getUnitPrice() == null || request.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new InvalidPaymentException("Birlik narxi 0 dan katta bo'lishi kerak!");
+            }
             totalAmount = request.getQuantity().multiply(request.getUnitPrice()).setScale(2, RoundingMode.HALF_UP);
         }
 
@@ -142,9 +176,9 @@ public class SupplierServiceImpl implements SupplierService {
         purchase.setSupplier(supplier);
         purchase.setCategory(supplier.getCategory());
         purchase.setProductName(request.getProductName().trim());
-        purchase.setUnit(request.getUnit().trim().toUpperCase());
-        purchase.setQuantity(request.getQuantity());
-        purchase.setUnitPrice(request.getUnitPrice());
+        purchase.setUnit(finalUnit);
+        purchase.setQuantity(finalQuantity);
+        purchase.setUnitPrice(finalUnitPrice);
         purchase.setTotalAmount(totalAmount);
         purchase.setPurchaseDate(purchaseDateTime);
         purchase.setNote(request.getNote() != null ? request.getNote().trim() : null);
@@ -152,7 +186,7 @@ public class SupplierServiceImpl implements SupplierService {
         purchase.setItemsPerBox(request.getItemsPerBox());
         purchase.setBoxesCount(request.getBoxesCount());
         purchase.setPricePerLiter(request.getPricePerLiter());
-        purchase.setTotalLiters(request.getTotalLiters());
+        purchase.setTotalLiters(finalTotalLiters);
         purchase.setIsCancelled(false);
 
         // Qarzni ko'paytiramiz (Bizning qarzimiz)
@@ -161,7 +195,7 @@ public class SupplierServiceImpl implements SupplierService {
         supplierRepository.save(supplier);
 
         SupplyPurchase saved = purchaseRepository.save(purchase);
-        log.info("Ta'minotchi kirimi saqlandi: SupplierID={}, Total={}, Unit={}", supplierId, totalAmount, request.getUnit());
+        log.info("Ta'minotchi kirimi saqlandi: SupplierID={}, Total={}, Unit={}", supplierId, totalAmount, finalUnit);
         return saved;
     }
 

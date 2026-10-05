@@ -29,6 +29,12 @@ class BackupServiceValidationTest {
     @Mock
     private PaymentRepository paymentRepository;
     @Mock
+    private SupplierRepository supplierRepository;
+    @Mock
+    private SupplyPurchaseRepository supplyPurchaseRepository;
+    @Mock
+    private SupplyPaymentRepository supplyPaymentRepository;
+    @Mock
     private EntityManager entityManager;
 
     private BackupServiceImpl backupService;
@@ -43,6 +49,9 @@ class BackupServiceValidationTest {
                 stockInRepository,
                 saleRepository,
                 paymentRepository,
+                supplierRepository,
+                supplyPurchaseRepository,
+                supplyPaymentRepository,
                 entityManager
         );
     }

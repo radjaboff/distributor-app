@@ -4638,9 +4638,11 @@ function renderSupplierLedgerEntryCard(entry, supplierId) {
         `;
     }
 
+    const payMethod = entry.paymentMethod ? entry.paymentMethod.toUpperCase() : 'NAQD';
+    const payMethodTitle = payMethod === 'KARTA' ? 'Karta' : 'Naqd';
     const typeTitle = isPurchase 
         ? `Kirim: ${escHtml(entry.productName || 'Mahsulot')}` 
-        : (isOil ? `To'lov (Naqd $)` : `To'lov (${escHtml(entry.paymentMethod || 'NAQD')})`);
+        : (isOil ? `To'lov (${payMethodTitle} $)` : `To'lov (${payMethodTitle})`);
     const typeIcon = isPurchase ? Icons.box : Icons.wallet;
     const iconColor = isPurchase ? '#F43F5E' : '#34D399';
     const iconBg = isPurchase ? 'rgba(244,63,94,0.14)' : 'rgba(16,185,129,0.14)';
@@ -5655,9 +5657,13 @@ function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0, cat
                     <span>To'lov usuli *</span>
                 </label>
                 ${isOil ? `
-                    <div style="display:inline-flex; align-items:center; gap:8px; padding:11px 18px; border-radius:12px; background:rgba(16,185,129,0.15); border:1.5px solid rgba(16,185,129,0.4); color:#34D399; font-weight:700; font-size:14px;">
-                        <span style="font-size:18px;">💵</span>
-                        <span>Naqd ($ AQSH Dollari)</span>
+                    <div class="segmented-group">
+                        <button type="button" class="segmented-btn segmented-btn--emerald active" id="supplyPayNaqdBtn" onclick="setSupplyPaymentType('NAQD')">
+                            💵 NAQD ($)
+                        </button>
+                        <button type="button" class="segmented-btn segmented-btn--sky" id="supplyPayKartaBtn" onclick="setSupplyPaymentType('KARTA')">
+                            💳 KARTA ($)
+                        </button>
                     </div>
                 ` : `
                     <div class="segmented-group">
@@ -5666,9 +5672,6 @@ function showAddSupplyPaymentForm(supplierId, supplierName, currentDebt = 0, cat
                         </button>
                         <button type="button" class="segmented-btn segmented-btn--sky" id="supplyPayKartaBtn" onclick="setSupplyPaymentType('KARTA')">
                             💳 KARTA
-                        </button>
-                        <button type="button" class="segmented-btn" id="supplyPayBankBtn" onclick="setSupplyPaymentType('BANK')">
-                            🏛️ BANK
                         </button>
                     </div>
                 `}
@@ -5737,7 +5740,6 @@ function setSupplyPaymentType(method) {
     currentSupplyPaymentMethod = method;
     document.getElementById('supplyPayNaqdBtn')?.classList.toggle('active', method === 'NAQD');
     document.getElementById('supplyPayKartaBtn')?.classList.toggle('active', method === 'KARTA');
-    document.getElementById('supplyPayBankBtn')?.classList.toggle('active', method === 'BANK');
 }
 
 function onSupplyPaymentAmountChange(input, currentDebt) {
@@ -5844,7 +5846,7 @@ async function submitSupplyPayment(supplierId, currentDebt = 0, category = 'SHAK
     try {
         const payload = {
             amount: amount,
-            paymentMethod: isOil ? 'NAQD' : (currentSupplyPaymentMethod || 'NAQD'),
+            paymentMethod: currentSupplyPaymentMethod || 'NAQD',
             paymentDate: paymentDate,
             note: note
         };
