@@ -68,8 +68,12 @@ public class SupplierServiceImpl implements SupplierService {
         Supplier supplier = new Supplier();
         supplier.setName(request.getName().trim());
         supplier.setPhone(request.getPhone() != null ? request.getPhone().trim() : null);
-        supplier.setCategory(request.getCategory() != null && !request.getCategory().trim().isEmpty() 
-                ? request.getCategory().trim().toUpperCase() : "SHAKAR");
+        String category = (request.getCategory() != null && !request.getCategory().trim().isEmpty()) 
+                ? request.getCategory().trim().toUpperCase() : "SHAKAR";
+        if (!"SHAKAR".equals(category) && !"YOG".equals(category)) {
+            throw new InvalidPaymentException("Ta'minotchi kategoriyasi faqat SHAKAR yoki YOG bo'lishi shart!");
+        }
+        supplier.setCategory(category);
         supplier.setCurrentDebt(BigDecimal.ZERO);
         supplier.setActive(true);
         Supplier saved = supplierRepository.save(supplier);
@@ -89,6 +93,9 @@ public class SupplierServiceImpl implements SupplierService {
         }
         if (request.getCategory() != null && !request.getCategory().trim().isEmpty()) {
             String newCat = request.getCategory().trim().toUpperCase();
+            if (!"SHAKAR".equals(newCat) && !"YOG".equals(newCat)) {
+                throw new InvalidPaymentException("Ta'minotchi kategoriyasi faqat SHAKAR yoki YOG bo'lishi shart!");
+            }
             if (!newCat.equalsIgnoreCase(supplier.getCategory())) {
                 boolean hasDebt = supplier.getCurrentDebt() != null && supplier.getCurrentDebt().compareTo(BigDecimal.ZERO) != 0;
                 boolean hasPurchases = purchaseRepository.existsBySupplierId(id);
@@ -224,10 +231,16 @@ public class SupplierServiceImpl implements SupplierService {
             throw new InvalidPaymentException("To'lov summasi joriy qarzdorlikdan (" + currentDebt + ") ortiq bo'lishi mumkin emas!");
         }
 
+        String method = (request.getPaymentMethod() != null && !request.getPaymentMethod().trim().isEmpty())
+                ? request.getPaymentMethod().trim().toUpperCase() : "NAQD";
+        if (!"NAQD".equals(method) && !"KARTA".equals(method)) {
+            throw new InvalidPaymentException("To'lov usuli faqat NAQD yoki KARTA bo'lishi shart! (Noto'g'ri tur: " + method + ")");
+        }
+
         SupplyPayment payment = new SupplyPayment();
         payment.setSupplier(supplier);
         payment.setAmount(request.getAmount());
-        payment.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod().toUpperCase() : "NAQD");
+        payment.setPaymentMethod(method);
         payment.setPaymentDate(paymentDateTime);
         payment.setNote(request.getNote() != null ? request.getNote().trim() : null);
         payment.setIsCancelled(false);

@@ -12,5 +12,6 @@ public class SupplierRequest {
 
     private String phone;
 
+    @jakarta.validation.constraints.Pattern(regexp = "^(?i)(SHAKAR|YOG)$", message = "Kategoriya faqat SHAKAR yoki YOG bo'lishi kerak")
     private String category = "SHAKAR";
 }

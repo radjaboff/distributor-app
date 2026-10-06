@@ -13,7 +13,8 @@ public class SupplyPaymentRequest {
     @DecimalMin(value = "0.01", message = "To'lov summasi 0 dan katta bo'lishi kerak")
     private BigDecimal amount;
 
-    private String paymentMethod = "NAQD"; // NAQD, KARTA, BANK
+    @jakarta.validation.constraints.Pattern(regexp = "^(?i)(NAQD|KARTA)$", message = "To'lov turi faqat NAQD yoki KARTA bo'lishi kerak")
+    private String paymentMethod = "NAQD";
 
     private String paymentDate; // YYYY-MM-DD or ISO
 

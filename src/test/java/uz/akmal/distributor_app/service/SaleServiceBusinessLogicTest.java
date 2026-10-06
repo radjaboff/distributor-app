@@ -274,4 +274,26 @@ class SaleServiceBusinessLogicTest {
 
         assertThrows(IllegalStateException.class, () -> saleService.cancelSale(101L, "Qayta bekor qilish"));
     }
+
+    @Test
+    void testCancelSale_WhenPaymentsMadeAndDebtLowerThanSaleDebt_ThrowsInvalidPaymentException() {
+        Shop shop = new Shop();
+        shop.setId(1L);
+        shop.setCurrentDebt(BigDecimal.ZERO); // Qarz allaqachon to'langan
+
+        Sale sale = new Sale();
+        sale.setId(105L);
+        sale.setShop(shop);
+        sale.setTotalAmount(BigDecimal.valueOf(100_000));
+        sale.setInitialPaidAmount(BigDecimal.ZERO);
+        sale.setIsCancelled(false);
+
+        when(saleRepository.findByIdWithLock(105L)).thenReturn(Optional.of(sale));
+        when(shopRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(shop));
+
+        InvalidPaymentException ex = assertThrows(InvalidPaymentException.class, () ->
+                saleService.cancelSale(105L, "Sinov")
+        );
+        assertTrue(ex.getMessage().contains("to'lovlar amalga oshirgan"));
+    }
 }

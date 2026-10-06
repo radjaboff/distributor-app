@@ -26,7 +26,9 @@ import uz.akmal.distributor_app.dto.OverdueShopResponse;
 import java.time.Duration;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ShopServiceImpl implements ShopService {
@@ -230,12 +232,25 @@ public class ShopServiceImpl implements ShopService {
                 .filter(s -> s.getCurrentDebt() != null && s.getCurrentDebt().compareTo(BigDecimal.ZERO) > 0)
                 .toList();
 
+        if (debtorShops.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Barcha do'konlarning oxirgi to'lov va sotuv sanalarini 2 ta tezkor guruhlangan so'rov bilan olamiz (N+1 muammosi to'liq bartaraf etildi)
+        Map<Long, LocalDateTime> lastPaymentMap = paymentRepository.findLastActivePaymentDatesGroupedByShop().stream()
+                .filter(row -> row != null && row.length >= 2 && row[0] != null && row[1] != null)
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (LocalDateTime) row[1], (existing, replace) -> existing));
+
+        Map<Long, LocalDateTime> lastSaleMap = saleRepository.findLastActiveSaleDatesGroupedByShop().stream()
+                .filter(row -> row != null && row.length >= 2 && row[0] != null && row[1] != null)
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (LocalDateTime) row[1], (existing, replace) -> existing));
+
         LocalDateTime now = LocalDateTime.now();
         List<OverdueShopResponse> result = new ArrayList<>();
 
         for (Shop shop : debtorShops) {
-            LocalDateTime lastPaymentDate = paymentRepository.findLastActivePaymentDateByShopId(shop.getId());
-            LocalDateTime lastSaleDate = saleRepository.findLastActiveSaleDateByShopId(shop.getId());
+            LocalDateTime lastPaymentDate = lastPaymentMap.get(shop.getId());
+            LocalDateTime lastSaleDate = lastSaleMap.get(shop.getId());
 
             LocalDateTime referenceDate = (lastPaymentDate != null) ? lastPaymentDate : lastSaleDate;
             if (referenceDate == null) {

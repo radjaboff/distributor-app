@@ -32,4 +32,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     @Query("SELECT MIN(s.date) FROM Sale s WHERE s.shop.id = :shopId AND (s.isCancelled = false OR s.isCancelled IS NULL)")
     LocalDateTime findFirstActiveSaleDateByShopId(@Param("shopId") Long shopId);
+
+    @Query("SELECT s.shop.id, MAX(s.date) FROM Sale s WHERE (s.isCancelled = false OR s.isCancelled IS NULL) GROUP BY s.shop.id")
+    List<Object[]> findLastActiveSaleDatesGroupedByShop();
 }

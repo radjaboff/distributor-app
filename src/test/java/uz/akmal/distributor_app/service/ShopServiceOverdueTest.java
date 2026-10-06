@@ -50,8 +50,8 @@ class ShopServiceOverdueTest {
 
         // 30 kun oldin oxirgi faol to'lov bo'lgan (haqiqiy oxirgi to'lov)
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
-        when(paymentRepository.findLastActivePaymentDateByShopId(1L)).thenReturn(thirtyDaysAgo);
-        when(saleRepository.findLastActiveSaleDateByShopId(1L)).thenReturn(LocalDateTime.now().minusDays(40));
+        when(paymentRepository.findLastActivePaymentDatesGroupedByShop()).thenReturn(java.util.Collections.singletonList(new Object[]{1L, thirtyDaysAgo}));
+        when(saleRepository.findLastActiveSaleDatesGroupedByShop()).thenReturn(java.util.Collections.singletonList(new Object[]{1L, LocalDateTime.now().minusDays(40)}));
 
         List<OverdueShopResponse> overdueShops = shopService.getOverdueShops(14);
 
@@ -60,8 +60,8 @@ class ShopServiceOverdueTest {
         assertEquals("Qarzdor do'kon", overdueShops.get(0).getShopName());
         assertTrue(overdueShops.get(0).getDaysSinceLastPayment() >= 30);
 
-        verify(paymentRepository).findLastActivePaymentDateByShopId(1L);
-        verify(saleRepository).findLastActiveSaleDateByShopId(1L);
+        verify(paymentRepository).findLastActivePaymentDatesGroupedByShop();
+        verify(saleRepository).findLastActiveSaleDatesGroupedByShop();
     }
 
     @Test
@@ -76,8 +76,8 @@ class ShopServiceOverdueTest {
 
         // 2 kun oldin faol to'lov qilgan
         LocalDateTime twoDaysAgo = LocalDateTime.now().minusDays(2);
-        when(paymentRepository.findLastActivePaymentDateByShopId(2L)).thenReturn(twoDaysAgo);
-        when(saleRepository.findLastActiveSaleDateByShopId(2L)).thenReturn(LocalDateTime.now().minusDays(10));
+        when(paymentRepository.findLastActivePaymentDatesGroupedByShop()).thenReturn(java.util.Collections.singletonList(new Object[]{2L, twoDaysAgo}));
+        when(saleRepository.findLastActiveSaleDatesGroupedByShop()).thenReturn(java.util.Collections.singletonList(new Object[]{2L, LocalDateTime.now().minusDays(10)}));
 
         List<OverdueShopResponse> overdueShops = shopService.getOverdueShops(14);
 

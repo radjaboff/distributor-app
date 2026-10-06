@@ -185,10 +185,14 @@ public class SaleServiceImpl implements SaleService {
         BigDecimal initialPaid = (sale.getInitialPaidAmount() != null) ? sale.getInitialPaidAmount() : BigDecimal.ZERO;
         BigDecimal debtIncreaseFromSale = sale.getTotalAmount().subtract(initialPaid);
         BigDecimal currentDebt = (shop.getCurrentDebt() != null) ? shop.getCurrentDebt() : BigDecimal.ZERO;
-        BigDecimal newDebt = currentDebt.subtract(debtIncreaseFromSale);
-        if (newDebt.compareTo(BigDecimal.ZERO) < 0) {
-            newDebt = BigDecimal.ZERO;
+
+        if (currentDebt.compareTo(debtIncreaseFromSale) < 0) {
+            throw new InvalidPaymentException("Ushbu sotuv bo'yicha do'kon to'lovlar amalga oshirgan (joriy qarz: " 
+                    + currentDebt + " so'm, bekor qilinayotgan sotuv qarzi: " + debtIncreaseFromSale 
+                    + " so'm)! Balans buzilmasligi uchun avval o'sha to'lovlarni bekor qiling.");
         }
+
+        BigDecimal newDebt = currentDebt.subtract(debtIncreaseFromSale);
         shop.setCurrentDebt(newDebt);
         shopRepository.save(shop);
 

@@ -31,15 +31,15 @@ read -p "Tanlovingizni kiriting [1, 2 yoki 3]: " choice
 if [ "$choice" = "1" ]; then
     echo ""
     echo "To'liq tozalash bajarilmoqda..."
-    docker exec distributor_postgres psql -U "$DB_USER" -d distributor_db -c "TRUNCATE TABLE sale_items, sales, payments, stock_ins, shops, products, market_groups RESTART IDENTITY CASCADE;"
+    docker exec distributor_postgres psql -U "$DB_USER" -d distributor_db -c "TRUNCATE TABLE supply_purchases, supply_payments, suppliers, sale_items, sales, payments, stock_ins, shops, products, market_groups RESTART IDENTITY CASCADE;"
     echo ""
-    echo "[OK] Barcha test ma'lumotlar muvaffaqiyatli tozalandi! Baza 0 holatiga keltirildi."
+    echo "[OK] Barcha test ma'lumotlar (shu jumladan ta'minotchi va ularning qarzlari) muvaffaqiyatli tozalandi! Baza 0 holatiga keltirildi."
 elif [ "$choice" = "2" ]; then
     echo ""
-    echo "Faqat savdo va to'lovlar tozalanmoqda..."
-    docker exec distributor_postgres psql -U "$DB_USER" -d distributor_db -c "TRUNCATE TABLE sale_items, sales, payments, stock_ins RESTART IDENTITY CASCADE; UPDATE shops SET current_debt = 0;"
+    echo "Faqat savdo, kirim va to'lovlar tozalanmoqda..."
+    docker exec distributor_postgres psql -U "$DB_USER" -d distributor_db -c "TRUNCATE TABLE supply_purchases, supply_payments, sale_items, sales, payments, stock_ins RESTART IDENTITY CASCADE; UPDATE shops SET current_debt = 0; UPDATE suppliers SET current_debt = 0;"
     echo ""
-    echo "[OK] Savdo, kirim va qarzlar 0 qilindi! Bozorlar, do'konlar va tovarlar ro'yxati saqlab qolindi."
+    echo "[OK] Savdo, ta'minot kirimlari va barcha qarzlar 0 qilindi! Bozorlar, do'konlar, tovarlar va ta'minotchilar saqlab qolindi."
 else
     echo "Amal bekor qilindi."
 fi

@@ -251,18 +251,22 @@ public class BackupServiceImpl implements BackupService {
         boolean hasSales = data.getSales() != null && !data.getSales().isEmpty();
         boolean hasPayments = data.getPayments() != null && !data.getPayments().isEmpty();
         boolean hasStockIns = data.getStockIns() != null && !data.getStockIns().isEmpty();
+        boolean hasSuppliers = data.getSuppliers() != null && !data.getSuppliers().isEmpty();
+        boolean hasSupplyPurchases = data.getSupplyPurchases() != null && !data.getSupplyPurchases().isEmpty();
+        boolean hasSupplyPayments = data.getSupplyPayments() != null && !data.getSupplyPayments().isEmpty();
 
-        if (!hasMarketGroups && !hasProducts && !hasShops && !hasSales && !hasPayments && !hasStockIns) {
+        if (!hasMarketGroups && !hasProducts && !hasShops && !hasSales && !hasPayments && !hasStockIns && !hasSuppliers && !hasSupplyPurchases && !hasSupplyPayments) {
             throw new IllegalArgumentException("Zaxira faylida hech qanday ma'lumot topilmadi! Bazani o'chirib yubormaslik uchun amal bekor qilindi.");
         }
 
-        // 2.1 Qisman (chala) fayl tekshiruvi: Agar mavjud bazada do'kon, mahsulot, sotuv, to'lov yoki ombor kirimlari bo'lsa,
+        // 2.1 Qisman (chala) fayl tekshiruvi: Agar mavjud bazada do'kon, mahsulot, sotuv, to'lov yoki ta'minot bo'lsa,
         // ammo faylda ularning ro'yxati bo'lmasa, mavjud bazadagi ma'lumotlarni tasodifan tozalab yubormaslik
         long currentShopsCount = shopRepository.count();
         long currentProductsCount = productRepository.count();
         long currentSalesCount = saleRepository.count();
         long currentPaymentsCount = paymentRepository.count();
         long currentStockInsCount = stockInRepository.count();
+        long currentSuppliersCount = supplierRepository.count();
 
         if (currentShopsCount > 0 && !hasShops) {
             throw new IllegalArgumentException("Zaxira faylida do'konlar ro'yxati topilmadi! Mavjud bazadagi do'konlar va ularning hisob-kitoblarini o'chirib yubormaslik uchun amal to'xtatildi.");
@@ -278,6 +282,9 @@ public class BackupServiceImpl implements BackupService {
         }
         if (currentStockInsCount > 0 && !hasStockIns) {
             throw new IllegalArgumentException("Zaxira faylida ombor kirimlari tarixi topilmadi! Mavjud ombor kirimlari tarixini o'chirib yubormaslik uchun tiklash to'xtatildi.");
+        }
+        if (currentSuppliersCount > 0 && !hasSuppliers) {
+            throw new IllegalArgumentException("Zaxira faylida ta'minotchilar ro'yxati topilmadi! Mavjud bazadagi ta'minotchilar va ularning qarzlarini o'chirib yubormaslik uchun tiklash to'xtatildi. (Eski formatdagi zaxira fayli bo'lishi mumkin)");
         }
 
         // 3. Muhim ma'lumotlar (bozor, mahsulot, do'kon) strukturasini va bog'liqliklarini tekshirish
