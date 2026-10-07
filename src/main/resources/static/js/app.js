@@ -44,6 +44,7 @@ async function fetchCurrentUserInfo() {
     }
 }
 fetchCurrentUserInfo();
+initProfileAvatar();
 
 function formatAdminBadge(name) {
     const user = (name && name.trim()) ? name.trim() : (currentLoggedInUser || 'admin');
@@ -601,8 +602,21 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// O'ng burchakdagi Logo / Profil tugmasi bosilganda chiquvchi modal
+// ==========================================
+// PROFIL VA SOZLAMALAR BO'LIMI (3-VARIANT: GLASSMORPHISM HUB)
+// ==========================================
+
+// Eski modal chaqirilganda ham to'g'ridan-to'g'ri profil bo'limiga yo'naltiramiz
 function showAppProfileModal() {
+    goToTab('profil');
+}
+
+// Profil ekrani (Boshqa bo'limlar kabi to'laqonli mustaqil bo'lim)
+async function showProfileScreen() {
+    updateHeaderMeta('Profil', 'Tizim va ma\'lumotlar markazi', 'PRO');
+    setRootScreen('profil');
+    fabBtn.style.display = 'none';
+
     const now = new Date();
     const dayNames = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
     const monthNames = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'];
@@ -611,85 +625,395 @@ function showAppProfileModal() {
     const dayOfMonth = now.getDate();
     const monthName = monthNames[now.getMonth()];
     const year = now.getFullYear();
-    const formattedDate = `${dayOfMonth}-${monthName}, ${year} (${dayOfWeek})`;
+    const formattedDate = `${dayOfMonth}-${monthName}, ${year}`;
 
-    showBottomSheet(`
-        <div style="padding: 4px 0 10px 0;">
-            <!-- Brand & User Header -->
-            <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid var(--color-line);">
-                <div style="width:52px; height:52px; border-radius:16px; background:#090D16; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 22px rgba(0,0,0,0.4), 0 0 15px rgba(59,130,246,0.3); border:1px solid rgba(255,255,255,0.15); flex-shrink:0; overflow:hidden;">
-                    <img src="icons/icon-v2-192.png" alt="Logo" style="width:100%; height:100%; object-fit:cover; display:block;">
+    const customAvatar = localStorage.getItem('user_profile_avatar');
+    const avatarSrc = customAvatar || 'icons/icon-v2-192.png';
+    const hasCustomAvatar = !!customAvatar;
+
+    const savedDisplayName = localStorage.getItem('user_display_name');
+    const displayName = savedDisplayName || (currentLoggedInUser ? (currentLoggedInUser.charAt(0).toUpperCase() + currentLoggedInUser.slice(1)) : 'Administrator');
+
+    // Do'konlar sonini hisoblash
+    let shopCount = 0;
+    try {
+        const shops = await apiGet('/shops');
+        shopCount = Array.isArray(shops) ? shops.length : 0;
+    } catch (e) {
+        shopCount = (allShopsInGroup && allShopsInGroup.length) ? allShopsInGroup.length : 28;
+    }
+
+    contentEl.innerHTML = `
+        <div class="profile-section-container">
+            <!-- 1. Markaziy Dumaloq Avatar & Profil Kartasi -->
+            <div class="profile-avatar-card">
+                <div class="profile-avatar-wrapper">
+                    <img id="profileMainAvatar" class="profile-avatar-img" src="${avatarSrc}" alt="Avatar">
+                    <label for="profileAvatarFileInput" class="profile-avatar-camera-btn" title="Suratni o'zgartirish">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    </label>
+                    <input type="file" id="profileAvatarFileInput" accept="image/*" style="display:none;" onchange="handleProfileAvatarUpload(event)">
                 </div>
-                <div style="flex:1;">
-                    <div style="font-size:17.5px; font-weight:700; color:#FFF; display:flex; align-items:center; gap:7px;">
-                        <span>Bozor Distributor</span>
-                        <span style="font-size:10px; background:rgba(16,185,129,0.2); color:#34D399; border:1px solid rgba(16,185,129,0.4); padding:2px 6px; border-radius:6px; font-weight:700; letter-spacing:0.5px;">PRO</span>
+
+                <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <h2 id="profileDisplayName" style="font-size:22px; font-weight:800; color:#FFF; margin:0; letter-spacing:0.3px;">${escHtml(displayName)}</h2>
+                    <button class="btn-icon" onclick="showEditProfileNameModal()" title="Ismni tahrirlash" style="background:transparent; border:none; color:var(--color-ink-dim); padding:4px; cursor:pointer;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </button>
+                </div>
+
+                <div style="margin-top:6px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span style="display:inline-flex; align-items:center; gap:5px; background:linear-gradient(90deg, rgba(56,189,248,0.18), rgba(16,185,129,0.18)); border:1px solid rgba(56,189,248,0.35); padding:3px 12px; border-radius:20px; font-size:11px; font-weight:800; color:#38BDF8; letter-spacing:0.8px;">
+                        <span>✨ DISTRIBUTOR PRO</span>
+                    </span>
+                    <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#34D399; font-weight:700; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); padding:3px 9px; border-radius:20px;">
+                        <span style="width:6px; height:6px; border-radius:50%; background:#34D399; box-shadow:0 0 6px #34D399;"></span>
+                        Online
+                    </span>
+                </div>
+
+                <!-- Rasm amallari (Almashtirish / O'chirish) -->
+                <div style="margin-top:14px; display:flex; justify-content:center; gap:8px;">
+                    <label for="profileAvatarFileInput" class="btn" style="background:rgba(56,189,248,0.14); border:1px solid rgba(56,189,248,0.3); color:#38BDF8; font-size:12px; font-weight:700; padding:6px 12px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <span>Rasm yuklash</span>
+                    </label>
+                    <button class="btn" onclick="showPresetAvatarsModal()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:#CBD5E1; font-size:12px; font-weight:600; padding:6px 12px; border-radius:10px; display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+                        <span>🎭 Avatarlar</span>
+                    </button>
+                    <button id="resetAvatarBtn" class="btn" onclick="resetProfileAvatar()" style="background:rgba(244,63,94,0.1); border:1px solid rgba(244,63,94,0.25); color:#FB7185; font-size:12px; font-weight:600; padding:6px 10px; border-radius:10px; display:${hasCustomAvatar ? 'inline-flex' : 'none'}; align-items:center; gap:4px; cursor:pointer;" title="Rasmni o'chirish">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        <span>O'chirish</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. Tezkor Ko'rsatkichlar (KPI Pill Cards) -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:16px;">
+                <div style="background:rgba(17,24,39,0.7); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px 14px; display:flex; align-items:center; gap:12px;">
+                    <div style="width:38px; height:38px; border-radius:11px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); display:flex; align-items:center; justify-content:center; color:#34D399; flex-shrink:0;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                     </div>
-                    <div style="font-size:12.5px; color:var(--color-ink-dim); margin-top:3px; display:flex; align-items:center; gap:6px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#10B981; box-shadow:0 0 6px #10B981; display:inline-block;"></span>
-                        <span>Admin: <strong style="color:#FFF; font-weight:700;">${escHtml(currentLoggedInUser || 'admin')}</strong></span>
+                    <div>
+                        <div style="font-size:11px; color:var(--color-ink-dim); font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">Do'konlar</div>
+                        <div style="font-size:16px; font-weight:800; color:#FFF; margin-top:1px;">${shopCount} ta</div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(17,24,39,0.7); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px 14px; display:flex; align-items:center; gap:12px;">
+                    <div style="width:38px; height:38px; border-radius:11px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); display:flex; align-items:center; justify-content:center; color:#38BDF8; flex-shrink:0;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    </div>
+                    <div>
+                        <div style="font-size:11px; color:var(--color-ink-dim); font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">Bugun</div>
+                        <div style="font-size:13.5px; font-weight:800; color:#FFF; margin-top:1px;">${formattedDate}</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Bugungi sana & status kartasi -->
-            <div style="background:var(--color-paper-dim); border:1px solid var(--color-line); border-radius:14px; padding:12px 14px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <div style="font-size:11px; color:var(--color-ink-dim); text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">Bugungi sana</div>
-                    <div style="font-size:13.5px; font-weight:700; color:#FFF; margin-top:2px;">
-                        ${formattedDate}
+            <!-- 3. KARTA 1: Baza va Hisobotlar (Emerald Theme) -->
+            <div class="profile-group-card">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <div style="display:flex; align-items:center; gap:9px;">
+                        <span style="width:24px; height:24px; border-radius:7px; background:rgba(16,185,129,0.2); color:#34D399; font-size:12.5px; font-weight:800; display:flex; align-items:center; justify-content:center;">1</span>
+                        <h3 style="font-size:15.5px; font-weight:750; color:#FFF; margin:0;">Baza va Hisobotlar</h3>
                     </div>
+                    <span style="font-size:11px; color:#34D399; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.25); padding:2px 8px; border-radius:6px; font-weight:700;">Zaxira</span>
                 </div>
-                <div style="font-size:12px; color:#34D399; font-weight:600; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.25); padding:4px 10px; border-radius:8px; display:flex; align-items:center; gap:5px;">
-                    <span style="width:6px; height:6px; border-radius:50%; background:#34D399;"></span>
-                    Online
-                </div>
-            </div>
 
-            <!-- Tezkor amallar -->
-            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
-                <button class="btn" style="background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#60A5FA; justify-content:flex-start; padding:13px 15px; font-size:14px; border-radius:14px; display:flex; align-items:center; gap:12px;" onclick="forceAppUpdate()">
-                    <span style="color:#60A5FA; display:flex;">
-                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    </span>
-                    <div style="text-align:left;">
-                        <div style="font-weight:700; font-size:14px; color:#FFF;">Ilovani yangilash (Keshni tozalash)</div>
-                        <div style="font-size:12px; color:var(--color-ink-dim);">Eng so'nggi versiyaga majburiy o'tish</div>
-                    </div>
-                </button>
-
-                <button class="btn" style="background:rgba(16,185,129,0.14); border:1px solid rgba(16,185,129,0.35); color:#34D399; justify-content:flex-start; padding:13px 15px; font-size:14px; border-radius:14px; display:flex; align-items:center; gap:12px; width:100%; box-shadow:0 4px 14px rgba(16,185,129,0.15);" onclick="downloadDatabaseExcelBackup()">
-                    <span style="color:#34D399; display:flex;">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                    </span>
-                    <div style="text-align:left;">
-                        <div style="font-weight:700; font-size:14.5px; color:#FFF; display:flex; align-items:center; gap:6px;">
-                            <span>Bazani Excel'da yuklab olish</span>
-                            <span style="font-size:10px; background:rgba(16,185,129,0.25); color:#34D399; padding:1px 5px; border-radius:4px; font-weight:700;">.XLSX</span>
+                <!-- Excel Yuklash (Katta yashil button) -->
+                <button class="btn" onclick="downloadDatabaseExcelBackup()" style="width:100%; background:linear-gradient(135deg, rgba(16,185,129,0.28), rgba(5,150,105,0.38)); border:1px solid rgba(16,185,129,0.55); color:#FFF; padding:14px 16px; border-radius:15px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 6px 20px rgba(16,185,129,0.22); margin-bottom:10px; cursor:pointer; text-align:left;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:40px; height:40px; border-radius:11px; background:rgba(16,185,129,0.3); border:1px solid rgba(16,185,129,0.5); display:flex; align-items:center; justify-content:center; color:#34D399; flex-shrink:0;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                         </div>
-                        <div style="font-size:11.5px; color:#A7F3D0;">Hisobot va ko'rish uchun (qayta tiklanmaydi)</div>
+                        <div>
+                            <div style="font-weight:750; font-size:14.5px; color:#FFF; display:flex; align-items:center; gap:6px;">
+                                <span>Bazani Excel'da yuklab olish</span>
+                                <span style="font-size:10px; background:rgba(255,255,255,0.2); padding:1px 5px; border-radius:4px; font-weight:800;">.XLSX</span>
+                            </div>
+                            <div style="font-size:11.5px; color:#A7F3D0; margin-top:2px;">Barcha savdo, to'lov va qarzlar hisoboti</div>
+                        </div>
                     </div>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#34D399;"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                    <button class="btn" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:#CBD5E1; justify-content:center; padding:10px; font-size:12.5px; border-radius:12px; display:flex; align-items:center; gap:6px;" onclick="downloadDatabaseBackup()" title="Dastur uchun to'liq texnik zaxira (.json)">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        <span>JSON zaxira</span>
-                    </button>
-                    <button class="btn" style="background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.18); color:#CBD5E1; justify-content:center; padding:10px; font-size:12.5px; border-radius:12px; display:flex; align-items:center; gap:6px;" onclick="triggerRestoreBackup()" title="Faqat JSON zaxira faylidan bazani qayta tiklaydi">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                        <span>JSON'dan tiklash</span>
-                    </button>
+                <!-- JSON Zaxira va Tiklash -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:9px;">
+                    <div class="profile-action-row" onclick="downloadDatabaseBackup()" style="margin-bottom:0; padding:11px 12px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:30px; height:30px; border-radius:8px; background:rgba(56,189,248,0.15); color:#38BDF8; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            </div>
+                            <div>
+                                <div style="font-size:12.5px; font-weight:700; color:#FFF;">JSON zaxira</div>
+                                <div style="font-size:10.5px; color:var(--color-ink-dim);">To'liq nusxa</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-action-row" onclick="triggerRestoreBackup()" style="margin-bottom:0; padding:11px 12px; border-style:dashed;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:30px; height:30px; border-radius:8px; background:rgba(167,139,250,0.15); color:#A78BFA; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            </div>
+                            <div>
+                                <div style="font-size:12.5px; font-weight:700; color:#FFF;">JSON tiklash</div>
+                                <div style="font-size:10.5px; color:var(--color-ink-dim);">Fayldan qayta</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="onBackupFileSelected(event)">
-
-                <button class="btn" style="background:rgba(244,63,94,0.12); border:1px solid rgba(244,63,94,0.3); color:#FB7185; justify-content:center; padding:13px 16px; font-size:14px; font-weight:700; border-radius:14px; display:flex; align-items:center; gap:8px;" onclick="window.location.href='/logout'">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                    Tizimdan chiqish (Logout)
-                </button>
             </div>
 
-            <button class="btn btn--full" style="background:var(--color-paper-dim); color:var(--color-ink-dim); border:1px solid var(--color-line); padding:11px; border-radius:12px; font-size:13.5px;" onclick="closeBottomSheet()">Yopish</button>
+            <!-- 4. KARTA 2: Tizim va Xavfsizlik -->
+            <div class="profile-group-card">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <div style="display:flex; align-items:center; gap:9px;">
+                        <span style="width:24px; height:24px; border-radius:7px; background:rgba(56,189,248,0.2); color:#38BDF8; font-size:12.5px; font-weight:800; display:flex; align-items:center; justify-content:center;">2</span>
+                        <h3 style="font-size:15.5px; font-weight:750; color:#FFF; margin:0;">Tizim va Xavfsizlik</h3>
+                    </div>
+                    <span style="font-size:11px; color:#38BDF8; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.25); padding:2px 8px; border-radius:6px; font-weight:700;">v2.0 PRO</span>
+                </div>
+
+                <!-- Ilovani yangilash va kesh tozalash -->
+                <div class="profile-action-row" onclick="forceAppUpdate()">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:36px; height:36px; border-radius:10px; background:rgba(56,189,248,0.14); color:#38BDF8; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        </div>
+                        <div>
+                            <div style="font-size:13.5px; font-weight:700; color:#FFF;">Ilovani yangilash (Kesh tozalash)</div>
+                            <div style="font-size:11.5px; color:var(--color-ink-dim);">Eng so'nggi versiyaga majburiy o'tish</div>
+                        </div>
+                    </div>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-ink-dim);"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </div>
+
+                <!-- Ekranga o'rnatish -->
+                <div class="profile-action-row" onclick="handlePwaInstallClick()">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:36px; height:36px; border-radius:10px; background:rgba(245,158,11,0.14); color:#F59E0B; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2.5" ry="2.5"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                        </div>
+                        <div>
+                            <div style="font-size:13.5px; font-weight:700; color:#FFF;">Ekranga o'rnatish (PWA)</div>
+                            <div style="font-size:11.5px; color:var(--color-ink-dim);">Ilova sifatida telefonga o'rnatish</div>
+                        </div>
+                    </div>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-ink-dim);"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </div>
+
+                <!-- Foydalanuvchi va Kirish -->
+                <div class="profile-action-row" onclick="showEditProfileNameModal()" style="margin-bottom:14px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:36px; height:36px; border-radius:10px; background:rgba(168,85,247,0.14); color:#C084FC; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        </div>
+                        <div>
+                            <div style="font-size:13.5px; font-weight:700; color:#FFF;">Foydalanuvchi ma'lumotlari</div>
+                            <div style="font-size:11.5px; color:var(--color-ink-dim);">Login: <strong style="color:#FFF;">${escHtml(currentLoggedInUser || 'admin')}</strong></div>
+                        </div>
+                    </div>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-ink-dim);"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </div>
+
+                <!-- Tizimdan chiqish (Logout) -->
+                <button class="btn" onclick="confirmLogout()" style="width:100%; background:linear-gradient(135deg, rgba(244,63,94,0.18), rgba(225,29,72,0.28)); border:1px solid rgba(244,63,94,0.45); color:#FB7185; padding:13px 16px; border-radius:14px; display:flex; align-items:center; justify-content:center; gap:10px; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 15px rgba(244,63,94,0.15);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span>Tizimdan chiqish (Logout)</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Surat yuklash (Galereya yoki kameradan)
+function handleProfileAvatarUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        showToast('Faqat rasm fayllarini yuklash mumkin!', 'error');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            // Rasmni optimallashtirish (maksimal 250px)
+            const canvas = document.createElement('canvas');
+            const maxDim = 250;
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+                if (width > maxDim) {
+                    height = Math.round((height * maxDim) / width);
+                    width = maxDim;
+                }
+            } else {
+                if (height > maxDim) {
+                    width = Math.round((width * maxDim) / height);
+                    height = maxDim;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            try {
+                localStorage.setItem('user_profile_avatar', dataUrl);
+                updateAppAvatars(dataUrl);
+                showToast('Profil rasmi muvaffaqiyatli saqlandi! ✨', 'success');
+                const resetBtn = document.getElementById('resetAvatarBtn');
+                if (resetBtn) resetBtn.style.display = 'inline-flex';
+            } catch (err) {
+                console.warn('Rasm saqlashda xato:', err);
+                showToast('Rasm hajmi juda katta, boshqa rasm tanlang', 'error');
+            }
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// Avatarlarni yangilash (Ekranda va Header'da)
+function updateAppAvatars(src) {
+    const mainAvatar = document.getElementById('profileMainAvatar');
+    if (mainAvatar) mainAvatar.src = src;
+    const headerAvatar = document.getElementById('headerProfileAvatar');
+    if (headerAvatar) headerAvatar.src = src;
+}
+
+// Boshlang'ich yuklanishda avatarni o'qish
+function initProfileAvatar() {
+    const savedAvatar = localStorage.getItem('user_profile_avatar');
+    if (savedAvatar) {
+        const headerAvatar = document.getElementById('headerProfileAvatar');
+        if (headerAvatar) headerAvatar.src = savedAvatar;
+    }
+}
+
+// Rasmni o'chirish (Standart holatga qaytarish)
+function resetProfileAvatar() {
+    localStorage.removeItem('user_profile_avatar');
+    updateAppAvatars('icons/icon-v2-192.png');
+    showToast('Profil rasmi o\'chirildi (standart logotipga qaytarildi)', 'info');
+    const resetBtn = document.getElementById('resetAvatarBtn');
+    if (resetBtn) resetBtn.style.display = 'none';
+}
+
+// Tayyor avatarlar modal oynasi
+function showPresetAvatarsModal() {
+    const presetSvgAvatars = [
+        { id: 'av1', label: 'Boshliq', bg: 'linear-gradient(135deg, #1E3A8A, #3B82F6)', emoji: '👨‍💼' },
+        { id: 'av2', label: 'Distributor', bg: 'linear-gradient(135deg, #065F46, #10B981)', emoji: '📦' },
+        { id: 'av3', label: 'Menejer', bg: 'linear-gradient(135deg, #581C87, #8B5CF6)', emoji: '👑' },
+        { id: 'av4', label: 'Hisobchi', bg: 'linear-gradient(135deg, #7C2D12, #F97316)', emoji: '📊' }
+    ];
+
+    let avatarsHtml = presetSvgAvatars.map(av => `
+        <div onclick="selectPresetAvatar('${av.emoji}', '${av.bg}')" style="background:${av.bg}; border:2px solid rgba(255,255,255,0.2); border-radius:16px; padding:12px; text-align:center; cursor:pointer; transition:transform 0.15s ease;">
+            <div style="font-size:32px; line-height:1;">${av.emoji}</div>
+            <div style="font-size:11px; font-weight:700; color:#FFF; margin-top:6px;">${av.label}</div>
+        </div>
+    `).join('');
+
+    showBottomSheet(`
+        <div style="padding:4px 0 10px 0;">
+            <h3 style="font-size:17.5px; font-weight:750; color:#FFF; margin-bottom:12px; text-align:center;">Tayyor Avatarlardan Tanlang</h3>
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:18px;">
+                ${avatarsHtml}
+            </div>
+            <button class="btn btn--full" style="background:var(--color-paper-dim); color:var(--color-ink-dim); border:1px solid var(--color-line); padding:11px; border-radius:12px;" onclick="closeBottomSheet()">Yopish</button>
+        </div>
+    `);
+}
+
+function selectPresetAvatar(emoji, bg) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 180;
+    canvas.height = 180;
+    const ctx = canvas.getContext('2d');
+
+    // Orqa fon doirasi
+    ctx.fillStyle = '#0F172A';
+    ctx.fillRect(0, 0, 180, 180);
+    ctx.beginPath();
+    ctx.arc(90, 90, 85, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+
+    // Gradient fon
+    const grad = ctx.createLinearGradient(0, 0, 180, 180);
+    grad.addColorStop(0, '#0284C7');
+    grad.addColorStop(1, '#1E293B');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 180, 180);
+
+    // Emoji chizish
+    ctx.font = '85px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 90, 95);
+
+    const dataUrl = canvas.toDataURL('image/png');
+    localStorage.setItem('user_profile_avatar', dataUrl);
+    updateAppAvatars(dataUrl);
+    closeBottomSheet();
+    showToast('Yangi avatar o\'rnatildi! ✨', 'success');
+    const resetBtn = document.getElementById('resetAvatarBtn');
+    if (resetBtn) resetBtn.style.display = 'inline-flex';
+}
+
+// Profil ismini tahrirlash oynasi
+function showEditProfileNameModal() {
+    const savedDisplayName = localStorage.getItem('user_display_name');
+    const currentName = savedDisplayName || (currentLoggedInUser ? (currentLoggedInUser.charAt(0).toUpperCase() + currentLoggedInUser.slice(1)) : 'Administrator');
+    showBottomSheet(`
+        <div style="padding:4px 0 10px 0;">
+            <h3 style="font-size:17.5px; font-weight:750; color:#FFF; margin-bottom:12px; text-align:center;">Profil ismini o'zgartirish</h3>
+            <div style="margin-bottom:16px;">
+                <label style="font-size:12px; color:var(--color-ink-dim); display:block; margin-bottom:6px; font-weight:600;">Ko'rsatiladigan ism:</label>
+                <input type="text" id="editDisplayNameInput" class="form-input" value="${escHtml(currentName)}" maxlength="30" placeholder="Ismingizni kiriting" style="width:100%; font-size:15px; padding:12px;">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn--full" style="background:var(--color-accent); color:#FFF; font-weight:700; border-radius:12px; padding:12px;" onclick="saveProfileDisplayName()">Saqlash</button>
+                <button class="btn btn--full" style="background:var(--color-paper-dim); color:var(--color-ink-dim); border:1px solid var(--color-line); border-radius:12px; padding:12px;" onclick="closeBottomSheet()">Bekor qilish</button>
+            </div>
+        </div>
+    `);
+}
+
+function saveProfileDisplayName() {
+    const input = document.getElementById('editDisplayNameInput');
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) {
+        showToast('Ism bo\'sh bo\'lishi mumkin emas', 'error');
+        return;
+    }
+    localStorage.setItem('user_display_name', val);
+    const titleEl = document.getElementById('profileDisplayName');
+    if (titleEl) titleEl.textContent = val;
+    closeBottomSheet();
+    showToast('Profil ismi saqlandi! ✨', 'success');
+}
+
+// Tizimdan chiqishni tasdiqlash
+function confirmLogout() {
+    showBottomSheet(`
+        <div style="padding:6px 0 10px 0; text-align:center;">
+            <div style="width:52px; height:52px; border-radius:50%; background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#FB7185; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            </div>
+            <h3 style="font-size:18px; font-weight:800; color:#FFF; margin-bottom:6px;">Tizimdan chiqmoqchimisiz?</h3>
+            <p style="font-size:13px; color:var(--color-ink-dim); margin-bottom:20px;">Joriy administrator sessiyasi yakunlanadi va login sahifasiga o'tasiz.</p>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn--full" style="background:linear-gradient(135deg, #E11D48, #BE123C); color:#FFF; font-weight:700; border-radius:12px; padding:12px;" onclick="window.location.href='/logout'">Ha, chiqish</button>
+                <button class="btn btn--full" style="background:var(--color-paper-dim); color:var(--color-ink-dim); border:1px solid var(--color-line); border-radius:12px; padding:12px;" onclick="closeBottomSheet()">Bekor qilish</button>
+            </div>
         </div>
     `);
 }
@@ -2588,6 +2912,9 @@ function goToTab(tab) {
     } else if (tab === 'dashboard') {
         setActiveNav('dashboard');
         showDashboard();
+    } else if (tab === 'profil') {
+        setActiveNav('profil');
+        showProfileScreen();
     }
 }
 
