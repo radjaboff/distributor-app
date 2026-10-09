@@ -55,6 +55,11 @@ public class SupplierController {
         return supplierService.addPurchase(id, request);
     }
 
+    @PostMapping("/{id}/purchases/batch")
+    public List<SupplyPurchase> addPurchasesBatch(@PathVariable Long id, @Valid @RequestBody List<SupplyPurchaseRequest> requests) {
+        return supplierService.addPurchasesBatch(id, requests);
+    }
+
     @PostMapping("/{id}/payments")
     public SupplyPayment addPayment(@PathVariable Long id, @Valid @RequestBody SupplyPaymentRequest request) {
         return supplierService.addPayment(id, request);

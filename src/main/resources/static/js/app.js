@@ -5456,225 +5456,315 @@ async function submitSupplyPurchase(supplierId) {
 }
 
 // ==========================================
-// YOG' SOTIB OLISH (KIRIM) MAXSUS FORMASI (USD $)
+// YOG' SOTIB OLISH (KIRIM) FAKTURA FORMASI (USD $) - KO'P MAHSULOTLI BATCH
 // ==========================================
+let currentOilPurchaseItems = [];
+
 function showAddOilPurchaseForm(supplierId, supplierName) {
-    updateHeaderMeta("Mahsulot olish", supplierName, "KIRIM $");
+    updateHeaderMeta("Mahsulot olish", supplierName, "KIRIM $ (FAKTURA)");
     setBackAction(() => showSupplierDetail(supplierId), 'addOilPurchase');
     fabBtn.style.display = 'none';
 
+    currentOilPurchaseItems = [];
     const today = getLocalDateString();
 
     contentEl.innerHTML = `
-        <div class="form-card">
-            <div class="form-card__header">
+        <div class="form-card" style="max-width:680px; margin:0 auto;">
+            <!-- Header -->
+            <div class="form-card__header" style="margin-bottom:18px;">
                 <div class="form-card__icon" style="background: rgba(245, 158, 11, 0.18); color: #FBBF24;">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 </div>
                 <div>
-                    <div class="form-card__title">Yog' sotib olish (Kirim - USD $)</div>
+                    <div class="form-card__title">Yog' kirimi (Faktura / Nakladnoy)</div>
                     <div class="form-card__desc">${escHtml(supplierName)} dan yuk qabul qilish</div>
                 </div>
             </div>
 
-            <!-- 1. Mahsulot nomi -->
-            <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label" for="oilProductNameInput">
-                    <span class="label-icon">${Icons.box}</span>
-                    <span>Mahsulot nomi *</span>
-                </label>
-                <input type="text" 
-                       class="form-input" 
-                       id="oilProductNameInput" 
-                       placeholder="Masalan: Sunny gold, Sulton, Altay, Lasko..." 
-                       autofocus>
-            </div>
-
-            <!-- 2. Yog' hajmi (Litr) -->
-            <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label" for="oilLiterPerItemInput">
-                    <span class="label-icon">🛢️</span>
-                    <span>Yog' hajmi (1 ta butilka litri) *</span>
-                </label>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <input type="number" 
-                           step="0.1" 
-                           min="0.1" 
-                           class="form-input" 
-                           id="oilLiterPerItemInput" 
-                           placeholder="Masalan: 5" 
-                           style="font-size:17px; font-weight:700;"
-                           oninput="updateOilPurchaseTotal()">
-                    <span style="font-size:14px; font-weight:700; color:var(--color-ink-dim); padding-right:6px;">Litr</span>
+            <!-- Umumiy faktura ma'lumotlari: Sana va Nakladnoy raqami -->
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px; margin-bottom:18px;">
+                <div style="font-size:12px; font-weight:700; color:#93C5FD; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                    <span>📄</span>
+                    <span>Faktura umumiy ma'lumotlari</span>
                 </div>
-                <div class="quick-chips-row" style="margin-top:8px;">
-                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(1)">1 L</button>
-                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(1.5)">1.5 L</button>
-                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(3)">3 L</button>
-                    <button type="button" class="preset-chip" onclick="setOilLiterPreset(5)">5 L</button>
-                </div>
-            </div>
-
-            <!-- 3. Karopka ichidagi soni (dona) -->
-            <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label" for="oilItemsPerBoxInput">
-                    <span class="label-icon">📦</span>
-                    <span>1 karopka ichidagi soni (dona) *</span>
-                </label>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <button type="button" class="btn" onclick="adjustOilItemsPerBox(-1)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">−</button>
-                    <input type="number" 
-                           class="form-input" 
-                           id="oilItemsPerBoxInput" 
-                           step="1" 
-                           min="1" 
-                           placeholder="Masalan: 3" 
-                           style="text-align:center; font-size:18px; font-weight:700;"
-                           oninput="updateOilPurchaseTotal()">
-                    <button type="button" class="btn" onclick="adjustOilItemsPerBox(1)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">+</button>
-                </div>
-                <div class="quick-chips-row" style="margin-top:8px;">
-                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(3)">3 dona</button>
-                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(4)">4 dona</button>
-                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(6)">6 dona</button>
-                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(12)">12 dona</button>
-                    <button type="button" class="preset-chip" onclick="setOilItemsPreset(15)">15 dona</button>
-                </div>
-            </div>
-
-            <!-- 4. Karopka soni -->
-            <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label" for="oilBoxesCountInput">
-                    <span class="label-icon">${Icons.cart}</span>
-                    <span>Karopka soni *</span>
-                </label>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <button type="button" class="btn" onclick="adjustOilBoxesCount(-5)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">−</button>
-                    <input type="number" 
-                           class="form-input" 
-                           id="oilBoxesCountInput" 
-                           step="1" 
-                           min="1" 
-                           placeholder="Masalan: 100" 
-                           style="text-align:center; font-size:18px; font-weight:700;"
-                           oninput="updateOilPurchaseTotal()">
-                    <button type="button" class="btn" onclick="adjustOilBoxesCount(5)" style="width:46px; height:46px; padding:0; font-size:20px; font-weight:800; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">+</button>
-                </div>
-                <div class="quick-chips-row" style="margin-top:8px;">
-                    <button type="button" class="preset-chip" onclick="addOilBoxesCount(10)">+10</button>
-                    <button type="button" class="preset-chip" onclick="addOilBoxesCount(50)">+50</button>
-                    <button type="button" class="preset-chip" onclick="addOilBoxesCount(100)">+100</button>
-                    <button type="button" class="preset-chip" onclick="addOilBoxesCount(500)">+500</button>
-                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearOilBoxesCount()">Tozalash</button>
-                </div>
-            </div>
-
-            <!-- 5. 1 litr narxi ($) -->
-            <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label" for="oilPricePerLiterInput">
-                    <span class="label-icon">${Icons.money}</span>
-                    <span>1 litr narxi ($ AQSH Dollari) *</span>
-                </label>
-                <div class="money-field-wrap">
-                    <div class="money-input-box">
-                        <input type="number" 
-                               step="0.01" 
-                               min="0.001" 
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" for="oilPurchaseDateInput" style="font-size:12px;">
+                            <span>Kirim sanasi *</span>
+                        </label>
+                        <input type="date" 
                                class="form-input" 
-                               id="oilPricePerLiterInput" 
-                               placeholder="Masalan: 1.86" 
-                               style="font-size:18px; font-weight:700;"
-                               oninput="updateOilPurchaseTotal()">
-                        <span class="money-suffix" style="font-weight:800; color:#38BDF8;">$</span>
+                               id="oilPurchaseDateInput" 
+                               value="${today}" 
+                               max="${today}">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" for="oilPurchaseInvoiceNoteInput" style="font-size:12px;">
+                            <span>Nakladnoy № / Izoh</span>
+                        </label>
+                        <input type="text" 
+                               class="form-input" 
+                               id="oilPurchaseInvoiceNoteInput" 
+                               placeholder="Masalan: №120729">
                     </div>
                 </div>
-                <div class="quick-chips-row" style="margin-top:8px;">
-                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.50)">$1.50</button>
-                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.60)">$1.60</button>
-                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.70)">$1.70</button>
-                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.75)">$1.75</button>
-                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.80)">$1.80</button>
-                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.85)">$1.85</button>
-                    <button type="button" class="preset-chip" onclick="setOilPricePreset(1.90)">$1.90</button>
-                    <button type="button" class="preset-chip" onclick="setOilPricePreset(2.00)">$2.00</button>
-                    <button type="button" class="preset-chip" onclick="addOilPrice(0.01)">+$0.01</button>
-                    <button type="button" class="preset-chip" onclick="addOilPrice(0.05)">+$0.05</button>
-                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearOilPrice()">Tozalash</button>
+            </div>
+
+            <!-- Pozitsiya kiritish kartasi (Mahsulot qo'shish) -->
+            <div id="oilItemEntryCard" style="background:rgba(30, 41, 59, 0.45); border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:16px; margin-bottom:20px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-size:13px; font-weight:700; color:#FBBF24; display:flex; align-items:center; gap:6px;">
+                        <span>📦</span>
+                        <span>Mahsulot qo'shish (Pozitsiya)</span>
+                    </div>
+                    <span style="font-size:11px; background:rgba(251,191,36,0.15); color:#FBBF24; padding:2px 8px; border-radius:999px; font-weight:600;">
+                        Har bir turni alohida qo'shing
+                    </span>
+                </div>
+
+                <!-- Tezkor mahsulot tugmalari (Presets) -->
+                <div style="margin-bottom:14px;">
+                    <div style="font-size:11px; color:var(--color-ink-dim); margin-bottom:6px; font-weight:600;">⚡ Tezkor tanlash:</div>
+                    <div class="quick-chips-row" style="flex-wrap:wrap; gap:6px;">
+                        <button type="button" class="preset-chip" onclick="setOilProductPreset('Южанка 5л', 5, 3, 1.63)">Южанка 5л (3×5L)</button>
+                        <button type="button" class="preset-chip" onclick="setOilProductPreset('Ласка масло 1л', 1, 15, 1.62)">Ласка 1л (15×1L)</button>
+                        <button type="button" class="preset-chip" onclick="setOilProductPreset('Миладора 5л', 5, 3, 1.63)">Миладора 5л (3×5L)</button>
+                        <button type="button" class="preset-chip" onclick="setOilProductPreset('Sunny Gold 5л', 5, 3)">Sunny Gold 5л</button>
+                        <button type="button" class="preset-chip" onclick="setOilProductPreset('Sulton 5л', 5, 3)">Sulton 5л</button>
+                        <button type="button" class="preset-chip" onclick="setOilProductPreset('Altay 5л', 5, 3)">Altay 5л</button>
+                    </div>
+                </div>
+
+                <!-- 1. Mahsulot nomi -->
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label class="form-label" for="oilProductNameInput">
+                        <span class="label-icon">${Icons.box}</span>
+                        <span>Mahsulot nomi *</span>
+                    </label>
+                    <input type="text" 
+                           class="form-input" 
+                           id="oilProductNameInput" 
+                           placeholder="Masalan: Южанка 5л, Ласка масло 1л..." 
+                           autofocus>
+                </div>
+
+                <!-- 2. Yog' hajmi va Karopkadagi soni (Grid) -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
+                    <!-- Yog' hajmi (1 butilka) -->
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" for="oilLiterPerItemInput" style="font-size:12px;">
+                            <span>🛢️ Butilka hajmi (L) *</span>
+                        </label>
+                        <input type="number" 
+                               step="0.1" 
+                               min="0.1" 
+                               class="form-input" 
+                               id="oilLiterPerItemInput" 
+                               placeholder="5" 
+                               style="font-size:16px; font-weight:700;"
+                               oninput="updateOilPurchaseTotal()">
+                        <div class="quick-chips-row" style="margin-top:6px; gap:4px;">
+                            <button type="button" class="preset-chip" style="padding:3px 8px; font-size:11px;" onclick="setOilLiterPreset(1)">1 L</button>
+                            <button type="button" class="preset-chip" style="padding:3px 8px; font-size:11px;" onclick="setOilLiterPreset(1.5)">1.5 L</button>
+                            <button type="button" class="preset-chip" style="padding:3px 8px; font-size:11px;" onclick="setOilLiterPreset(3)">3 L</button>
+                            <button type="button" class="preset-chip" style="padding:3px 8px; font-size:11px;" onclick="setOilLiterPreset(5)">5 L</button>
+                        </div>
+                    </div>
+
+                    <!-- 1 karopka ichidagi soni (dona) -->
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" for="oilItemsPerBoxInput" style="font-size:12px;">
+                            <span>📦 Karopkada (dona) *</span>
+                        </label>
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <button type="button" class="btn" onclick="adjustOilItemsPerBox(-1)" style="width:36px; height:42px; padding:0; font-size:18px; font-weight:800; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF; flex-shrink:0;">−</button>
+                            <input type="number" 
+                                   class="form-input" 
+                                   id="oilItemsPerBoxInput" 
+                                   step="1" 
+                                   min="1" 
+                                   placeholder="3" 
+                                   style="text-align:center; font-size:16px; font-weight:700;"
+                                   oninput="updateOilPurchaseTotal()">
+                            <button type="button" class="btn" onclick="adjustOilItemsPerBox(1)" style="width:36px; height:42px; padding:0; font-size:18px; font-weight:800; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF; flex-shrink:0;">+</button>
+                        </div>
+                        <div class="quick-chips-row" style="margin-top:6px; gap:4px;">
+                            <button type="button" class="preset-chip" style="padding:3px 7px; font-size:11px;" onclick="setOilItemsPreset(3)">3 d</button>
+                            <button type="button" class="preset-chip" style="padding:3px 7px; font-size:11px;" onclick="setOilItemsPreset(4)">4 d</button>
+                            <button type="button" class="preset-chip" style="padding:3px 7px; font-size:11px;" onclick="setOilItemsPreset(6)">6 d</button>
+                            <button type="button" class="preset-chip" style="padding:3px 7px; font-size:11px;" onclick="setOilItemsPreset(12)">12 d</button>
+                            <button type="button" class="preset-chip" style="padding:3px 7px; font-size:11px;" onclick="setOilItemsPreset(15)">15 d</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Karopka soni -->
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label class="form-label" for="oilBoxesCountInput">
+                        <span class="label-icon">${Icons.cart}</span>
+                        <span>Karopka soni *</span>
+                    </label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button type="button" class="btn" onclick="adjustOilBoxesCount(-5)" style="width:44px; height:44px; padding:0; font-size:18px; font-weight:800; border-radius:10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">−</button>
+                        <input type="number" 
+                               class="form-input" 
+                               id="oilBoxesCountInput" 
+                               step="1" 
+                               min="1" 
+                               placeholder="Masalan: 10" 
+                               style="text-align:center; font-size:18px; font-weight:700;"
+                               oninput="updateOilPurchaseTotal()">
+                        <button type="button" class="btn" onclick="adjustOilBoxesCount(5)" style="width:44px; height:44px; padding:0; font-size:18px; font-weight:800; border-radius:10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#FFF; flex-shrink:0;">+</button>
+                    </div>
+                    <div class="quick-chips-row" style="margin-top:8px;">
+                        <button type="button" class="preset-chip" onclick="addOilBoxesCount(10)">+10</button>
+                        <button type="button" class="preset-chip" onclick="addOilBoxesCount(20)">+20</button>
+                        <button type="button" class="preset-chip" onclick="addOilBoxesCount(50)">+50</button>
+                        <button type="button" class="preset-chip" onclick="addOilBoxesCount(100)">+100</button>
+                        <button type="button" class="preset-chip preset-chip--clear" onclick="clearOilBoxesCount()">Tozalash</button>
+                    </div>
+                </div>
+
+                <!-- 4. 1 litr narxi ($ AQSH Dollari) -->
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label class="form-label" for="oilPricePerLiterInput">
+                        <span class="label-icon">${Icons.money}</span>
+                        <span>1 litr narxi ($ AQSH Dollari) *</span>
+                    </label>
+                    <div class="money-field-wrap">
+                        <div class="money-input-box">
+                            <input type="number" 
+                                   step="0.01" 
+                                   min="0.001" 
+                                   class="form-input" 
+                                   id="oilPricePerLiterInput" 
+                                   placeholder="Masalan: 1.63" 
+                                   style="font-size:18px; font-weight:700;"
+                                   oninput="updateOilPurchaseTotal()">
+                            <span class="money-suffix" style="font-weight:800; color:#38BDF8;">$</span>
+                        </div>
+                    </div>
+                    <div class="quick-chips-row" style="margin-top:8px; flex-wrap:wrap; gap:6px;">
+                        <button type="button" class="preset-chip" onclick="setOilPricePreset(1.50)">$1.50</button>
+                        <button type="button" class="preset-chip" onclick="setOilPricePreset(1.60)">$1.60</button>
+                        <button type="button" class="preset-chip" onclick="setOilPricePreset(1.62)">$1.62</button>
+                        <button type="button" class="preset-chip" onclick="setOilPricePreset(1.63)">$1.63</button>
+                        <button type="button" class="preset-chip" onclick="setOilPricePreset(1.70)">$1.70</button>
+                        <button type="button" class="preset-chip" onclick="setOilPricePreset(1.75)">$1.75</button>
+                        <button type="button" class="preset-chip" onclick="setOilPricePreset(1.80)">$1.80</button>
+                        <button type="button" class="preset-chip" onclick="addOilPrice(0.01)">+$0.01</button>
+                        <button type="button" class="preset-chip" onclick="addOilPrice(0.05)">+$0.05</button>
+                        <button type="button" class="preset-chip preset-chip--clear" onclick="clearOilPrice()">Tozalash</button>
+                    </div>
+                </div>
+
+                <!-- Ushbu pozitsiyaning jonli hisobi -->
+                <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:12.5px; line-height:1.6;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                        <span style="color:var(--color-ink-dim);">📦 1 karopka hajmi:</span>
+                        <strong id="oilCalcBoxLiters" style="color:#FFF;">0 litr</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                        <span style="color:var(--color-ink-dim);">🛢️ Pozitsiya jami hajmi:</span>
+                        <strong id="oilCalcTotalLiters" style="color:#38BDF8;">0 litr</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                        <span style="color:var(--color-ink-dim);">💵 1 karopka narxi:</span>
+                        <strong id="oilCalcBoxPrice" style="color:#34D399;">$0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:4px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.1); font-size:14px;">
+                        <span style="color:#E2E8F0; font-weight:600;">Pozitsiya summasi:</span>
+                        <strong id="oilCalcTotalAmount" style="color:#38BDF8; font-weight:800;">$0.00</strong>
+                    </div>
+                </div>
+
+                <!-- Ro'yxatga qo'shish tugmasi -->
+                <button type="button" 
+                        class="btn btn--secondary btn--full" 
+                        onclick="addOilItemToPurchaseList()"
+                        style="background:rgba(245, 158, 11, 0.2); border:1px solid #F59E0B; color:#FBBF24; font-weight:700; padding:12px; font-size:15px; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>Fakturaga (ro'yxatga) qo'shish</span>
+                </button>
+            </div>
+
+            <!-- Faktura tarkibi: Qo'shilgan mahsulotlar ro'yxati -->
+            <div style="margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="font-size:13px; font-weight:700; color:#F1F5F9; display:flex; align-items:center; gap:6px;">
+                        <span>📋</span>
+                        <span id="oilItemsCountTitle">Fakturadagi mahsulotlar (0 xil)</span>
+                    </div>
+                    <button type="button" 
+                            id="clearAllOilItemsBtn" 
+                            onclick="clearAllOilPurchaseItems()" 
+                            style="display:none; background:none; border:none; color:#EF4444; font-size:12px; font-weight:600; cursor:pointer;">
+                        Hammasini o'chirish
+                    </button>
+                </div>
+
+                <div id="oilPurchaseItemsContainer">
+                    <!-- Dinamik ravishda renderOilPurchaseItemsList() orqali to'ldiriladi -->
                 </div>
             </div>
 
-            <!-- 6. Kirim sanasi -->
-            <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label" for="oilPurchaseDateInput">
-                    <span class="label-icon">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                    </span>
-                    <span>Kirim sanasi</span>
-                </label>
-                <input type="date" 
-                       class="form-input" 
-                       id="oilPurchaseDateInput" 
-                       value="${today}" 
-                       max="${today}">
-            </div>
-
-            <!-- 7. Izoh (ixtiyoriy) -->
-            <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label" for="oilPurchaseNoteInput">
-                    <span class="label-icon">${Icons.info}</span>
-                    <span>Izoh (ixtiyoriy)</span>
-                </label>
-                <input type="text" class="form-input" id="oilPurchaseNoteInput" placeholder="Masalan: Fura raqami, yuk xati yoki vagon...">
-            </div>
-
-            <!-- 8. Professional Hisob-kitob kartasi (Jonli kalkulyator) -->
+            <!-- Faktura umumiy hisob-kitob kartasi (Grand Total) -->
             <div class="stat-card stat-card--glow-blue" style="margin-bottom:20px; padding:18px; position:relative; overflow:hidden;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                     <div style="font-size:11.5px; font-weight:700; color:#93C5FD; text-transform:uppercase; letter-spacing:0.8px;">
-                        🧮 Jonli hisob-kitob (USD $)
+                        🧮 Faktura jami summasi (USD $)
                     </div>
-                    <span style="font-size:11px; background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3); padding:2px 8px; border-radius:999px; font-weight:700;">
-                        Avtomatik
+                    <span id="oilGrandBadge" style="font-size:11px; background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3); padding:2px 8px; border-radius:999px; font-weight:700;">
+                        0 ta pozitsiya
                     </span>
                 </div>
 
                 <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.7;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                        <span style="color:var(--color-ink-dim);">📦 1 karopka hajmi:</span>
-                        <strong id="oilCalcBoxLiters" style="color:#FFF;">0 litr</strong>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                        <span style="color:var(--color-ink-dim);">🛢️ Jami qabul qilingan hajm:</span>
-                        <strong id="oilCalcTotalLiters" style="color:#38BDF8;">0 litr</strong>
+                        <span style="color:var(--color-ink-dim);">📦 Jami karopkalar:</span>
+                        <strong id="oilGrandBoxes" style="color:#FFF;">0 karopka</strong>
                     </div>
                     <div style="display:flex; justify-content:space-between;">
-                        <span style="color:var(--color-ink-dim);">💵 1 karopka narxi:</span>
-                        <strong id="oilCalcBoxPrice" style="color:#34D399;">$0.00</strong>
+                        <span style="color:var(--color-ink-dim);">🛢️ Jami umumiy hajm:</span>
+                        <strong id="oilGrandLiters" style="color:#38BDF8;">0 litr</strong>
                     </div>
                 </div>
 
                 <div style="text-align:center; padding: 4px 0 10px 0;">
-                    <div style="font-size:12px; color:var(--color-ink-dim); text-transform:uppercase; letter-spacing:0.5px;">Jami hisoblangan summa ($):</div>
-                    <div id="oilCalcTotalAmount" style="font-size:30px; font-weight:800; color:#38BDF8; margin-top:4px; font-variant-numeric:tabular-nums;">
+                    <div style="font-size:12px; color:var(--color-ink-dim); text-transform:uppercase; letter-spacing:0.5px;">Faktura bo'yicha jami summa ($):</div>
+                    <div id="oilGrandTotalAmount" style="font-size:32px; font-weight:800; color:#38BDF8; margin-top:4px; font-variant-numeric:tabular-nums;">
                         $0.00
                     </div>
                 </div>
 
                 <div style="text-align:center; margin-top:4px; font-size:11.5px; color:#94A3B8; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:7px 12px; display:flex; align-items:center; justify-content:center; gap:6px;">
                     <span>💳</span>
-                    <span>Zavoddan bizning qarzimizga dollarda ($) qo'shiladi</span>
+                    <span>Zavoddan bizning qarzimizga dollarda ($) to'liq qo'shiladi</span>
                 </div>
             </div>
 
-            <!-- 9. Saqlash tugmasi -->
+            <!-- Yakuniy saqlash tugmasi -->
             <div class="form-group" style="margin-top:10px;">
                 <button class="btn btn--primary btn--full" id="submitOilSupplyPurchaseBtn" onclick="submitOilSupplyPurchase(${supplierId})">
-                    ${Icons.check} Kirimni tasdiqlash va saqlash
+                    ${Icons.check} Fakturani tasdiqlash va saqlash
                 </button>
             </div>
         </div>
     `;
 
+    renderOilPurchaseItemsList();
+    updateOilPurchaseTotal();
+}
+
+function setOilProductPreset(name, liters, items, price = null) {
+    const nameEl = document.getElementById('oilProductNameInput');
+    const literEl = document.getElementById('oilLiterPerItemInput');
+    const itemsEl = document.getElementById('oilItemsPerBoxInput');
+    const priceEl = document.getElementById('oilPricePerLiterInput');
+    if (nameEl) nameEl.value = name;
+    if (literEl) literEl.value = liters;
+    if (itemsEl) itemsEl.value = items;
+    if (price !== null && priceEl) priceEl.value = Number(price).toFixed(2);
     updateOilPurchaseTotal();
 }
 
@@ -5791,7 +5881,8 @@ function updateOilPurchaseTotal() {
     }
 }
 
-async function submitOilSupplyPurchase(supplierId) {
+// Bitta mahsulotni ro'yxatga (fakturaga) qo'shish
+function addOilItemToPurchaseList() {
     const productName = document.getElementById('oilProductNameInput')?.value.trim();
     const literRaw = (document.getElementById('oilLiterPerItemInput')?.value || '').toString().replace(',', '.');
     const litersPerItem = parseFloat(literRaw);
@@ -5799,63 +5890,277 @@ async function submitOilSupplyPurchase(supplierId) {
     const boxesCount = parseInt(document.getElementById('oilBoxesCountInput')?.value, 10);
     const priceRaw = (document.getElementById('oilPricePerLiterInput')?.value || '').toString().replace(',', '.');
     const pricePerLiter = parseFloat(priceRaw);
-    const purchaseDate = document.getElementById('oilPurchaseDateInput')?.value || null;
-    const note = document.getElementById('oilPurchaseNoteInput')?.value.trim() || null;
-    const today = getLocalDateString();
 
     if (!productName) {
         showToast("Mahsulot nomini kiriting", "error");
-        return;
+        document.getElementById('oilProductNameInput')?.focus();
+        return false;
     }
     if (!litersPerItem || litersPerItem <= 0) {
         showToast("Yog' hajmini (1 butilka litri) kiriting", "error");
-        return;
+        document.getElementById('oilLiterPerItemInput')?.focus();
+        return false;
     }
     if (!itemsPerBox || itemsPerBox <= 0) {
         showToast("Karopkadagi donalar sonini kiriting", "error");
-        return;
+        document.getElementById('oilItemsPerBoxInput')?.focus();
+        return false;
     }
     if (!boxesCount || boxesCount <= 0) {
         showToast("Karopkalar sonini kiriting", "error");
-        return;
+        document.getElementById('oilBoxesCountInput')?.focus();
+        return false;
     }
     if (!pricePerLiter || pricePerLiter <= 0) {
         showToast("1 litr narxini ($) to'g'ri kiriting", "error");
+        document.getElementById('oilPricePerLiterInput')?.focus();
+        return false;
+    }
+
+    const boxLiters = litersPerItem * itemsPerBox;
+    const totalLiters = boxesCount * boxLiters;
+    const boxPrice = boxLiters * pricePerLiter;
+    const totalAmount = totalLiters * pricePerLiter;
+
+    const newItem = {
+        id: Date.now() + Math.random().toString(36).substr(2, 5),
+        productName: productName,
+        litersPerItem: litersPerItem,
+        itemsPerBox: itemsPerBox,
+        boxesCount: boxesCount,
+        pricePerLiter: pricePerLiter,
+        boxLiters: boxLiters,
+        totalLiters: totalLiters,
+        boxPrice: boxPrice,
+        totalAmount: totalAmount
+    };
+
+    currentOilPurchaseItems.push(newItem);
+
+    // Formani keyingi mahsulotga tayyorlash
+    const nameEl = document.getElementById('oilProductNameInput');
+    const boxesEl = document.getElementById('oilBoxesCountInput');
+    if (nameEl) nameEl.value = '';
+    if (boxesEl) boxesEl.value = '';
+    updateOilPurchaseTotal();
+
+    renderOilPurchaseItemsList();
+    showToast(`"${productName}" fakturaga qo'shildi!`, "success");
+    return true;
+}
+
+// Mahsulotni ro'yxatdan o'chirish
+function removeOilItemFromPurchaseList(index) {
+    if (index >= 0 && index < currentOilPurchaseItems.length) {
+        const removed = currentOilPurchaseItems.splice(index, 1);
+        renderOilPurchaseItemsList();
+        if (removed && removed[0]) {
+            showToast(`"${removed[0].productName}" o'chirildi`, "info");
+        }
+    }
+}
+
+// Mahsulotni tahrirlash (formaga qayta yuklash)
+function editOilPurchaseItem(index) {
+    if (index >= 0 && index < currentOilPurchaseItems.length) {
+        const item = currentOilPurchaseItems[index];
+        const nameEl = document.getElementById('oilProductNameInput');
+        const literEl = document.getElementById('oilLiterPerItemInput');
+        const itemsEl = document.getElementById('oilItemsPerBoxInput');
+        const boxesEl = document.getElementById('oilBoxesCountInput');
+        const priceEl = document.getElementById('oilPricePerLiterInput');
+
+        if (nameEl) nameEl.value = item.productName;
+        if (literEl) literEl.value = item.litersPerItem;
+        if (itemsEl) itemsEl.value = item.itemsPerBox;
+        if (boxesEl) boxesEl.value = item.boxesCount;
+        if (priceEl) priceEl.value = Number(item.pricePerLiter).toFixed(2);
+
+        currentOilPurchaseItems.splice(index, 1);
+        renderOilPurchaseItemsList();
+        updateOilPurchaseTotal();
+
+        const card = document.getElementById('oilItemEntryCard');
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        showToast(`"${item.productName}" tahrirlash uchun formaga yuklandi`, "info");
+    }
+}
+
+// Barcha qo'shilgan mahsulotlarni tozalash
+function clearAllOilPurchaseItems() {
+    if (currentOilPurchaseItems.length === 0) return;
+    if (confirm("Fakturadagi barcha mahsulotlarni o'chirmoqchimisiz?")) {
+        currentOilPurchaseItems = [];
+        renderOilPurchaseItemsList();
+        showToast("Faktura tozalandi", "info");
+    }
+}
+
+// Faktura ro'yxatini render qilish
+function renderOilPurchaseItemsList() {
+    const container = document.getElementById('oilPurchaseItemsContainer');
+    const countTitle = document.getElementById('oilItemsCountTitle');
+    const clearBtn = document.getElementById('clearAllOilItemsBtn');
+    const grandBadge = document.getElementById('oilGrandBadge');
+    const grandBoxes = document.getElementById('oilGrandBoxes');
+    const grandLiters = document.getElementById('oilGrandLiters');
+    const grandTotal = document.getElementById('oilGrandTotalAmount');
+    const submitBtn = document.getElementById('submitOilSupplyPurchaseBtn');
+
+    if (!container) return;
+
+    const count = currentOilPurchaseItems.length;
+    if (countTitle) countTitle.textContent = `Fakturadagi mahsulotlar (${count} xil)`;
+    if (clearBtn) clearBtn.style.display = count > 0 ? 'inline-block' : 'none';
+    if (grandBadge) grandBadge.textContent = `${count} xil pozitsiya`;
+
+    if (count === 0) {
+        container.innerHTML = `
+            <div style="border:1.5px dashed rgba(255,255,255,0.14); border-radius:14px; padding:24px 16px; text-align:center; color:var(--color-ink-dim);">
+                <div style="font-size:28px; margin-bottom:6px;">🧾</div>
+                <div style="font-size:13px; font-weight:600; color:#CBD5E1; margin-bottom:4px;">Hozircha mahsulot qo'shilmadi</div>
+                <div style="font-size:12px; color:#94A3B8;">Yuqoridagi formadan mahsulot parametrlarini kiritib, <b>"Fakturaga qo'shish"</b> tugmasini bosing. Bir nechta har xil yog'larni birga kiritish mumkin.</div>
+            </div>
+        `;
+
+        if (grandBoxes) grandBoxes.textContent = '0 karopka';
+        if (grandLiters) grandLiters.textContent = '0 litr';
+        if (grandTotal) {
+            grandTotal.textContent = '$0.00';
+            grandTotal.style.color = 'var(--color-ink-dim)';
+        }
+        if (submitBtn) {
+            submitBtn.innerHTML = `${Icons.check} Fakturani tasdiqlash va saqlash`;
+        }
         return;
     }
+
+    let totalBoxes = 0;
+    let totalLiters = 0;
+    let totalAmount = 0;
+
+    let itemsHtml = currentOilPurchaseItems.map((item, idx) => {
+        totalBoxes += item.boxesCount;
+        totalLiters += item.totalLiters;
+        totalAmount += item.totalAmount;
+
+        const boxLitStr = Number.isInteger(item.boxLiters) ? item.boxLiters : item.boxLiters.toFixed(1);
+        const totLitStr = Number.isInteger(item.totalLiters) ? item.totalLiters.toLocaleString('uz-UZ') : item.totalLiters.toFixed(1);
+
+        return `
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.09); border-radius:12px; padding:12px 14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                        <span style="background:rgba(56,189,248,0.2); color:#38BDF8; font-weight:700; font-size:11px; width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center;">${idx + 1}</span>
+                        <div style="font-size:14px; font-weight:700; color:#FFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${escHtml(item.productName)}
+                        </div>
+                    </div>
+                    <div style="font-size:12px; color:var(--color-ink-dim); line-height:1.4;">
+                        <span>📦 <b>${item.boxesCount}</b> karopka (${item.itemsPerBox} d × ${item.litersPerItem}L = ${boxLitStr}L)</span>
+                        <span style="margin:0 4px;">•</span>
+                        <span>🛢️ <b style="color:#38BDF8;">${totLitStr} L</b></span>
+                        <span style="margin:0 4px;">•</span>
+                        <span>💵 <b>$${Number(item.pricePerLiter).toFixed(2)}</b>/L</span>
+                    </div>
+                </div>
+
+                <div style="text-align:right; flex-shrink:0;">
+                    <div style="font-size:15px; font-weight:800; color:#38BDF8; margin-bottom:4px;">
+                        ${formatDollar(item.totalAmount)}
+                    </div>
+                    <div style="display:flex; gap:6px; justify-content:flex-end;">
+                        <button type="button" 
+                                onclick="editOilPurchaseItem(${idx})" 
+                                style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#CBD5E1; border-radius:6px; padding:3px 7px; font-size:11px; cursor:pointer;"
+                                title="Tahrirlash">
+                            ✏️
+                        </button>
+                        <button type="button" 
+                                onclick="removeOilItemFromPurchaseList(${idx})" 
+                                style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#F87171; border-radius:6px; padding:3px 7px; font-size:11px; cursor:pointer;"
+                                title="O'chirish">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = itemsHtml;
+
+    if (grandBoxes) grandBoxes.textContent = `${totalBoxes.toLocaleString('uz-UZ')} karopka`;
+    if (grandLiters) grandLiters.textContent = `${Number.isInteger(totalLiters) ? totalLiters.toLocaleString('uz-UZ') : totalLiters.toFixed(1)} litr`;
+    if (grandTotal) {
+        grandTotal.textContent = formatDollar(totalAmount);
+        grandTotal.style.color = '#38BDF8';
+    }
+    if (submitBtn) {
+        submitBtn.innerHTML = `${Icons.check} Fakturani tasdiqlash (${formatDollar(totalAmount)})`;
+    }
+}
+
+// Fakturani serverga jo'natish (Batch saqlash)
+async function submitOilSupplyPurchase(supplierId) {
+    const purchaseDate = document.getElementById('oilPurchaseDateInput')?.value || null;
+    const invoiceNote = document.getElementById('oilPurchaseInvoiceNoteInput')?.value.trim() || null;
+    const today = getLocalDateString();
+
     if (purchaseDate && purchaseDate > today) {
         showToast("Kirim sanasi kelajak sanada bo'lishi mumkin emas", "error");
         return;
     }
 
-    const boxLiters = litersPerItem * itemsPerBox;
-    const totalLiters = boxesCount * boxLiters;
+    // Agar ro'yxat bo'sh bo'lsa yoki foydalanuvchi formaga ma'lumot yozib, "Qo'shish"ni bosmasdan to'g'ridan-to'g'ri "Saqlash"ni bosgan bo'lsa
+    const pendingName = document.getElementById('oilProductNameInput')?.value.trim();
+    const pendingBoxes = parseInt(document.getElementById('oilBoxesCountInput')?.value, 10);
+    const pendingPrice = parseFloat((document.getElementById('oilPricePerLiterInput')?.value || '').toString().replace(',', '.'));
+
+    if (pendingName && pendingBoxes > 0 && pendingPrice > 0) {
+        const added = addOilItemToPurchaseList();
+        if (!added && currentOilPurchaseItems.length === 0) {
+            return;
+        }
+    }
+
+    if (currentOilPurchaseItems.length === 0) {
+        showToast("Fakturaga kamida bitta mahsulot qo'shing!", "error");
+        document.getElementById('oilProductNameInput')?.focus();
+        return;
+    }
 
     const btn = document.getElementById('submitOilSupplyPurchaseBtn');
     if (btn) {
         if (btn.disabled) return;
         btn.disabled = true;
-        btn.innerHTML = 'Kirim saqlanmoqda...';
+        btn.innerHTML = 'Faktura saqlanmoqda...';
     }
 
     try {
-        const payload = {
-            productName: productName,
+        const payloadList = currentOilPurchaseItems.map(item => ({
+            productName: item.productName,
             unit: 'KAROPKA',
-            quantity: boxesCount,
-            unitPrice: pricePerLiter,
+            quantity: item.boxesCount,
+            unitPrice: item.pricePerLiter,
             purchaseDate: purchaseDate,
-            note: note,
+            note: invoiceNote || null,
             category: 'YOG',
-            litersPerItem: litersPerItem,
-            itemsPerBox: itemsPerBox,
-            boxesCount: boxesCount,
-            pricePerLiter: pricePerLiter,
-            totalLiters: totalLiters
-        };
+            litersPerItem: item.litersPerItem,
+            itemsPerBox: item.itemsPerBox,
+            boxesCount: item.boxesCount,
+            pricePerLiter: item.pricePerLiter,
+            totalLiters: item.totalLiters
+        }));
 
-        await apiPost('/suppliers/' + supplierId + '/purchases', payload);
-        showToast("Yog' kirimi muvaffaqiyatli saqlandi!", "success");
+        await apiPost('/suppliers/' + supplierId + '/purchases/batch', payloadList);
+
+        const totalAmount = currentOilPurchaseItems.reduce((acc, it) => acc + it.totalAmount, 0);
+        showToast(`Faktura (${currentOilPurchaseItems.length} xil mahsulot, ${formatDollar(totalAmount)}) muvaffaqiyatli saqlandi!`, "success");
+
+        currentOilPurchaseItems = [];
         if (purchaseDate) {
             currentSupplierLedgerSelectedDate = purchaseDate;
             currentSupplierLedgerFilterMode = 'day';
@@ -5864,7 +6169,8 @@ async function submitOilSupplyPurchase(supplierId) {
     } catch (err) {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = `${Icons.check} Kirimni tasdiqlash va saqlash`;
+            const curTotal = currentOilPurchaseItems.reduce((acc, it) => acc + it.totalAmount, 0);
+            btn.innerHTML = `${Icons.check} Fakturani tasdiqlash (${formatDollar(curTotal)})`;
         }
         showToast("Xatolik: " + err.message, "error");
     }

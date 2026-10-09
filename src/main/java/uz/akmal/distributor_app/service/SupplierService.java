@@ -14,6 +14,7 @@ public interface SupplierService {
     void deleteSupplier(Long id);
     SupplierLedgerResponse getSupplierLedger(Long supplierId);
     SupplyPurchase addPurchase(Long supplierId, SupplyPurchaseRequest request);
+    List<SupplyPurchase> addPurchasesBatch(Long supplierId, List<SupplyPurchaseRequest> requests);
     SupplyPayment addPayment(Long supplierId, SupplyPaymentRequest request);
     void cancelEntry(Long supplierId, String type, Long entryId, String reason);
 }

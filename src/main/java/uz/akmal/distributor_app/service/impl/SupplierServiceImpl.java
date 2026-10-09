@@ -208,6 +208,96 @@ public class SupplierServiceImpl implements SupplierService {
 
     @Override
     @Transactional
+    public List<SupplyPurchase> addPurchasesBatch(Long supplierId, List<SupplyPurchaseRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw new InvalidPaymentException("Kirim qilinayotgan mahsulotlar ro'yxati bo'sh bo'lishi mumkin emas!");
+        }
+
+        Supplier supplier = supplierRepository.findByIdWithLock(supplierId)
+                .filter(Supplier::getActive)
+                .orElseThrow(() -> new ResourceNotFoundException("Ta'minotchi topilmadi"));
+
+        boolean isOilSupplier = "YOG".equalsIgnoreCase(supplier.getCategory());
+        List<SupplyPurchase> purchasesToSave = new ArrayList<>();
+        BigDecimal totalDebtIncrease = BigDecimal.ZERO;
+
+        for (SupplyPurchaseRequest request : requests) {
+            LocalDateTime purchaseDateTime = parseDateTime(request.getPurchaseDate());
+            if (purchaseDateTime.toLocalDate().isAfter(LocalDate.now())) {
+                throw new InvalidPaymentException("Kirim sanasi kelajak sanada bo'lishi mumkin emas!");
+            }
+
+            BigDecimal totalAmount;
+            BigDecimal finalQuantity = request.getQuantity();
+            BigDecimal finalUnitPrice = request.getUnitPrice();
+            BigDecimal finalTotalLiters = request.getTotalLiters();
+            String finalUnit = request.getUnit() != null ? request.getUnit().trim().toUpperCase() : "QOP";
+
+            boolean hasBoxDetails = request.getBoxesCount() != null || request.getPricePerLiter() != null;
+
+            if (isOilSupplier || hasBoxDetails) {
+                if (request.getBoxesCount() == null || request.getBoxesCount() <= 0) {
+                    throw new InvalidPaymentException("Karobkalar soni 0 dan katta bo'lishi kerak!");
+                }
+                if (request.getItemsPerBox() == null || request.getItemsPerBox() <= 0) {
+                    throw new InvalidPaymentException("Karobka ichidagi dona soni 0 dan katta bo'lishi kerak!");
+                }
+                if (request.getLitersPerItem() == null || request.getLitersPerItem().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new InvalidPaymentException("1 dona idish hajmi (litr) 0 dan katta bo'lishi kerak!");
+                }
+                if (request.getPricePerLiter() == null || request.getPricePerLiter().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new InvalidPaymentException("1 litr narxi ($) 0 dan katta bo'lishi kerak!");
+                }
+
+                BigDecimal boxLiters = request.getLitersPerItem().multiply(BigDecimal.valueOf(request.getItemsPerBox()));
+                finalTotalLiters = boxLiters.multiply(BigDecimal.valueOf(request.getBoxesCount())).setScale(2, RoundingMode.HALF_UP);
+                totalAmount = finalTotalLiters.multiply(request.getPricePerLiter()).setScale(2, RoundingMode.HALF_UP);
+                finalQuantity = BigDecimal.valueOf(request.getBoxesCount());
+                finalUnitPrice = request.getPricePerLiter();
+                finalUnit = "KAROPKA";
+            } else {
+                if (request.getQuantity() == null || request.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new InvalidPaymentException("Miqdori 0 dan katta bo'lishi kerak!");
+                }
+                if (request.getUnitPrice() == null || request.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new InvalidPaymentException("Birlik narxi 0 dan katta bo'lishi kerak!");
+                }
+                totalAmount = request.getQuantity().multiply(request.getUnitPrice()).setScale(2, RoundingMode.HALF_UP);
+            }
+
+            SupplyPurchase purchase = new SupplyPurchase();
+            purchase.setSupplier(supplier);
+            purchase.setCategory(supplier.getCategory());
+            purchase.setProductName(request.getProductName().trim());
+            purchase.setUnit(finalUnit);
+            purchase.setQuantity(finalQuantity);
+            purchase.setUnitPrice(finalUnitPrice);
+            purchase.setTotalAmount(totalAmount);
+            purchase.setPurchaseDate(purchaseDateTime);
+            purchase.setNote(request.getNote() != null ? request.getNote().trim() : null);
+            purchase.setLitersPerItem(request.getLitersPerItem());
+            purchase.setItemsPerBox(request.getItemsPerBox());
+            purchase.setBoxesCount(request.getBoxesCount());
+            purchase.setPricePerLiter(request.getPricePerLiter());
+            purchase.setTotalLiters(finalTotalLiters);
+            purchase.setIsCancelled(false);
+
+            purchasesToSave.add(purchase);
+            totalDebtIncrease = totalDebtIncrease.add(totalAmount);
+        }
+
+        BigDecimal currentDebt = supplier.getCurrentDebt() != null ? supplier.getCurrentDebt() : BigDecimal.ZERO;
+        supplier.setCurrentDebt(currentDebt.add(totalDebtIncrease));
+        supplierRepository.save(supplier);
+
+        List<SupplyPurchase> savedList = purchaseRepository.saveAll(purchasesToSave);
+        log.info("Ta'minotchi partiya kirimi saqlandi: SupplierID={}, ItemsCount={}, TotalDebtIncrease={}", 
+                supplierId, savedList.size(), totalDebtIncrease);
+        return savedList;
+    }
+
+    @Override
+    @Transactional
     public SupplyPayment addPayment(Long supplierId, SupplyPaymentRequest request) {
         Supplier supplier = supplierRepository.findByIdWithLock(supplierId)
                 .filter(Supplier::getActive)

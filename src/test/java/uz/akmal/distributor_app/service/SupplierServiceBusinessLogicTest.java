@@ -161,4 +161,52 @@ class SupplierServiceBusinessLogicTest {
                 supplierService.addPurchase(2L, request)
         );
     }
+
+    @Test
+    void testAddPurchasesBatch_MultipleOilItems_MatchesUserInvoiceTotal() {
+        Supplier supplier = new Supplier();
+        supplier.setId(2L);
+        supplier.setName("Yog' Zavod");
+        supplier.setCategory("YOG");
+        supplier.setCurrentDebt(BigDecimal.ZERO);
+        supplier.setActive(true);
+
+        when(supplierRepository.findByIdWithLock(2L)).thenReturn(Optional.of(supplier));
+        when(purchaseRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // 1. Южанка 5л: 10 kor, 3 dona, 5L, $1.63 -> 150L * 1.63 = 244.50
+        SupplyPurchaseRequest item1 = new SupplyPurchaseRequest();
+        item1.setProductName("Южанка 5л");
+        item1.setBoxesCount(10);
+        item1.setItemsPerBox(3);
+        item1.setLitersPerItem(new BigDecimal("5.0"));
+        item1.setPricePerLiter(new BigDecimal("1.63"));
+
+        // 2. Ласка 1л: 10 kor, 15 dona, 1L, $1.62 -> 150L * 1.62 = 243.00
+        SupplyPurchaseRequest item2 = new SupplyPurchaseRequest();
+        item2.setProductName("Ласка масло 1 л");
+        item2.setBoxesCount(10);
+        item2.setItemsPerBox(15);
+        item2.setLitersPerItem(new BigDecimal("1.0"));
+        item2.setPricePerLiter(new BigDecimal("1.62"));
+
+        // 3. Миладора 5л: 10 kor, 3 dona, 5L, $1.63 -> 150L * 1.63 = 244.50
+        SupplyPurchaseRequest item3 = new SupplyPurchaseRequest();
+        item3.setProductName("Миладора 5л");
+        item3.setBoxesCount(10);
+        item3.setItemsPerBox(3);
+        item3.setLitersPerItem(new BigDecimal("5.0"));
+        item3.setPricePerLiter(new BigDecimal("1.63"));
+
+        java.util.List<SupplyPurchase> saved = supplierService.addPurchasesBatch(2L, java.util.List.of(item1, item2, item3));
+
+        assertEquals(3, saved.size());
+        assertEquals(new BigDecimal("244.50"), saved.get(0).getTotalAmount());
+        assertEquals(new BigDecimal("243.00"), saved.get(1).getTotalAmount());
+        assertEquals(new BigDecimal("244.50"), saved.get(2).getTotalAmount());
+        // Jami qarz 732.00 bo'lishi shart:
+        assertEquals(new BigDecimal("732.00"), supplier.getCurrentDebt());
+        verify(purchaseRepository).saveAll(any());
+        verify(supplierRepository).save(supplier);
+    }
 }
