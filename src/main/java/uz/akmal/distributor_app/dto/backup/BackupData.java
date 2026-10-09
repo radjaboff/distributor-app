@@ -138,6 +138,7 @@ public class BackupData {
         private LocalDateTime date;
         private LocalDateTime createdAt;
         private String createdBy;
+        private String note;
         private Boolean isCancelled;
         private String cancelReason;
         private LocalDateTime cancelledAt;

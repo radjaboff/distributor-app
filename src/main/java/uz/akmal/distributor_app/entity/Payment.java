@@ -53,6 +53,9 @@ public class Payment extends BaseEntity{
     @Column(nullable = false)
     private LocalDateTime date = LocalDateTime.now();
 
+    @Column(name = "note", length = 500)
+    private String note;
+
     @Column(name = "is_cancelled", nullable = false, columnDefinition = "boolean default false")
     private Boolean isCancelled = false;
 

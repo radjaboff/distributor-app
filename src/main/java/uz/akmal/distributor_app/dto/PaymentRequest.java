@@ -24,4 +24,6 @@ public class PaymentRequest {
     private PaymentMethod method;
 
     private String paymentDate;
+
+    private String note;
 }

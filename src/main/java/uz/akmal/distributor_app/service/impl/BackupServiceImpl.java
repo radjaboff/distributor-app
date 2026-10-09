@@ -138,6 +138,7 @@ public class BackupServiceImpl implements BackupService {
                         .amount(p.getAmount())
                         .method(p.getMethod())
                         .date(p.getDate())
+                        .note(p.getNote())
                         .createdAt(p.getCreatedAt())
                         .createdBy(p.getCreatedBy())
                         .isCancelled(p.getIsCancelled())
@@ -517,7 +518,7 @@ public class BackupServiceImpl implements BackupService {
         if (data.getPayments() != null) {
             for (BackupData.PaymentDto p : data.getPayments()) {
                 entityManager.createNativeQuery(
-                        "INSERT INTO payments (id, shop_id, sale_id, amount, method, is_cancelled, cancel_reason, cancelled_at, cancelled_by, date, created_at, updated_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                        "INSERT INTO payments (id, shop_id, sale_id, amount, method, is_cancelled, cancel_reason, cancelled_at, cancelled_by, date, created_at, updated_at, created_by, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                         .setParameter(1, p.getId())
                         .setParameter(2, p.getShopId())
                         .setParameter(3, p.getSaleId())
@@ -531,6 +532,7 @@ public class BackupServiceImpl implements BackupService {
                         .setParameter(11, p.getCreatedAt() != null ? p.getCreatedAt() : LocalDateTime.now())
                         .setParameter(12, LocalDateTime.now())
                         .setParameter(13, p.getCreatedBy() != null ? p.getCreatedBy() : "admin")
+                        .setParameter(14, p.getNote())
                         .executeUpdate();
             }
         }
@@ -814,7 +816,7 @@ public class BackupServiceImpl implements BackupService {
             // 5-VARAQ: TO'LOVLAR TARIXI
             Sheet paySheet = workbook.createSheet("To'lovlar tarixi");
             Row payHeader = paySheet.createRow(0);
-            String[] payCols = {"ID", "Sana va vaqt", "Do'kon", "To'langan summa (so'm)", "To'lov usuli", "Kim qabul qildi"};
+            String[] payCols = {"ID", "Sana va vaqt", "Do'kon", "To'langan summa (so'm)", "To'lov usuli", "Izoh", "Kim qabul qildi"};
             for (int i = 0; i < payCols.length; i++) {
                 Cell c = payHeader.createCell(i);
                 c.setCellValue(payCols[i]);
@@ -832,7 +834,8 @@ public class BackupServiceImpl implements BackupService {
                 amtCell.setCellStyle(moneyStyle);
 
                 row.createCell(4).setCellValue(p.getMethod() != null ? p.getMethod().toString() : "");
-                row.createCell(5).setCellValue(p.getCreatedBy() != null ? p.getCreatedBy() : "admin");
+                row.createCell(5).setCellValue(p.getNote() != null ? p.getNote() : "");
+                row.createCell(6).setCellValue(p.getCreatedBy() != null ? p.getCreatedBy() : "admin");
             }
             for (int i = 0; i < payCols.length; i++) paySheet.autoSizeColumn(i);
 

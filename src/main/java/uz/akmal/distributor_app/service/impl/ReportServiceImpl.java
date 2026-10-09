@@ -168,6 +168,7 @@ public class ReportServiceImpl implements ReportService {
             DailyReportResponse.PaymentSummary p = new DailyReportResponse.PaymentSummary();
             p.setShopName(payment.getShop().getName());
             p.setAmount(payment.getAmount());
+            p.setNote(payment.getNote());
             p.setCreatedBy(payment.getCreatedBy() != null && !payment.getCreatedBy().trim().isEmpty() ? payment.getCreatedBy() : "admin");
             return p;
         }).toList());

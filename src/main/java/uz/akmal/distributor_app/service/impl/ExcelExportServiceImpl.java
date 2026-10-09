@@ -56,7 +56,7 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             // 2-varaq: To'lovlar
             Sheet paymentsSheet = workbook.createSheet("To'lovlar");
             Row paymentsHeader = paymentsSheet.createRow(0);
-            String[] paymentCols = {"Do'kon", "Summa"};
+            String[] paymentCols = {"Do'kon", "Summa", "Izoh"};
             for (int i = 0; i < paymentCols.length; i++) {
                 Cell cell = paymentsHeader.createCell(i);
                 cell.setCellValue(paymentCols[i]);
@@ -67,6 +67,7 @@ public class ExcelExportServiceImpl implements ExcelExportService {
                 Row row = paymentsSheet.createRow(rowNum++);
                 row.createCell(0).setCellValue(payment.getShopName() != null ? payment.getShopName() : "");
                 row.createCell(1).setCellValue(payment.getAmount() != null ? payment.getAmount().doubleValue() : 0.0);
+                row.createCell(2).setCellValue(payment.getNote() != null ? payment.getNote() : "");
             }
             for (int i = 0; i < paymentCols.length; i++) paymentsSheet.autoSizeColumn(i);
 

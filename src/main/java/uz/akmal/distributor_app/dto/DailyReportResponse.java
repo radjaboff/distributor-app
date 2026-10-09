@@ -35,6 +35,7 @@ public class DailyReportResponse {
     public static class PaymentSummary {
         private String shopName;
         private BigDecimal amount;
+        private String note;
         private String createdBy;
     }
 

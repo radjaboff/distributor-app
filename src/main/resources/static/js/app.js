@@ -1879,7 +1879,7 @@ function renderLedgerEntryCard(entry, shopId) {
     let actionBtn = '';
     if (!isCancelled && entry.id) {
         actionBtn = `
-            <button class="btn" onclick="promptCancelEntry('${entry.type}', ${entry.id}, ${shopId}, '${escJs(entry.description || '')}', ${entry.amount})" 
+            <button class="btn" onclick="promptCancelEntry('${entry.type}', ${entry.id}, ${shopId}, '${escJs(entry.note || entry.description || '')}', ${entry.amount})" 
                     style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#F87171; padding:4px 8px; border-radius:8px; font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; gap:5px; cursor:pointer;" 
                     title="Operatsiyani bekor qilish (Storno)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
@@ -1917,6 +1917,17 @@ function renderLedgerEntryCard(entry, shopId) {
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 11px; font-size:13px; font-weight:500; color:#F1F5F9; line-height:1.45; word-break:break-word; ${titleStyle}">
                 <span style="color:var(--color-ink-dim); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:2px;">Tovar tarkibi:</span>
                 ${escHtml(entry.description)}
+            </div>
+        ` : ''}
+
+        <!-- 2b-qator: To'lov izohi (agar mavjud bo'lsa) -->
+        ${!isSale && entry.note ? `
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:7px 11px; font-size:12.5px; font-weight:500; color:#F1F5F9; line-height:1.45; word-break:break-word; ${titleStyle}">
+                <span style="color:var(--color-ink-dim); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; display:flex; align-items:center; gap:5px; margin-bottom:2px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    <span>Izoh:</span>
+                </span>
+                <span style="color:#CBD5E1;">${escHtml(entry.note)}</span>
             </div>
         ` : ''}
 
@@ -2804,6 +2815,25 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
                 </select>
             </div>
 
+            <!-- Izoh (ixtiyoriy) -->
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" for="paymentNoteInput">
+                    <span class="label-icon">${Icons.info}</span>
+                    <span>Izoh (ixtiyoriy)</span>
+                </label>
+                <input type="text" 
+                       class="form-input" 
+                       id="paymentNoteInput" 
+                       placeholder="Masalan: Click orqali tashladi, Haydovchiga berildi, Kvitansiya...">
+                <div class="quick-chips-row" style="margin-top:6px; flex-wrap:wrap; gap:6px;">
+                    <button type="button" class="preset-chip" onclick="setPaymentNotePreset('Click orqali tashladi')">Click orqali</button>
+                    <button type="button" class="preset-chip" onclick="setPaymentNotePreset('Haydovchiga berildi')">Haydovchiga</button>
+                    <button type="button" class="preset-chip" onclick="setPaymentNotePreset('Qarzning bir qismi')">Bir qismi</button>
+                    <button type="button" class="preset-chip" onclick="setPaymentNotePreset('To\'liq yopildi')">To'liq yopildi</button>
+                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearPaymentNote()">Tozalash</button>
+                </div>
+            </div>
+
             <div class="form-group" style="margin-top: 22px;">
                 <button class="btn btn--full" id="submitPaymentBtn" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: 1px solid rgba(52, 211, 153, 0.4); color: #FFFFFF; font-size:15px; font-weight: 800; padding: 15px; border-radius: 14px; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);" onclick="submitPayment(${shopId}, ${currentDebt})">
                     ${Icons.check} To'lovni saqlash
@@ -2811,6 +2841,16 @@ function showAddPaymentForm(shopId, currentDebt = 0) {
             </div>
         </div>
     `;
+}
+
+function setPaymentNotePreset(text) {
+    const el = document.getElementById('paymentNoteInput');
+    if (el) el.value = text;
+}
+
+function clearPaymentNote() {
+    const el = document.getElementById('paymentNoteInput');
+    if (el) el.value = '';
 }
 
 function setPaymentMethodType(method) {
@@ -2843,6 +2883,7 @@ async function submitPayment(shopId, currentDebt = 0) {
 
     const amount = parseMoney(document.getElementById('paymentAmountInput').value);
     const method = document.getElementById('paymentMethodInput').value;
+    const note = document.getElementById('paymentNoteInput')?.value.trim() || null;
 
     if (!amount || amount <= 0) {
         showToast('To\'g\'ri summa kiriting', 'error');
@@ -2861,10 +2902,10 @@ async function submitPayment(shopId, currentDebt = 0) {
         return;
     }
 
-    executePayment(shopId, amount, method);
+    executePayment(shopId, amount, method, note);
 }
 
-async function executePayment(shopId, amount, method) {
+async function executePayment(shopId, amount, method, note = null) {
     const paymentDate = document.getElementById('paymentDateInput')?.value || null;
     const btn = document.getElementById('submitPaymentBtn');
     if (btn) {
@@ -2874,7 +2915,7 @@ async function executePayment(shopId, amount, method) {
     }
 
     try {
-        await apiPost('/payments', { shopId, amount, method, paymentDate });
+        await apiPost('/payments', { shopId, amount, method, paymentDate, note });
         showToast('To\'lov qabul qilindi', 'success');
         if (paymentDate) {
             currentLedgerSelectedDate = paymentDate;
@@ -3257,6 +3298,7 @@ function renderDailyReportHtml(report) {
           ${formatAdminBadge(p.createdBy)}
         </div>
         <div style="font-size:12px; color:#34D399; margin-top:3px; font-weight:600;">To'lov qabul qilindi</div>
+        ${p.note ? `<div style="font-size:11.5px; color:#CBD5E1; margin-top:3px; font-style:italic; display:flex; align-items:center; gap:4px;"><span>📝</span><span>${escHtml(p.note)}</span></div>` : ''}
       </div>
       <div class="ledger-row__amount amount--paid" style="font-size:13.5px; padding:6px 12px; font-weight:800; margin-left:10px;">${formatMoney(p.amount)}</div>
     </div>
@@ -4149,6 +4191,13 @@ function generateStatementPaperHtml(ledger, shopId) {
                         <span class="pdf-badge" style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;">Usul: ${escHtml(entry.paymentMethod || 'Naqd')}</span>
                     </div>
                 `;
+                if (entry.note) {
+                    detailHtml += `
+                        <div style="font-size:11px; color:#475569; margin-top:4px; font-style:italic;">
+                            Izoh: ${escHtml(entry.note)}
+                        </div>
+                    `;
+                }
             }
 
             let amountText = `${isSale ? '+' : '−'}${formatMoney(entry.amount)}`;

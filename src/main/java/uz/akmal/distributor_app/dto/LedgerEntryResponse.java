@@ -13,6 +13,7 @@ public class LedgerEntryResponse {
     private LocalDateTime date;
     private String type; // "SOTUV" yoki "TOLOV"
     private String description;
+    private String note;
     private BigDecimal amount;
     private BigDecimal balanceAfter; // shu amaldan keyingi qoldiq qarz
     private String createdBy; // amaliyotni bajargan admin

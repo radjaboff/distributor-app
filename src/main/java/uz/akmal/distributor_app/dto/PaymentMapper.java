@@ -10,6 +10,7 @@ public class PaymentMapper {
         payment.setShop(shop);
         payment.setAmount(request.getAmount());
         payment.setMethod(request.getMethod());
+        payment.setNote(request.getNote() != null && !request.getNote().trim().isEmpty() ? request.getNote().trim() : null);
         return payment;
     }
 
@@ -21,6 +22,7 @@ public class PaymentMapper {
         response.setAmount(payment.getAmount());
         response.setMethod(payment.getMethod());
         response.setDate(payment.getDate());
+        response.setNote(payment.getNote());
         response.setCreatedBy(payment.getCreatedBy() != null && !payment.getCreatedBy().trim().isEmpty() ? payment.getCreatedBy() : "admin");
         response.setSaleId(payment.getSale() != null ? payment.getSale().getId() : null);
         response.setIsCancelled(Boolean.TRUE.equals(payment.getIsCancelled()));

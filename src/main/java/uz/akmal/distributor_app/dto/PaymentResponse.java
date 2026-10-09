@@ -15,6 +15,7 @@ public class PaymentResponse {
     private BigDecimal amount;
     private PaymentMethod method;
     private LocalDateTime date;
+    private String note;
     private String createdBy;
     private Long saleId;
     private Boolean isCancelled;

@@ -212,4 +212,33 @@ class PaymentServiceBusinessLogicTest {
 
         assertThrows(uz.akmal.distributor_app.exception.InvalidPaymentException.class, () -> paymentService.create(request));
     }
+
+    @Test
+    void testCreatePayment_WithNote_SavesAndReturnsNote() {
+        Shop shop = new Shop();
+        shop.setId(1L);
+        shop.setName("Test Shop");
+        shop.setCurrentDebt(BigDecimal.valueOf(100_000));
+
+        when(shopRepository.findByIdWithLock(1L)).thenReturn(Optional.of(shop));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> {
+            Payment p = i.getArgument(0);
+            p.setId(99L);
+            return p;
+        });
+
+        PaymentRequest request = new PaymentRequest();
+        request.setShopId(1L);
+        request.setAmount(BigDecimal.valueOf(25_000));
+        request.setMethod(PaymentMethod.KARTA);
+        request.setNote("Click orqali tashlab berdi");
+
+        PaymentResponse response = paymentService.create(request);
+
+        assertNotNull(response);
+        assertEquals(BigDecimal.valueOf(25_000), response.getAmount());
+        assertEquals("Click orqali tashlab berdi", response.getNote());
+        assertEquals(BigDecimal.valueOf(75_000), shop.getCurrentDebt());
+        verify(paymentRepository).save(argThat(p -> "Click orqali tashlab berdi".equals(p.getNote())));
+    }
 }

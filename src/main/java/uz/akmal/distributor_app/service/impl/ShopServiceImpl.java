@@ -105,6 +105,7 @@ public class ShopServiceImpl implements ShopService {
             entry.setCancelledAt(payment.getCancelledAt());
             entry.setCancelledBy(payment.getCancelledBy());
             entry.setDescription(payment.getMethod().toString());
+            entry.setNote(payment.getNote());
             entry.setAmount(payment.getAmount());
             entry.setPaymentMethod(payment.getMethod().toString());
             entry.setCreatedBy(payment.getCreatedBy() != null && !payment.getCreatedBy().trim().isEmpty() ? payment.getCreatedBy() : "admin");
