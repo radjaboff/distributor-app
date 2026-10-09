@@ -1141,63 +1141,104 @@ function handleAuthRedirect(response) {
     return false;
 }
 
+// Tarmoq va server xatolarini o'zbek tilida tushunarli formatlash
+function formatNetworkError(err) {
+    if (!err) return "Server bilan bog'lanishda xatolik yuz berdi";
+    const msg = String(err.message || err);
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) {
+        return "Internet aloqasi yoki server bilan bog'lanishda uzilish bo'ldi. Iltimos, qayta urinib ko'ring.";
+    }
+    if (msg.includes('502') || msg.includes('504')) {
+        return "Server qayta yuklanmoqda yoki yangilanmoqda. Iltimos, 10-15 soniyadan so'ng qayta urinib ko'ring.";
+    }
+    return msg;
+}
+
 // Backend'ga so'rov yuborish yordamchilari
 async function apiGet(path) {
-    const response = await fetch(`${API_BASE}${path}`);
-    if (handleAuthRedirect(response)) {
-        return new Promise(() => {});
+    try {
+        const response = await fetch(`${API_BASE}${path}`);
+        if (handleAuthRedirect(response)) {
+            return new Promise(() => {});
+        }
+        if (!response.ok) {
+            if (response.status === 502 || response.status === 504) {
+                throw new Error("Server qayta yuklanmoqda. Bir necha soniyadan so'ng qayta urinib ko'ring.");
+            }
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || ('Server xatosi: ' + response.status));
+        }
+        return await response.json();
+    } catch (err) {
+        throw new Error(formatNetworkError(err));
     }
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || ('Server xatosi: ' + response.status));
-    }
-    return response.json();
 }
 
 async function apiPost(path, body) {
-    const response = await fetch(`${API_BASE}${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
-    if (handleAuthRedirect(response)) {
-        return new Promise(() => {});
+    try {
+        const response = await fetch(`${API_BASE}${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (handleAuthRedirect(response)) {
+            return new Promise(() => {});
+        }
+        if (!response.ok) {
+            if (response.status === 502 || response.status === 504) {
+                throw new Error("Server qayta yuklanmoqda. Bir necha soniyadan so'ng qayta urinib ko'ring.");
+            }
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Server xatosi');
+        }
+        return await response.json();
+    } catch (err) {
+        throw new Error(formatNetworkError(err));
     }
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Server xatosi');
-    }
-    return response.json();
 }
 
 async function apiPut(path, body) {
-    const response = await fetch(`${API_BASE}${path}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
-    if (handleAuthRedirect(response)) {
-        return new Promise(() => {});
+    try {
+        const response = await fetch(`${API_BASE}${path}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (handleAuthRedirect(response)) {
+            return new Promise(() => {});
+        }
+        if (!response.ok) {
+            if (response.status === 502 || response.status === 504) {
+                throw new Error("Server qayta yuklanmoqda. Bir necha soniyadan so'ng qayta urinib ko'ring.");
+            }
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Server xatosi');
+        }
+        return await response.json();
+    } catch (err) {
+        throw new Error(formatNetworkError(err));
     }
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Server xatosi');
-    }
-    return response.json();
 }
 
 async function apiDelete(path) {
-    const response = await fetch(`${API_BASE}${path}`, {
-        method: 'DELETE'
-    });
-    if (handleAuthRedirect(response)) {
-        return new Promise(() => {});
+    try {
+        const response = await fetch(`${API_BASE}${path}`, {
+            method: 'DELETE'
+        });
+        if (handleAuthRedirect(response)) {
+            return new Promise(() => {});
+        }
+        if (!response.ok) {
+            if (response.status === 502 || response.status === 504) {
+                throw new Error("Server qayta yuklanmoqda. Bir necha soniyadan so'ng qayta urinib ko'ring.");
+            }
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Server xatosi');
+        }
+        return response.ok;
+    } catch (err) {
+        throw new Error(formatNetworkError(err));
     }
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Server xatosi');
-    }
-    return response.ok;
 }
 
 // ==========================================
@@ -1371,7 +1412,17 @@ async function showMarketGroups() {
         contentEl.innerHTML = html;
 
     } catch (err) {
-        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+        contentEl.innerHTML = `
+            <div class="empty-state" style="padding: 36px 16px; text-align:center;">
+                <div style="font-size:36px; margin-bottom:8px;">📡</div>
+                <div style="font-size:15px; font-weight:700; color:#F87171; margin-bottom:6px;">Ulanishda xatolik</div>
+                <div style="font-size:13px; color:#94A3B8; max-width:320px; margin:0 auto 16px auto; line-height:1.5;">${escHtml(err.message)}</div>
+                <button class="btn btn--secondary" style="padding:10px 22px; font-size:13px; font-weight:700; border-radius:12px; display:inline-flex; align-items:center; gap:6px;" onclick="showMarketGroups()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Qayta urinish</span>
+                </button>
+            </div>
+        `;
     }
 }
 
