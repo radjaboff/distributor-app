@@ -2215,20 +2215,20 @@ button:disabled {
     justify-content: center;
     margin-top: 2px;
     margin-bottom: 4px;
-    height: 52px;
+    height: 56px;
     pointer-events: none;
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .market-tile:hover .market-tile__store-wrap {
-    transform: scale(1.05) translateY(-2px);
+    transform: scale(1.06) translateY(-2px);
 }
 
 .market-tile__store-img {
-    width: 64px;
-    height: 50px;
+    width: 68px;
+    height: 54px;
     object-fit: contain;
-    filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.65));
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.65));
 }
 
 .market-tile__title {
