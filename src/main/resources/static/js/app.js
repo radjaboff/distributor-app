@@ -85,7 +85,9 @@ const Icons = {
     storeFront: `<svg class="svg-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"></path><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"></path><path d="M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"></path><path d="M9 21v-7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"></path></svg>`,
     shopBag: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-1px; margin-right:3px;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
     truck: `<svg class="svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>`,
-    scale: `<svg class="svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><rect x="4" y="7" width="16" height="2" rx="1"></rect><path d="M6 9l-3 7h6l-3-7z"></path><path d="M18 9l-3 7h6l-3-7z"></path></svg>`
+    scale: `<svg class="svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><rect x="4" y="7" width="16" height="2" rx="1"></rect><path d="M6 9l-3 7h6l-3-7z"></path><path d="M18 9l-3 7h6l-3-7z"></path></svg>`,
+    search: `<svg class="svg-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
+    moreVertical: `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg>`
 };
 
 // ==========================================
@@ -1246,105 +1248,129 @@ async function apiDelete(path) {
 // ==========================================
 const MARKET_THEMES = [
     {
-        border: 'rgba(56, 189, 248, 0.28)',
-        borderHover: 'rgba(56, 189, 248, 0.65)',
-        glow: 'rgba(56, 189, 248, 0.18)',
-        glowHover: 'rgba(56, 189, 248, 0.35)',
+        // 0: Sky Blue (Orzu Bozor)
+        border: 'rgba(56, 189, 248, 0.42)',
+        borderHover: 'rgba(56, 189, 248, 0.85)',
+        glow: 'rgba(56, 189, 248, 0.22)',
+        glowHover: 'rgba(56, 189, 248, 0.45)',
         avatarBg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.16) 100%)',
         avatarBorder: 'rgba(56, 189, 248, 0.45)',
         avatarColor: '#38BDF8',
-        avatarShadow: 'rgba(56, 189, 248, 0.3)',
+        darkColor: '#0284C7',
+        darkerColor: '#075985',
+        lightColor: '#BAE6FD',
         badgeBg: 'rgba(56, 189, 248, 0.12)',
         badgeBorder: 'rgba(56, 189, 248, 0.25)',
         badgeText: '#7DD3FC'
     },
     {
-        border: 'rgba(52, 211, 153, 0.28)',
-        borderHover: 'rgba(52, 211, 153, 0.65)',
-        glow: 'rgba(52, 211, 153, 0.18)',
-        glowHover: 'rgba(52, 211, 153, 0.35)',
+        // 1: Emerald Mint (Eski Bozor)
+        border: 'rgba(52, 211, 153, 0.42)',
+        borderHover: 'rgba(52, 211, 153, 0.85)',
+        glow: 'rgba(52, 211, 153, 0.22)',
+        glowHover: 'rgba(52, 211, 153, 0.45)',
         avatarBg: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)',
         avatarBorder: 'rgba(52, 211, 153, 0.45)',
         avatarColor: '#34D399',
-        avatarShadow: 'rgba(52, 211, 153, 0.3)',
+        darkColor: '#059669',
+        darkerColor: '#064E3B',
+        lightColor: '#A7F3D0',
         badgeBg: 'rgba(52, 211, 153, 0.12)',
         badgeBorder: 'rgba(52, 211, 153, 0.25)',
         badgeText: '#6EE7B7'
     },
     {
-        border: 'rgba(168, 85, 247, 0.28)',
-        borderHover: 'rgba(168, 85, 247, 0.65)',
-        glow: 'rgba(168, 85, 247, 0.18)',
-        glowHover: 'rgba(168, 85, 247, 0.35)',
+        // 2: Violet/Purple (Yer Qurg'on)
+        border: 'rgba(192, 132, 252, 0.42)',
+        borderHover: 'rgba(192, 132, 252, 0.85)',
+        glow: 'rgba(192, 132, 252, 0.22)',
+        glowHover: 'rgba(192, 132, 252, 0.45)',
         avatarBg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(124, 58, 237, 0.16) 100%)',
         avatarBorder: 'rgba(168, 85, 247, 0.45)',
         avatarColor: '#C084FC',
-        avatarShadow: 'rgba(168, 85, 247, 0.3)',
+        darkColor: '#9333EA',
+        darkerColor: '#581C87',
+        lightColor: '#E9D5FF',
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         badgeBorder: 'rgba(168, 85, 247, 0.25)',
         badgeText: '#D8B4FE'
     },
     {
-        border: 'rgba(251, 191, 36, 0.28)',
-        borderHover: 'rgba(251, 191, 36, 0.65)',
-        glow: 'rgba(251, 191, 36, 0.18)',
-        glowHover: 'rgba(251, 191, 36, 0.35)',
+        // 3: Warm Amber/Gold (Vagzal)
+        border: 'rgba(251, 191, 36, 0.42)',
+        borderHover: 'rgba(251, 191, 36, 0.85)',
+        glow: 'rgba(251, 191, 36, 0.22)',
+        glowHover: 'rgba(251, 191, 36, 0.45)',
         avatarBg: 'linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(217, 119, 6, 0.16) 100%)',
         avatarBorder: 'rgba(251, 191, 36, 0.45)',
         avatarColor: '#FBBF24',
-        avatarShadow: 'rgba(251, 191, 36, 0.3)',
+        darkColor: '#D97706',
+        darkerColor: '#78350F',
+        lightColor: '#FDE68A',
         badgeBg: 'rgba(251, 191, 36, 0.12)',
         badgeBorder: 'rgba(251, 191, 36, 0.25)',
         badgeText: '#FDE68A'
     },
     {
-        border: 'rgba(244, 63, 94, 0.28)',
-        borderHover: 'rgba(244, 63, 94, 0.65)',
-        glow: 'rgba(244, 63, 94, 0.18)',
-        glowHover: 'rgba(244, 63, 94, 0.35)',
+        // 4: Rose/Ruby (Gezdi Buyi)
+        border: 'rgba(251, 113, 133, 0.42)',
+        borderHover: 'rgba(251, 113, 133, 0.85)',
+        glow: 'rgba(251, 113, 133, 0.22)',
+        glowHover: 'rgba(251, 113, 133, 0.45)',
         avatarBg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)',
         avatarBorder: 'rgba(244, 63, 94, 0.45)',
         avatarColor: '#FB7185',
-        avatarShadow: 'rgba(244, 63, 94, 0.3)',
+        darkColor: '#E11D48',
+        darkerColor: '#881337',
+        lightColor: '#FECDD3',
         badgeBg: 'rgba(244, 63, 94, 0.12)',
         badgeBorder: 'rgba(244, 63, 94, 0.25)',
         badgeText: '#FDA4AF'
     },
     {
-        border: 'rgba(99, 102, 241, 0.28)',
-        borderHover: 'rgba(99, 102, 241, 0.65)',
-        glow: 'rgba(99, 102, 241, 0.18)',
-        glowHover: 'rgba(99, 102, 241, 0.35)',
+        // 5: Royal Blue/Indigo (Kimsanboylar)
+        border: 'rgba(129, 140, 248, 0.42)',
+        borderHover: 'rgba(129, 140, 248, 0.85)',
+        glow: 'rgba(129, 140, 248, 0.22)',
+        glowHover: 'rgba(129, 140, 248, 0.45)',
         avatarBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(79, 70, 229, 0.16) 100%)',
         avatarBorder: 'rgba(99, 102, 241, 0.45)',
         avatarColor: '#818CF8',
-        avatarShadow: 'rgba(99, 102, 241, 0.3)',
+        darkColor: '#4F46E5',
+        darkerColor: '#312E81',
+        lightColor: '#C7D2FE',
         badgeBg: 'rgba(99, 102, 241, 0.12)',
         badgeBorder: 'rgba(99, 102, 241, 0.25)',
         badgeText: '#A5B4FC'
     },
     {
-        border: 'rgba(20, 184, 166, 0.28)',
-        borderHover: 'rgba(20, 184, 166, 0.65)',
-        glow: 'rgba(20, 184, 166, 0.18)',
-        glowHover: 'rgba(20, 184, 166, 0.35)',
+        // 6: Teal Cyan
+        border: 'rgba(45, 212, 191, 0.42)',
+        borderHover: 'rgba(45, 212, 191, 0.85)',
+        glow: 'rgba(45, 212, 191, 0.22)',
+        glowHover: 'rgba(45, 212, 191, 0.45)',
         avatarBg: 'linear-gradient(135deg, rgba(20, 184, 166, 0.22) 0%, rgba(13, 148, 136, 0.16) 100%)',
         avatarBorder: 'rgba(20, 184, 166, 0.45)',
         avatarColor: '#2DD4BF',
-        avatarShadow: 'rgba(20, 184, 166, 0.3)',
+        darkColor: '#0D9488',
+        darkerColor: '#134E4A',
+        lightColor: '#99F6E4',
         badgeBg: 'rgba(20, 184, 166, 0.12)',
         badgeBorder: 'rgba(20, 184, 166, 0.25)',
         badgeText: '#5EEAD4'
     },
     {
-        border: 'rgba(249, 115, 22, 0.28)',
-        borderHover: 'rgba(249, 115, 22, 0.65)',
-        glow: 'rgba(249, 115, 22, 0.18)',
-        glowHover: 'rgba(249, 115, 22, 0.35)',
+        // 7: Vivid Orange
+        border: 'rgba(251, 146, 60, 0.42)',
+        borderHover: 'rgba(251, 146, 60, 0.85)',
+        glow: 'rgba(251, 146, 60, 0.22)',
+        glowHover: 'rgba(251, 146, 60, 0.45)',
         avatarBg: 'linear-gradient(135deg, rgba(249, 115, 22, 0.22) 0%, rgba(194, 65, 12, 0.16) 100%)',
         avatarBorder: 'rgba(249, 115, 22, 0.45)',
         avatarColor: '#FB923C',
-        avatarShadow: 'rgba(249, 115, 22, 0.3)',
+        darkColor: '#EA580C',
+        darkerColor: '#7C2D12',
+        lightColor: '#FED7AA',
         badgeBg: 'rgba(249, 115, 22, 0.12)',
         badgeBorder: 'rgba(249, 115, 22, 0.25)',
         badgeText: '#FDBA74'
@@ -1361,11 +1387,93 @@ function getShopTheme(id, name) {
     return MARKET_THEMES[Math.abs(hash) % MARKET_THEMES.length];
 }
 
+function getIsometricStoreSvg(t, idSuffix) {
+    const main = t.avatarColor || '#38BDF8';
+    const dark = t.darkColor || '#0284C7';
+    const darker = t.darkerColor || '#0C4A6E';
+    const light = t.lightColor || '#BAE6FD';
+    const sId = 'mkt_svg_' + (idSuffix !== undefined ? idSuffix : Math.floor(Math.random() * 10000));
+
+    return `
+    <svg class="market-tile__store-svg" viewBox="0 0 72 64" width="66" height="58" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="${sId}_rf" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="${main}"/>
+                <stop offset="100%" stop-color="${dark}"/>
+            </linearGradient>
+            <linearGradient id="${sId}_wl" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="${dark}"/>
+                <stop offset="100%" stop-color="${darker}"/>
+            </linearGradient>
+            <linearGradient id="${sId}_wr" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="${main}"/>
+                <stop offset="100%" stop-color="${dark}"/>
+            </linearGradient>
+            <linearGradient id="${sId}_stp" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+                <stop offset="100%" stop-color="${light}" stop-opacity="0.85"/>
+            </linearGradient>
+        </defs>
+        
+        <!-- Ground drop shadow -->
+        <ellipse cx="36" cy="56" rx="26" ry="5.5" fill="rgba(0,0,0,0.45)"/>
+        
+        <!-- Left Wall (Side perspective) -->
+        <path d="M13 23 L36 35 L36 52 L13 40 Z" fill="url(#${sId}_wl)"/>
+        <path d="M18 29 L29 35 L29 44 L18 38 Z" fill="#030712" opacity="0.6"/>
+        <path d="M20 31 L27 35 L27 42 L20 38 Z" fill="${main}" opacity="0.35"/>
+
+        <!-- Right Wall (Front facade) -->
+        <path d="M36 35 L59 23 L59 40 L36 52 Z" fill="url(#${sId}_wr)"/>
+        
+        <!-- Display Window -->
+        <path d="M39 37 L47 33 L47 45 L39 49 Z" fill="#030712" opacity="0.75"/>
+        <path d="M40 38 L46 35 L46 44 L40 47 Z" fill="${light}" opacity="0.55"/>
+        <line x1="41" y1="45" x2="45" y2="37" stroke="#FFFFFF" stroke-width="0.9" opacity="0.7"/>
+
+        <!-- Front Door -->
+        <path d="M49 32 L56 28.5 L56 41.5 L49 45 Z" fill="#030712" opacity="0.85"/>
+        <path d="M50 33 L55 30.5 L55 40.5 L50 43 Z" fill="${main}" opacity="0.45"/>
+        <circle cx="51.5" cy="38" r="0.9" fill="#F8FAFC"/>
+
+        <!-- Roof Top Plane -->
+        <path d="M36 7 L62 20 L36 33 L10 20 Z" fill="url(#${sId}_rf)"/>
+        <path d="M36 7 L62 20 L36 22 L10 20 Z" fill="#FFFFFF" opacity="0.25"/>
+
+        <!-- Striped Awning hanging over front facade -->
+        <path d="M36 31 L60 19 L63 23 L39 35 Z" fill="url(#${sId}_rf)"/>
+        <path d="M41 28 L46 25.5 L48 29.5 L43 32 Z" fill="url(#${sId}_stp)"/>
+        <path d="M51 23 L56 20.5 L58 24.5 L53 27 Z" fill="url(#${sId}_stp)"/>
+        <path d="M39 35 L63 23 L63 26 L39 38 Z" fill="${dark}"/>
+    </svg>`;
+}
+
+function formatCompactDebt(num) {
+    const val = Number(num) || 0;
+    if (val <= 0) return "Qarz yo'q";
+    if (val >= 1000000000) {
+        const mlrd = val / 1000000000;
+        const formatted = (mlrd % 1 === 0 ? mlrd.toFixed(0) : mlrd.toFixed(1).replace('.0', ''));
+        return `${formatted} mlrd qarz`;
+    }
+    if (val >= 1000000) {
+        const mln = val / 1000000;
+        const formatted = (mln % 1 === 0 ? mln.toFixed(0) : mln.toFixed(1).replace('.0', ''));
+        return `${formatted} mln qarz`;
+    }
+    if (val >= 1000) {
+        const ming = val / 1000;
+        const formatted = (ming % 1 === 0 ? ming.toFixed(0) : ming.toFixed(1).replace('.0', ''));
+        return `${formatted} ming qarz`;
+    }
+    return `${formatMoney(val)} qarz`;
+}
+
 let allMarketGroupsList = [];
 
 // Toifalar (Bozorlar) ro'yxatini ko'rsatish
 async function showMarketGroups() {
-    updateHeaderMeta('Bozorlar', "Do'konlar va savdo nuqtalari", 'PRO');
+    updateHeaderMeta('Bozorlar', "Savdo nuqtalari va do'konlar", 'PRO');
     setRootScreen('bozorlar');
     fabBtn.style.display = 'flex';
     fabBtn.onclick = showAddMarketGroupForm;
@@ -1377,30 +1485,36 @@ async function showMarketGroups() {
         allMarketGroupsList = Array.isArray(groups) ? groups : [];
 
         if (allMarketGroupsList.length === 0) {
-            contentEl.innerHTML = '<div class="empty-state">Hali bozor qo\'shilmagan.<br>Pastdagi + tugmasi orqali yangi bozor qo\'shing.</div>';
+            contentEl.innerHTML = `
+                <div class="empty-state" style="padding: 40px 16px; text-align: center;">
+                    <div style="font-size: 44px; margin-bottom: 12px;">🏪</div>
+                    <div style="font-size: 16px; font-weight: 700; color: #F8FAFC; margin-bottom: 6px;">Hali bozor qo'shilmagan</div>
+                    <div style="font-size: 13px; color: #94A3B8; max-width: 280px; margin: 0 auto 20px auto; line-height: 1.5;">Pastdagi + tugmasi orqali yangi savdo bozori qo'shing.</div>
+                    <button class="btn btn--primary" style="display: inline-flex; width: auto; padding: 11px 24px; gap: 8px; border-radius: 14px;" onclick="showAddMarketGroupForm()">
+                        ${Icons.plus} Yangi bozor qo'shish
+                    </button>
+                </div>
+            `;
             return;
         }
 
         const totalShops = allMarketGroupsList.reduce((sum, g) => sum + (Number(g.shopCount) || 0), 0);
 
         let html = `
-            <div class="market-summary-bar">
-                <div class="market-summary-item">
-                    <span>🏪</span>
+            <div class="market-top-bar">
+                <div class="market-summary-capsule">
                     <span>Jami: <strong>${allMarketGroupsList.length} ta bozor</strong></span>
-                </div>
-                <div class="market-summary-divider"></div>
-                <div class="market-summary-item">
-                    <span>🏬</span>
+                    <span class="market-summary-sep">|</span>
                     <span><strong>${totalShops} ta do'kon</strong></span>
                 </div>
             </div>
         `;
 
-        if (allMarketGroupsList.length >= 4) {
+        if (allMarketGroupsList.length >= 3) {
             html += `
-                <div class="form-group" style="padding-bottom:10px;">
-                    <input type="text" class="form-input" id="marketSearchInput" placeholder="Bozor nomini qidirish..." oninput="filterMarketGroups()">
+                <div class="market-search-box">
+                    <span class="market-search-icon">${Icons.search || '🔍'}</span>
+                    <input type="text" class="market-search-field" id="marketSearchInput" placeholder="Bozor nomini qidirish..." oninput="filterMarketGroups()" autocomplete="off">
                 </div>
             `;
         }
@@ -1428,42 +1542,46 @@ async function showMarketGroups() {
 
 function renderMarketCardsHtml(groups) {
     if (!groups || groups.length === 0) {
-        return '<div class="empty-state" style="padding:20px 0;">Bozor topilmadi.</div>';
+        return '<div class="empty-state" style="padding:28px 0; text-align:center; color:#94A3B8;">Bozor topilmadi.</div>';
     }
 
-    return groups.map((group, index) => {
+    return `<div class="market-grid">` + groups.map((group, index) => {
         const t = MARKET_THEMES[index % MARKET_THEMES.length];
         const count = Number(group.shopCount) || 0;
+        const debt = Number(group.totalDebt) || 0;
+        const storeSvg = getIsometricStoreSvg(t, group.id || index);
+
+        let debtBadgeHtml = '';
+        if (debt > 0) {
+            debtBadgeHtml = `<span class="market-pill market-pill--debt">${formatCompactDebt(debt)}</span>`;
+        } else {
+            debtBadgeHtml = `<span class="market-pill market-pill--clean">Qarz yo'q</span>`;
+        }
 
         return `
-            <div class="market-card" style="
-                --card-border: ${t.border};
-                --card-border-hover: ${t.borderHover};
-                --card-glow: ${t.glow};
-                --card-glow-hover: ${t.glowHover};
-                --avatar-bg: ${t.avatarBg};
-                --avatar-border: ${t.avatarBorder};
-                --avatar-color: ${t.avatarColor};
-                --avatar-shadow: ${t.avatarShadow};
+            <div class="market-tile" style="
+                --tile-border: ${t.border};
+                --tile-border-hover: ${t.borderHover};
+                --tile-glow: ${t.glow};
+                --tile-glow-hover: ${t.glowHover};
+                --tile-accent: ${t.avatarColor};
             " onclick="showShops(${group.id}, '${escJs(group.name)}')">
-                <div class="market-card__avatar">
-                    ${Icons.storeFront || Icons.market}
+                <div class="market-tile__actions" onclick="event.stopPropagation()">
+                    <button class="market-tile__menu-btn" onclick="showMarketGroupActions(${group.id}, '${escJs(group.name)}')" title="Bozor amallari" aria-label="Bozor amallari">
+                        ${Icons.moreVertical || '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg>'}
+                    </button>
                 </div>
-                <div class="market-card__info">
-                    <div class="market-card__title">${escHtml(group.name)}</div>
-                    <div class="market-card__badge" style="background:${t.badgeBg}; border:1px solid ${t.badgeBorder}; color:${t.badgeText};">
-                        <span class="market-card__badge-icon">${Icons.shopBag}</span>
-                        <span class="market-card__badge-count">${count} ta do'kon</span>
-                    </div>
+                <div class="market-tile__icon-wrap">
+                    ${storeSvg}
                 </div>
-                <div class="market-card__actions" onclick="event.stopPropagation()">
-                    <button class="market-action-btn" onclick="showEditMarketGroupForm(${group.id}, '${escJs(group.name)}')" title="Tahrirlash">${Icons.edit}</button>
-                    <button class="market-action-btn market-action-btn--danger" onclick="deleteMarketGroup(${group.id}, '${escJs(group.name)}')" title="O'chirish">${Icons.trash}</button>
-                    <span class="market-card__chevron">${Icons.chevronRight}</span>
+                <div class="market-tile__title" title="${escAttr(group.name)}">${escHtml(group.name)}</div>
+                <div class="market-tile__badges">
+                    <span class="market-pill market-pill--shops">${count} ta do'kon</span>
+                    ${debtBadgeHtml}
                 </div>
             </div>
         `;
-    }).join('');
+    }).join('') + `</div>`;
 }
 
 function filterMarketGroups() {
@@ -1477,6 +1595,63 @@ function filterMarketGroups() {
     }
     const filtered = allMarketGroupsList.filter(g => g.name && g.name.toLowerCase().includes(query));
     container.innerHTML = renderMarketCardsHtml(filtered);
+}
+
+function showMarketGroupActions(id, name) {
+    let overlay = document.getElementById('marketActionSheet');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'marketActionSheet';
+        overlay.className = 'confirm-overlay';
+        document.body.appendChild(overlay);
+    }
+
+    overlay.innerHTML = `
+        <div class="action-sheet-card" onclick="event.stopPropagation()">
+            <div class="action-sheet-header">
+                <div class="action-sheet-icon">
+                    ${Icons.storeFront || Icons.market}
+                </div>
+                <div>
+                    <div class="action-sheet-title">${escHtml(name)}</div>
+                    <div class="action-sheet-subtitle">Bozor toifasini boshqarish</div>
+                </div>
+            </div>
+            <div class="action-sheet-buttons">
+                <button class="action-sheet-btn" id="actionSheetEditBtn">
+                    <span class="action-sheet-btn-icon">${Icons.edit}</span>
+                    <span>Bozor nomini tahrirlash</span>
+                </button>
+                <button class="action-sheet-btn action-sheet-btn--danger" id="actionSheetDeleteBtn">
+                    <span class="action-sheet-btn-icon">${Icons.trash}</span>
+                    <span>Bozorni o'chirish</span>
+                </button>
+                <button class="action-sheet-btn action-sheet-btn--cancel" id="actionSheetCancelBtn">
+                    <span>Bekor qilish</span>
+                </button>
+            </div>
+        </div>
+    `;
+
+    overlay.onclick = () => { overlay.classList.remove('active'); };
+    const cancelBtn = document.getElementById('actionSheetCancelBtn');
+    if (cancelBtn) cancelBtn.onclick = () => { overlay.classList.remove('active'); };
+
+    const editBtn = document.getElementById('actionSheetEditBtn');
+    if (editBtn) editBtn.onclick = () => {
+        overlay.classList.remove('active');
+        showEditMarketGroupForm(id, name);
+    };
+
+    const deleteBtn = document.getElementById('actionSheetDeleteBtn');
+    if (deleteBtn) deleteBtn.onclick = () => {
+        overlay.classList.remove('active');
+        deleteMarketGroup(id, name);
+    };
+
+    setTimeout(() => {
+        overlay.classList.add('active');
+    }, 10);
 }
 
 // Boshlang'ich sahifa

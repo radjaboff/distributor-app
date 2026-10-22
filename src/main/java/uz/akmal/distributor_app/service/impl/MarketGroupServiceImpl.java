@@ -34,17 +34,26 @@ public class MarketGroupServiceImpl implements MarketGroupService {
     @Override
     public List<MarketGroupResponse> getAll() {
         List<MarketGroup> groups = marketGroupRepository.findByIsDeletedFalse();
-        List<Object[]> counts = shopRepository.countActiveShopsByMarketGroup();
+        List<Object[]> counts = shopRepository.countActiveShopsAndDebtByMarketGroup();
         java.util.Map<Long, Integer> countMap = new java.util.HashMap<>();
+        java.util.Map<Long, java.math.BigDecimal> debtMap = new java.util.HashMap<>();
         for (Object[] row : counts) {
-            if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
-                countMap.put((Long) row[0], ((Number) row[1]).intValue());
+            if (row != null && row.length >= 2 && row[0] != null) {
+                Long mgId = (Long) row[0];
+                int count = row[1] != null ? ((Number) row[1]).intValue() : 0;
+                java.math.BigDecimal debt = java.math.BigDecimal.ZERO;
+                if (row.length >= 3 && row[2] != null) {
+                    debt = (java.math.BigDecimal) row[2];
+                }
+                countMap.put(mgId, count);
+                debtMap.put(mgId, debt);
             }
         }
         return groups.stream()
                 .map(mg -> {
                     MarketGroupResponse resp = MarketGroupMapper.toResponse(mg);
                     resp.setShopCount(countMap.getOrDefault(mg.getId(), 0));
+                    resp.setTotalDebt(debtMap.getOrDefault(mg.getId(), java.math.BigDecimal.ZERO));
                     return resp;
                 })
                 .toList();
@@ -55,7 +64,9 @@ public class MarketGroupServiceImpl implements MarketGroupService {
         MarketGroup mg = findEntityById(id);
         MarketGroupResponse resp = MarketGroupMapper.toResponse(mg);
         long count = shopRepository.countByMarketGroupIdAndIsDeletedFalse(id);
+        java.math.BigDecimal debt = shopRepository.sumDebtByMarketGroupIdAndIsDeletedFalse(id);
         resp.setShopCount((int) count);
+        resp.setTotalDebt(debt != null ? debt : java.math.BigDecimal.ZERO);
         return resp;
     }
 
