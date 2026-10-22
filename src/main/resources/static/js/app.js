@@ -1249,131 +1249,99 @@ async function apiDelete(path) {
 const MARKET_THEMES = [
     {
         // 0: Sky Blue (Orzu Bozor)
-        border: 'rgba(56, 189, 248, 0.42)',
-        borderHover: 'rgba(56, 189, 248, 0.85)',
-        glow: 'rgba(56, 189, 248, 0.22)',
-        glowHover: 'rgba(56, 189, 248, 0.45)',
+        border: '#38BDF8',
+        borderHover: '#7DD3FC',
+        innerBorder: 'rgba(56, 189, 248, 0.65)',
+        glow: 'rgba(56, 189, 248, 0.45)',
+        glowHover: 'rgba(56, 189, 248, 0.75)',
+        radialGlow: 'rgba(56, 189, 248, 0.3)',
         avatarBg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.16) 100%)',
         avatarBorder: 'rgba(56, 189, 248, 0.45)',
         avatarColor: '#38BDF8',
-        darkColor: '#0284C7',
-        darkerColor: '#075985',
-        lightColor: '#BAE6FD',
+        icon: 'icons/store_1.png',
         badgeBg: 'rgba(56, 189, 248, 0.12)',
         badgeBorder: 'rgba(56, 189, 248, 0.25)',
         badgeText: '#7DD3FC'
     },
     {
         // 1: Emerald Mint (Eski Bozor)
-        border: 'rgba(52, 211, 153, 0.42)',
-        borderHover: 'rgba(52, 211, 153, 0.85)',
-        glow: 'rgba(52, 211, 153, 0.22)',
-        glowHover: 'rgba(52, 211, 153, 0.45)',
+        border: '#34D399',
+        borderHover: '#6EE7B7',
+        innerBorder: 'rgba(52, 211, 153, 0.65)',
+        glow: 'rgba(52, 211, 153, 0.45)',
+        glowHover: 'rgba(52, 211, 153, 0.75)',
+        radialGlow: 'rgba(52, 211, 153, 0.3)',
         avatarBg: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)',
         avatarBorder: 'rgba(52, 211, 153, 0.45)',
         avatarColor: '#34D399',
-        darkColor: '#059669',
-        darkerColor: '#064E3B',
-        lightColor: '#A7F3D0',
+        icon: 'icons/store_2.png',
         badgeBg: 'rgba(52, 211, 153, 0.12)',
         badgeBorder: 'rgba(52, 211, 153, 0.25)',
         badgeText: '#6EE7B7'
     },
     {
         // 2: Violet/Purple (Yer Qurg'on)
-        border: 'rgba(192, 132, 252, 0.42)',
-        borderHover: 'rgba(192, 132, 252, 0.85)',
-        glow: 'rgba(192, 132, 252, 0.22)',
-        glowHover: 'rgba(192, 132, 252, 0.45)',
+        border: '#C084FC',
+        borderHover: '#E9D5FF',
+        innerBorder: 'rgba(192, 132, 252, 0.65)',
+        glow: 'rgba(192, 132, 252, 0.45)',
+        glowHover: 'rgba(192, 132, 252, 0.75)',
+        radialGlow: 'rgba(192, 132, 252, 0.3)',
         avatarBg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(124, 58, 237, 0.16) 100%)',
         avatarBorder: 'rgba(168, 85, 247, 0.45)',
         avatarColor: '#C084FC',
-        darkColor: '#9333EA',
-        darkerColor: '#581C87',
-        lightColor: '#E9D5FF',
+        icon: 'icons/store_3.png',
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         badgeBorder: 'rgba(168, 85, 247, 0.25)',
         badgeText: '#D8B4FE'
     },
     {
         // 3: Warm Amber/Gold (Vagzal)
-        border: 'rgba(251, 191, 36, 0.42)',
-        borderHover: 'rgba(251, 191, 36, 0.85)',
-        glow: 'rgba(251, 191, 36, 0.22)',
-        glowHover: 'rgba(251, 191, 36, 0.45)',
+        border: '#FBBF24',
+        borderHover: '#FDE68A',
+        innerBorder: 'rgba(251, 191, 36, 0.65)',
+        glow: 'rgba(251, 191, 36, 0.45)',
+        glowHover: 'rgba(251, 191, 36, 0.75)',
+        radialGlow: 'rgba(251, 191, 36, 0.3)',
         avatarBg: 'linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(217, 119, 6, 0.16) 100%)',
         avatarBorder: 'rgba(251, 191, 36, 0.45)',
         avatarColor: '#FBBF24',
-        darkColor: '#D97706',
-        darkerColor: '#78350F',
-        lightColor: '#FDE68A',
+        icon: 'icons/store_4.png',
         badgeBg: 'rgba(251, 191, 36, 0.12)',
         badgeBorder: 'rgba(251, 191, 36, 0.25)',
         badgeText: '#FDE68A'
     },
     {
         // 4: Rose/Ruby (Gezdi Buyi)
-        border: 'rgba(251, 113, 133, 0.42)',
-        borderHover: 'rgba(251, 113, 133, 0.85)',
-        glow: 'rgba(251, 113, 133, 0.22)',
-        glowHover: 'rgba(251, 113, 133, 0.45)',
+        border: '#FB7185',
+        borderHover: '#FDA4AF',
+        innerBorder: 'rgba(251, 113, 133, 0.65)',
+        glow: 'rgba(251, 113, 133, 0.45)',
+        glowHover: 'rgba(251, 113, 133, 0.75)',
+        radialGlow: 'rgba(251, 113, 133, 0.3)',
         avatarBg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)',
         avatarBorder: 'rgba(244, 63, 94, 0.45)',
         avatarColor: '#FB7185',
-        darkColor: '#E11D48',
-        darkerColor: '#881337',
-        lightColor: '#FECDD3',
+        icon: 'icons/store_5.png',
         badgeBg: 'rgba(244, 63, 94, 0.12)',
         badgeBorder: 'rgba(244, 63, 94, 0.25)',
         badgeText: '#FDA4AF'
     },
     {
         // 5: Royal Blue/Indigo (Kimsanboylar)
-        border: 'rgba(129, 140, 248, 0.42)',
-        borderHover: 'rgba(129, 140, 248, 0.85)',
-        glow: 'rgba(129, 140, 248, 0.22)',
-        glowHover: 'rgba(129, 140, 248, 0.45)',
+        border: '#60A5FA',
+        borderHover: '#93C5FD',
+        innerBorder: 'rgba(96, 165, 250, 0.65)',
+        glow: 'rgba(96, 165, 250, 0.45)',
+        glowHover: 'rgba(96, 165, 250, 0.75)',
+        radialGlow: 'rgba(96, 165, 250, 0.3)',
         avatarBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(79, 70, 229, 0.16) 100%)',
         avatarBorder: 'rgba(99, 102, 241, 0.45)',
-        avatarColor: '#818CF8',
-        darkColor: '#4F46E5',
-        darkerColor: '#312E81',
-        lightColor: '#C7D2FE',
+        avatarColor: '#60A5FA',
+        icon: 'icons/store_6.png',
         badgeBg: 'rgba(99, 102, 241, 0.12)',
         badgeBorder: 'rgba(99, 102, 241, 0.25)',
         badgeText: '#A5B4FC'
-    },
-    {
-        // 6: Teal Cyan
-        border: 'rgba(45, 212, 191, 0.42)',
-        borderHover: 'rgba(45, 212, 191, 0.85)',
-        glow: 'rgba(45, 212, 191, 0.22)',
-        glowHover: 'rgba(45, 212, 191, 0.45)',
-        avatarBg: 'linear-gradient(135deg, rgba(20, 184, 166, 0.22) 0%, rgba(13, 148, 136, 0.16) 100%)',
-        avatarBorder: 'rgba(20, 184, 166, 0.45)',
-        avatarColor: '#2DD4BF',
-        darkColor: '#0D9488',
-        darkerColor: '#134E4A',
-        lightColor: '#99F6E4',
-        badgeBg: 'rgba(20, 184, 166, 0.12)',
-        badgeBorder: 'rgba(20, 184, 166, 0.25)',
-        badgeText: '#5EEAD4'
-    },
-    {
-        // 7: Vivid Orange
-        border: 'rgba(251, 146, 60, 0.42)',
-        borderHover: 'rgba(251, 146, 60, 0.85)',
-        glow: 'rgba(251, 146, 60, 0.22)',
-        glowHover: 'rgba(251, 146, 60, 0.45)',
-        avatarBg: 'linear-gradient(135deg, rgba(249, 115, 22, 0.22) 0%, rgba(194, 65, 12, 0.16) 100%)',
-        avatarBorder: 'rgba(249, 115, 22, 0.45)',
-        avatarColor: '#FB923C',
-        darkColor: '#EA580C',
-        darkerColor: '#7C2D12',
-        lightColor: '#FED7AA',
-        badgeBg: 'rgba(249, 115, 22, 0.12)',
-        badgeBorder: 'rgba(249, 115, 22, 0.25)',
-        badgeText: '#FDBA74'
     }
 ];
 
@@ -1385,67 +1353,6 @@ function getShopTheme(id, name) {
         hash |= 0;
     }
     return MARKET_THEMES[Math.abs(hash) % MARKET_THEMES.length];
-}
-
-function getIsometricStoreSvg(t, idSuffix) {
-    const main = t.avatarColor || '#38BDF8';
-    const dark = t.darkColor || '#0284C7';
-    const darker = t.darkerColor || '#0C4A6E';
-    const light = t.lightColor || '#BAE6FD';
-    const sId = 'mkt_svg_' + (idSuffix !== undefined ? idSuffix : Math.floor(Math.random() * 10000));
-
-    return `
-    <svg class="market-tile__store-svg" viewBox="0 0 72 64" width="66" height="58" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="${sId}_rf" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="${main}"/>
-                <stop offset="100%" stop-color="${dark}"/>
-            </linearGradient>
-            <linearGradient id="${sId}_wl" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="${dark}"/>
-                <stop offset="100%" stop-color="${darker}"/>
-            </linearGradient>
-            <linearGradient id="${sId}_wr" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="${main}"/>
-                <stop offset="100%" stop-color="${dark}"/>
-            </linearGradient>
-            <linearGradient id="${sId}_stp" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
-                <stop offset="100%" stop-color="${light}" stop-opacity="0.85"/>
-            </linearGradient>
-        </defs>
-        
-        <!-- Ground drop shadow -->
-        <ellipse cx="36" cy="56" rx="26" ry="5.5" fill="rgba(0,0,0,0.45)"/>
-        
-        <!-- Left Wall (Side perspective) -->
-        <path d="M13 23 L36 35 L36 52 L13 40 Z" fill="url(#${sId}_wl)"/>
-        <path d="M18 29 L29 35 L29 44 L18 38 Z" fill="#030712" opacity="0.6"/>
-        <path d="M20 31 L27 35 L27 42 L20 38 Z" fill="${main}" opacity="0.35"/>
-
-        <!-- Right Wall (Front facade) -->
-        <path d="M36 35 L59 23 L59 40 L36 52 Z" fill="url(#${sId}_wr)"/>
-        
-        <!-- Display Window -->
-        <path d="M39 37 L47 33 L47 45 L39 49 Z" fill="#030712" opacity="0.75"/>
-        <path d="M40 38 L46 35 L46 44 L40 47 Z" fill="${light}" opacity="0.55"/>
-        <line x1="41" y1="45" x2="45" y2="37" stroke="#FFFFFF" stroke-width="0.9" opacity="0.7"/>
-
-        <!-- Front Door -->
-        <path d="M49 32 L56 28.5 L56 41.5 L49 45 Z" fill="#030712" opacity="0.85"/>
-        <path d="M50 33 L55 30.5 L55 40.5 L50 43 Z" fill="${main}" opacity="0.45"/>
-        <circle cx="51.5" cy="38" r="0.9" fill="#F8FAFC"/>
-
-        <!-- Roof Top Plane -->
-        <path d="M36 7 L62 20 L36 33 L10 20 Z" fill="url(#${sId}_rf)"/>
-        <path d="M36 7 L62 20 L36 22 L10 20 Z" fill="#FFFFFF" opacity="0.25"/>
-
-        <!-- Striped Awning hanging over front facade -->
-        <path d="M36 31 L60 19 L63 23 L39 35 Z" fill="url(#${sId}_rf)"/>
-        <path d="M41 28 L46 25.5 L48 29.5 L43 32 Z" fill="url(#${sId}_stp)"/>
-        <path d="M51 23 L56 20.5 L58 24.5 L53 27 Z" fill="url(#${sId}_stp)"/>
-        <path d="M39 35 L63 23 L63 26 L39 38 Z" fill="${dark}"/>
-    </svg>`;
 }
 
 function formatCompactDebt(num) {
@@ -1549,7 +1456,6 @@ function renderMarketCardsHtml(groups) {
         const t = MARKET_THEMES[index % MARKET_THEMES.length];
         const count = Number(group.shopCount) || 0;
         const debt = Number(group.totalDebt) || 0;
-        const storeSvg = getIsometricStoreSvg(t, group.id || index);
 
         let debtBadgeHtml = '';
         if (debt > 0) {
@@ -1562,22 +1468,25 @@ function renderMarketCardsHtml(groups) {
             <div class="market-tile" style="
                 --tile-border: ${t.border};
                 --tile-border-hover: ${t.borderHover};
+                --tile-inner-border: ${t.innerBorder};
                 --tile-glow: ${t.glow};
                 --tile-glow-hover: ${t.glowHover};
-                --tile-accent: ${t.avatarColor};
+                --tile-radial-glow: ${t.radialGlow};
             " onclick="showShops(${group.id}, '${escJs(group.name)}')">
-                <div class="market-tile__actions" onclick="event.stopPropagation()">
-                    <button class="market-tile__menu-btn" onclick="showMarketGroupActions(${group.id}, '${escJs(group.name)}')" title="Bozor amallari" aria-label="Bozor amallari">
-                        ${Icons.moreVertical || '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg>'}
-                    </button>
-                </div>
-                <div class="market-tile__icon-wrap">
-                    ${storeSvg}
-                </div>
-                <div class="market-tile__title" title="${escAttr(group.name)}">${escHtml(group.name)}</div>
-                <div class="market-tile__badges">
-                    <span class="market-pill market-pill--shops">${count} ta do'kon</span>
-                    ${debtBadgeHtml}
+                <div class="market-tile__inner">
+                    <div class="market-tile__actions" onclick="event.stopPropagation()">
+                        <button class="market-tile__menu-btn" onclick="showMarketGroupActions(${group.id}, '${escJs(group.name)}')" title="Bozor amallari" aria-label="Bozor amallari">
+                            ${Icons.moreVertical || '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg>'}
+                        </button>
+                    </div>
+                    <div class="market-tile__store-wrap">
+                        <img class="market-tile__store-img" src="${t.icon}" alt="${escAttr(group.name)}" loading="eager">
+                    </div>
+                    <div class="market-tile__title" title="${escAttr(group.name)}">${escHtml(group.name)}</div>
+                    <div class="market-tile__badges-row">
+                        <span class="market-pill market-pill--shops">${count} ta do'kon</span>
+                        ${debtBadgeHtml}
+                    </div>
                 </div>
             </div>
         `;
@@ -1607,6 +1516,7 @@ function showMarketGroupActions(id, name) {
     }
 
     overlay.innerHTML = `
+        <div class="confirm-backdrop" id="actionSheetBackdrop"></div>
         <div class="action-sheet-card" onclick="event.stopPropagation()">
             <div class="action-sheet-header">
                 <div class="action-sheet-icon">
@@ -1633,25 +1543,34 @@ function showMarketGroupActions(id, name) {
         </div>
     `;
 
-    overlay.onclick = () => { overlay.classList.remove('active'); };
+    const closeSheet = () => {
+        overlay.classList.remove('show');
+        overlay.classList.remove('active');
+    };
+
+    const backdrop = document.getElementById('actionSheetBackdrop');
+    if (backdrop) backdrop.onclick = closeSheet;
+    overlay.onclick = closeSheet;
+
     const cancelBtn = document.getElementById('actionSheetCancelBtn');
-    if (cancelBtn) cancelBtn.onclick = () => { overlay.classList.remove('active'); };
+    if (cancelBtn) cancelBtn.onclick = closeSheet;
 
     const editBtn = document.getElementById('actionSheetEditBtn');
     if (editBtn) editBtn.onclick = () => {
-        overlay.classList.remove('active');
+        closeSheet();
         showEditMarketGroupForm(id, name);
     };
 
     const deleteBtn = document.getElementById('actionSheetDeleteBtn');
     if (deleteBtn) deleteBtn.onclick = () => {
-        overlay.classList.remove('active');
+        closeSheet();
         deleteMarketGroup(id, name);
     };
 
-    setTimeout(() => {
+    requestAnimationFrame(() => {
+        overlay.classList.add('show');
         overlay.classList.add('active');
-    }, 10);
+    });
 }
 
 // Boshlang'ich sahifa
