@@ -41,6 +41,8 @@
 html, body {
     margin: 0;
     padding: 0;
+    width: 100%;
+    max-width: 100%;
     min-height: 100dvh;
     background: var(--color-bg);
     font-family: var(--font-body);
@@ -48,12 +50,15 @@ html, body {
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
+    overflow-x: hidden;
+    position: relative;
 }
 
 body {
     display: flex;
     flex-direction: column;
     max-width: 480px;
+    width: 100%;
     margin: 0 auto;
     min-height: 100dvh;
     background:
@@ -61,6 +66,8 @@ body {
             var(--color-bg);
     border-left: 1px solid rgba(255, 255, 255, 0.05);
     border-right: 1px solid rgba(255, 255, 255, 0.05);
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 /* Tarmoq holati (Online / Offline) banneri */
@@ -346,9 +353,13 @@ body {
 .content {
     flex: 1;
     background: transparent;
-    padding: 14px 16px calc(92px + env(safe-area-inset-bottom, 0px)) 16px;
+    padding: 14px 14px calc(92px + env(safe-area-inset-bottom, 0px)) 14px;
     overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 /* SVG va piktogrammalar */
@@ -2093,166 +2104,172 @@ button:disabled {
     color: #64748B;
 }
 
-/* 2-Ustunli Plitkalar (Grid) */
+/* 2-Ustunli Plitkalar (Grid - Kompakt va qimirlamaydigan) */
 .market-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    padding-bottom: 70px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-bottom: 96px;
 }
 
-@media (max-width: 330px) {
+@media (max-width: 320px) {
     .market-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
     }
 }
 
-/* Double-Neon Capsule Card (Mockupdagi kabi professional jiloli kartalar) */
+/* Double-Neon Capsule Card (Kompakt, har qanday telefonga mos) */
 .market-tile {
     position: relative;
-    border-radius: 22px;
-    padding: 4px; /* Tashqi hoshiya bilan ichki hoshiya orasidagi masofa */
+    border-radius: 18px;
+    padding: 3px;
     border: 1.5px solid var(--tile-border, #38BDF8);
-    background: rgba(11, 19, 43, 0.7);
+    background: rgba(11, 19, 43, 0.75);
     box-shadow: 
-        0 10px 28px -4px rgba(0, 0, 0, 0.6),
-        0 0 22px -2px var(--tile-glow, rgba(56, 189, 248, 0.45)),
-        inset 0 0 12px -2px var(--tile-glow, rgba(56, 189, 248, 0.3));
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+        0 6px 18px -3px rgba(0, 0, 0, 0.55),
+        0 0 14px -2px var(--tile-glow, rgba(56, 189, 248, 0.38)),
+        inset 0 0 8px -2px var(--tile-glow, rgba(56, 189, 248, 0.22));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     cursor: pointer;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
-    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.market-tile:hover {
-    transform: translateY(-3px);
-    border-color: var(--tile-border-hover, #7DD3FC);
-    box-shadow: 
-        0 14px 34px -4px rgba(0, 0, 0, 0.7),
-        0 0 32px 2px var(--tile-glow-hover, rgba(56, 189, 248, 0.75)),
-        inset 0 0 16px var(--tile-glow-hover, rgba(56, 189, 248, 0.45));
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .market-tile:active {
-    transform: scale(0.975);
+    transform: scale(0.97);
 }
 
 /* Ichki neon hoshiya va 3D do'kon orqasidagi radial yog'du */
 .market-tile__inner {
     width: 100%;
-    height: 100%;
-    border-radius: 17px;
-    border: 1.5px solid var(--tile-inner-border, rgba(56, 189, 248, 0.65));
-    background: radial-gradient(circle at 50% 32%, var(--tile-radial-glow, rgba(56, 189, 248, 0.3)) 0%, rgba(13, 20, 38, 0.95) 75%);
-    box-shadow: inset 0 0 18px -4px var(--tile-glow, rgba(56, 189, 248, 0.3));
-    padding: 16px 6px 14px 6px;
+    min-width: 0;
+    box-sizing: border-box;
+    border-radius: 14px;
+    border: 1.2px solid var(--tile-inner-border, rgba(56, 189, 248, 0.6));
+    background: radial-gradient(circle at 50% 30%, var(--tile-radial-glow, rgba(56, 189, 248, 0.25)) 0%, rgba(13, 20, 38, 0.95) 75%);
+    box-shadow: inset 0 0 12px -3px var(--tile-glow, rgba(56, 189, 248, 0.22));
+    padding: 8px 4px 9px 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     position: relative;
+    overflow: hidden;
 }
 
 .market-tile__actions {
     position: absolute;
-    top: 6px;
-    right: 6px;
-    z-index: 10;
+    top: 4px;
+    right: 4px;
+    z-index: 5;
 }
 
 .market-tile__menu-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    color: #CBD5E1;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94A3B8;
     cursor: pointer;
     outline: none;
-    transition: all 0.18s ease;
+    padding: 0;
+    transition: all 0.16s ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.market-tile__menu-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: #FFFFFF;
+.market-tile__menu-btn:hover,
+.market-tile__menu-btn:active {
+    background: rgba(255, 255, 255, 0.22);
     border-color: rgba(255, 255, 255, 0.35);
+    color: #FFFFFF;
     transform: scale(1.1);
 }
 
-.market-tile__menu-btn:active {
-    transform: scale(0.92);
-}
-
-/* 3D Do'kon rasmi */
+/* 3D Do'kon rasmi (Kompakt o'lchamda) */
 .market-tile__store-wrap {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 6px;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-top: 2px;
+    margin-bottom: 4px;
+    height: 52px;
+    pointer-events: none;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .market-tile:hover .market-tile__store-wrap {
-    transform: scale(1.08) translateY(-2px);
+    transform: scale(1.05) translateY(-2px);
 }
 
 .market-tile__store-img {
-    width: 82px;
-    height: 68px;
+    width: 64px;
+    height: 50px;
     object-fit: contain;
-    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.65));
+    filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.65));
 }
 
 .market-tile__title {
     font-family: var(--font-heading);
-    font-size: 15.5px;
+    font-size: 13.5px;
     font-weight: 700;
     color: #FFFFFF;
     line-height: 1.25;
     letter-spacing: -0.2px;
-    margin-top: 4px;
-    margin-bottom: 8px;
+    margin-top: 1px;
+    margin-bottom: 6px;
     padding: 0 4px;
+    width: 100%;
     max-width: 100%;
-    word-break: break-word;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
+    box-sizing: border-box;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
     text-align: center;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
-/* Badgelar: Yonma-yon 1 qatorda (horizontal row) */
+/* Badgelar: Yonma-yon 1 qatorda (horizontal row, qochmaydi) */
 .market-tile__badges-row {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 4px;
     width: 100%;
-    flex-wrap: nowrap;
+    box-sizing: border-box;
+    padding: 0 2px;
 }
 
 .market-pill {
+    flex: 1 1 0;
+    min-width: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 3px 7px;
+    padding: 3px 2px;
     border-radius: 999px;
-    font-size: 10.5px;
+    font-size: 9.5px;
     font-weight: 600;
     letter-spacing: -0.1px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 52%;
+    text-align: center;
+    box-sizing: border-box;
 }
 
 .market-pill--shops {
@@ -2267,7 +2284,7 @@ button:disabled {
     border: 1px solid rgba(244, 63, 94, 0.45);
     color: #FDA4AF;
     font-weight: 700;
-    box-shadow: 0 2px 10px rgba(225, 29, 72, 0.25);
+    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25);
 }
 
 .market-pill--clean {
@@ -2275,113 +2292,135 @@ button:disabled {
     border: 1px solid rgba(52, 211, 153, 0.4);
     color: #6EE7B7;
     font-weight: 700;
-    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.22);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.22);
 }
 
-/* Action Sheet (Bozor amallari) */
-.action-sheet-card {
-    width: 100%;
-    max-width: 360px;
-    background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 24px;
-    padding: 20px 18px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    animation: actionSheetSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+/* Bozor amallari (Bottom sheet ichidagi zamonaviy menyu) */
+.market-sheet {
+    padding: 4px 0 10px 0;
 }
 
-@keyframes actionSheetSlideUp {
-    from { transform: translateY(20px) scale(0.96); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-}
-
-.action-sheet-header {
+.market-sheet__header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding-bottom: 12px;
+    gap: 14px;
+    padding-bottom: 14px;
+    margin-bottom: 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.action-sheet-icon {
+.market-sheet__icon {
     width: 44px;
     height: 44px;
     border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     background: rgba(56, 189, 248, 0.15);
     border: 1px solid rgba(56, 189, 248, 0.3);
     color: #38BDF8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
 }
 
-.action-sheet-title {
+.market-sheet__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.market-sheet__title {
     font-family: var(--font-heading);
     font-size: 16px;
     font-weight: 700;
     color: #FFFFFF;
-    line-height: 1.25;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.action-sheet-subtitle {
+.market-sheet__subtitle {
     font-size: 12px;
     color: #94A3B8;
     margin-top: 2px;
 }
 
-.action-sheet-buttons {
+.market-sheet__list {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.action-sheet-btn {
-    width: 100%;
-    padding: 12px 16px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #F8FAFC;
-    font-size: 14px;
-    font-weight: 600;
+.market-sheet-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    transition: all 0.18s ease;
-}
-
-.action-sheet-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.22);
-}
-
-.action-sheet-btn--danger {
-    color: #F87171;
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.25);
-}
-
-.action-sheet-btn--danger:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
-}
-
-.action-sheet-btn--cancel {
-    justify-content: center;
-    color: #94A3B8;
-    background: transparent;
-    border-color: transparent;
-    margin-top: 2px;
-}
-
-.action-sheet-btn--cancel:hover {
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 14px;
     background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: #F8FAFC;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s ease;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.market-sheet-item:hover,
+.market-sheet-item:active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.market-sheet-item--danger {
+    color: #FCA5A5;
+}
+
+.market-sheet-item--danger:hover,
+.market-sheet-item--danger:active {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.market-sheet-item__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(56, 189, 248, 0.15);
+    color: #38BDF8;
+}
+
+.market-sheet-item--danger .market-sheet-item__icon {
+    background: rgba(239, 68, 68, 0.18);
+    color: #F87171;
+}
+
+.market-sheet-item__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.market-sheet-item__title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.market-sheet-item__desc {
+    font-size: 11.5px;
+    color: #94A3B8;
+    margin-top: 1px;
+}
+
+.market-sheet-item__chevron {
+    color: #64748B;
+    flex-shrink: 0;
 }
 
 /* Standart bozor va do'kon kartalari uchun umumiy elementlar */

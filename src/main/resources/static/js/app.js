@@ -1447,15 +1447,36 @@ async function showMarketGroups() {
     }
 }
 
+function formatMarketTitle(str) {
+    if (!str) return '';
+    const trimmed = str.trim();
+    if (trimmed === trimmed.toUpperCase()) {
+        return trimmed.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+    return trimmed;
+}
+
+function getMarketTheme(name, index) {
+    const lower = (name || '').toLowerCase();
+    if (lower.includes('orzu')) return MARKET_THEMES[0]; // Firuza (Cyan)
+    if (lower.includes('eski')) return MARKET_THEMES[1]; // Zangori (Emerald)
+    if (lower.includes('yer') || lower.includes('qurg')) return MARKET_THEMES[2]; // Binafsha (Purple)
+    if (lower.includes('vagzal') || lower.includes('vokzal')) return MARKET_THEMES[3]; // Olovrang (Amber)
+    if (lower.includes('gezdi')) return MARKET_THEMES[4]; // Pushti (Rose Pink)
+    if (lower.includes('kimsan')) return MARKET_THEMES[5]; // Moviy (Royal Blue)
+    return MARKET_THEMES[index % MARKET_THEMES.length];
+}
+
 function renderMarketCardsHtml(groups) {
     if (!groups || groups.length === 0) {
         return '<div class="empty-state" style="padding:28px 0; text-align:center; color:#94A3B8;">Bozor topilmadi.</div>';
     }
 
     return `<div class="market-grid">` + groups.map((group, index) => {
-        const t = MARKET_THEMES[index % MARKET_THEMES.length];
+        const t = getMarketTheme(group.name, index);
         const count = Number(group.shopCount) || 0;
         const debt = Number(group.totalDebt) || 0;
+        const displayTitle = formatMarketTitle(group.name);
 
         let debtBadgeHtml = '';
         if (debt > 0) {
@@ -1476,13 +1497,17 @@ function renderMarketCardsHtml(groups) {
                 <div class="market-tile__inner">
                     <div class="market-tile__actions" onclick="event.stopPropagation()">
                         <button class="market-tile__menu-btn" onclick="showMarketGroupActions(${group.id}, '${escJs(group.name)}')" title="Bozor amallari" aria-label="Bozor amallari">
-                            ${Icons.moreVertical || '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg>'}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="12" cy="5" r="2.2"/>
+                                <circle cx="12" cy="12" r="2.2"/>
+                                <circle cx="12" cy="19" r="2.2"/>
+                            </svg>
                         </button>
                     </div>
                     <div class="market-tile__store-wrap">
                         <img class="market-tile__store-img" src="${t.icon}" alt="${escAttr(group.name)}" loading="eager">
                     </div>
-                    <div class="market-tile__title" title="${escAttr(group.name)}">${escHtml(group.name)}</div>
+                    <div class="market-tile__title" title="${escAttr(group.name)}">${escHtml(displayTitle)}</div>
                     <div class="market-tile__badges-row">
                         <span class="market-pill market-pill--shops">${count} ta do'kon</span>
                         ${debtBadgeHtml}
@@ -1507,70 +1532,59 @@ function filterMarketGroups() {
 }
 
 function showMarketGroupActions(id, name) {
-    let overlay = document.getElementById('marketActionSheet');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'marketActionSheet';
-        overlay.className = 'confirm-overlay';
-        document.body.appendChild(overlay);
-    }
+    const oldOverlay = document.getElementById('marketActionSheet');
+    if (oldOverlay) oldOverlay.remove();
 
-    overlay.innerHTML = `
-        <div class="confirm-backdrop" id="actionSheetBackdrop"></div>
-        <div class="action-sheet-card" onclick="event.stopPropagation()">
-            <div class="action-sheet-header">
-                <div class="action-sheet-icon">
-                    ${Icons.storeFront || Icons.market}
+    showBottomSheet(`
+        <div class="market-sheet">
+            <div class="market-sheet__header">
+                <div class="market-sheet__icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
                 </div>
-                <div>
-                    <div class="action-sheet-title">${escHtml(name)}</div>
-                    <div class="action-sheet-subtitle">Bozor toifasini boshqarish</div>
+                <div class="market-sheet__info">
+                    <div class="market-sheet__title">${escHtml(name)}</div>
+                    <div class="market-sheet__subtitle">Bozor toifasini boshqarish</div>
                 </div>
             </div>
-            <div class="action-sheet-buttons">
-                <button class="action-sheet-btn" id="actionSheetEditBtn">
-                    <span class="action-sheet-btn-icon">${Icons.edit}</span>
-                    <span>Bozor nomini tahrirlash</span>
+            
+            <div class="market-sheet__list">
+                <button class="market-sheet-item" onclick="closeBottomSheet(); showEditMarketGroupForm(${id}, '${escJs(name)}');">
+                    <div class="market-sheet-item__icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="market-sheet-item__content">
+                        <div class="market-sheet-item__title">Bozor nomini tahrirlash</div>
+                        <div class="market-sheet-item__desc">Nomini o'zgartirish yoki to'g'rilash</div>
+                    </div>
+                    <svg class="market-sheet-item__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
-                <button class="action-sheet-btn action-sheet-btn--danger" id="actionSheetDeleteBtn">
-                    <span class="action-sheet-btn-icon">${Icons.trash}</span>
-                    <span>Bozorni o'chirish</span>
-                </button>
-                <button class="action-sheet-btn action-sheet-btn--cancel" id="actionSheetCancelBtn">
-                    <span>Bekor qilish</span>
+
+                <button class="market-sheet-item market-sheet-item--danger" onclick="closeBottomSheet(); deleteMarketGroup(${id}, '${escJs(name)}');">
+                    <div class="market-sheet-item__icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </div>
+                    <div class="market-sheet-item__content">
+                        <div class="market-sheet-item__title">Bozorni o'chirish</div>
+                        <div class="market-sheet-item__desc">Toifani bazadan xavfsiz o'chirish</div>
+                    </div>
+                    <svg class="market-sheet-item__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
             </div>
+
+            <button class="btn btn--secondary btn--full" style="margin-top:14px; padding:12px; border-radius:14px; font-weight:700;" onclick="closeBottomSheet()">
+                Bekor qilish
+            </button>
         </div>
-    `;
-
-    const closeSheet = () => {
-        overlay.classList.remove('show');
-        overlay.classList.remove('active');
-    };
-
-    const backdrop = document.getElementById('actionSheetBackdrop');
-    if (backdrop) backdrop.onclick = closeSheet;
-    overlay.onclick = closeSheet;
-
-    const cancelBtn = document.getElementById('actionSheetCancelBtn');
-    if (cancelBtn) cancelBtn.onclick = closeSheet;
-
-    const editBtn = document.getElementById('actionSheetEditBtn');
-    if (editBtn) editBtn.onclick = () => {
-        closeSheet();
-        showEditMarketGroupForm(id, name);
-    };
-
-    const deleteBtn = document.getElementById('actionSheetDeleteBtn');
-    if (deleteBtn) deleteBtn.onclick = () => {
-        closeSheet();
-        deleteMarketGroup(id, name);
-    };
-
-    requestAnimationFrame(() => {
-        overlay.classList.add('show');
-        overlay.classList.add('active');
-    });
+    `);
 }
 
 // Boshlang'ich sahifa
