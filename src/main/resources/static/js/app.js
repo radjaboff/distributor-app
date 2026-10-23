@@ -1258,7 +1258,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.16) 100%)',
         avatarBorder: 'rgba(56, 189, 248, 0.45)',
         avatarColor: '#38BDF8',
-        icon: 'icons/store_1.png?v=61',
+        icon: 'icons/store_1.png?v=62',
         badgeBg: 'rgba(56, 189, 248, 0.12)',
         badgeBorder: 'rgba(56, 189, 248, 0.25)',
         badgeText: '#7DD3FC'
@@ -1274,7 +1274,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)',
         avatarBorder: 'rgba(52, 211, 153, 0.45)',
         avatarColor: '#34D399',
-        icon: 'icons/store_2.png?v=61',
+        icon: 'icons/store_2.png?v=62',
         badgeBg: 'rgba(52, 211, 153, 0.12)',
         badgeBorder: 'rgba(52, 211, 153, 0.25)',
         badgeText: '#6EE7B7'
@@ -1290,7 +1290,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(124, 58, 237, 0.16) 100%)',
         avatarBorder: 'rgba(168, 85, 247, 0.45)',
         avatarColor: '#C084FC',
-        icon: 'icons/store_3.png?v=61',
+        icon: 'icons/store_3.png?v=62',
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         badgeBorder: 'rgba(168, 85, 247, 0.25)',
         badgeText: '#D8B4FE'
@@ -1306,7 +1306,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(217, 119, 6, 0.16) 100%)',
         avatarBorder: 'rgba(251, 191, 36, 0.45)',
         avatarColor: '#FBBF24',
-        icon: 'icons/store_4.png?v=61',
+        icon: 'icons/store_4.png?v=62',
         badgeBg: 'rgba(251, 191, 36, 0.12)',
         badgeBorder: 'rgba(251, 191, 36, 0.25)',
         badgeText: '#FDE68A'
@@ -1322,7 +1322,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)',
         avatarBorder: 'rgba(244, 63, 94, 0.45)',
         avatarColor: '#FB7185',
-        icon: 'icons/store_5.png?v=61',
+        icon: 'icons/store_5.png?v=62',
         badgeBg: 'rgba(244, 63, 94, 0.12)',
         badgeBorder: 'rgba(244, 63, 94, 0.25)',
         badgeText: '#FDA4AF'
@@ -1338,12 +1338,26 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(79, 70, 229, 0.16) 100%)',
         avatarBorder: 'rgba(99, 102, 241, 0.45)',
         avatarColor: '#60A5FA',
-        icon: 'icons/store_6.png?v=61',
+        icon: 'icons/store_6.png?v=62',
         badgeBg: 'rgba(99, 102, 241, 0.12)',
         badgeBorder: 'rgba(99, 102, 241, 0.25)',
         badgeText: '#A5B4FC'
     }
 ];
+
+// 3D Bozor logotiplarini brauzer GPU xotirasiga oldindan yuklash (Instant paint, 0ms kechikish)
+const PRELOADED_MARKET_ICONS = MARKET_THEMES.map(theme => {
+    try {
+        const img = new Image();
+        img.src = theme.icon;
+        if (img.decode) {
+            img.decode().catch(() => {});
+        }
+        return img;
+    } catch (e) {
+        return null;
+    }
+});
 
 function getShopTheme(id, name) {
     let hash = 0;
@@ -1378,6 +1392,50 @@ function formatCompactDebt(num) {
 
 let allMarketGroupsList = [];
 
+// Bozorlar sahifasining butun HTMLini ekranga chizish
+function renderMarketGroupsView(groups) {
+    if (!groups || groups.length === 0) {
+        contentEl.innerHTML = `
+            <div class="empty-state" style="padding: 40px 16px; text-align: center;">
+                <div style="font-size: 44px; margin-bottom: 12px;">🏪</div>
+                <div style="font-size: 16px; font-weight: 700; color: #F8FAFC; margin-bottom: 6px;">Hali bozor qo'shilmagan</div>
+                <div style="font-size: 13px; color: #94A3B8; max-width: 280px; margin: 0 auto 20px auto; line-height: 1.5;">Pastdagi + tugmasi orqali yangi savdo bozori qo'shing.</div>
+                <button class="btn btn--primary" style="display: inline-flex; width: auto; padding: 11px 24px; gap: 8px; border-radius: 14px;" onclick="showAddMarketGroupForm()">
+                    ${Icons.plus} Yangi bozor qo'shish
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    const totalShops = groups.reduce((sum, g) => sum + (Number(g.shopCount) || 0), 0);
+
+    let html = `
+        <div class="market-top-bar">
+            <div class="market-summary-capsule">
+                <span>Jami: <strong>${groups.length} ta bozor</strong></span>
+                <span class="market-summary-sep">|</span>
+                <span><strong>${totalShops} ta do'kon</strong></span>
+            </div>
+        </div>
+    `;
+
+    if (groups.length >= 3) {
+        html += `
+            <div class="market-search-box">
+                <span class="market-search-icon">${Icons.search || '🔍'}</span>
+                <input type="text" class="market-search-field" id="marketSearchInput" placeholder="Bozor nomini qidirish..." oninput="filterMarketGroups()" autocomplete="off">
+            </div>
+        `;
+    }
+
+    html += `<div id="marketCardsContainer">`;
+    html += renderMarketCardsHtml(groups);
+    html += `</div>`;
+
+    contentEl.innerHTML = html;
+}
+
 // Toifalar (Bozorlar) ro'yxatini ko'rsatish
 async function showMarketGroups() {
     updateHeaderMeta('Bozorlar', "Savdo nuqtalari va do'konlar", 'PRO');
@@ -1385,65 +1443,37 @@ async function showMarketGroups() {
     fabBtn.style.display = 'flex';
     fabBtn.onclick = showAddMarketGroupForm;
 
-    contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    // 1. Agar avval yuklangan ro'yxat bo'lsa, uni DARHOL ekranga chiqaramiz (0ms kechikish, hech qanday yo'qolib qolish va spinnersiz!)
+    if (Array.isArray(allMarketGroupsList) && allMarketGroupsList.length > 0) {
+        renderMarketGroupsView(allMarketGroupsList);
+    } else {
+        contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    }
 
     try {
         const groups = await apiGet('/market-groups');
-        allMarketGroupsList = Array.isArray(groups) ? groups : [];
+        const freshList = Array.isArray(groups) ? groups : [];
+        const isChanged = JSON.stringify(freshList) !== JSON.stringify(allMarketGroupsList);
+        allMarketGroupsList = freshList;
 
-        if (allMarketGroupsList.length === 0) {
+        // Faqat ma'lumot haqiqatdan o'zgarganda yoki sahifa hali chizilmagan bo'lsagina qayta chizamiz
+        if (isChanged || !contentEl.querySelector('#marketCardsContainer')) {
+            renderMarketGroupsView(allMarketGroupsList);
+        }
+    } catch (err) {
+        if (!allMarketGroupsList || allMarketGroupsList.length === 0) {
             contentEl.innerHTML = `
-                <div class="empty-state" style="padding: 40px 16px; text-align: center;">
-                    <div style="font-size: 44px; margin-bottom: 12px;">🏪</div>
-                    <div style="font-size: 16px; font-weight: 700; color: #F8FAFC; margin-bottom: 6px;">Hali bozor qo'shilmagan</div>
-                    <div style="font-size: 13px; color: #94A3B8; max-width: 280px; margin: 0 auto 20px auto; line-height: 1.5;">Pastdagi + tugmasi orqali yangi savdo bozori qo'shing.</div>
-                    <button class="btn btn--primary" style="display: inline-flex; width: auto; padding: 11px 24px; gap: 8px; border-radius: 14px;" onclick="showAddMarketGroupForm()">
-                        ${Icons.plus} Yangi bozor qo'shish
+                <div class="empty-state" style="padding: 36px 16px; text-align:center;">
+                    <div style="font-size:36px; margin-bottom:8px;">📡</div>
+                    <div style="font-size:15px; font-weight:700; color:#F87171; margin-bottom:6px;">Ulanishda xatolik</div>
+                    <div style="font-size:13px; color:#94A3B8; max-width:320px; margin:0 auto 16px auto; line-height:1.5;">${escHtml(err.message)}</div>
+                    <button class="btn btn--secondary" style="padding:10px 22px; font-size:13px; font-weight:700; border-radius:12px; display:inline-flex; align-items:center; gap:6px;" onclick="showMarketGroups()">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        <span>Qayta urinish</span>
                     </button>
                 </div>
             `;
-            return;
         }
-
-        const totalShops = allMarketGroupsList.reduce((sum, g) => sum + (Number(g.shopCount) || 0), 0);
-
-        let html = `
-            <div class="market-top-bar">
-                <div class="market-summary-capsule">
-                    <span>Jami: <strong>${allMarketGroupsList.length} ta bozor</strong></span>
-                    <span class="market-summary-sep">|</span>
-                    <span><strong>${totalShops} ta do'kon</strong></span>
-                </div>
-            </div>
-        `;
-
-        if (allMarketGroupsList.length >= 3) {
-            html += `
-                <div class="market-search-box">
-                    <span class="market-search-icon">${Icons.search || '🔍'}</span>
-                    <input type="text" class="market-search-field" id="marketSearchInput" placeholder="Bozor nomini qidirish..." oninput="filterMarketGroups()" autocomplete="off">
-                </div>
-            `;
-        }
-
-        html += `<div id="marketCardsContainer">`;
-        html += renderMarketCardsHtml(allMarketGroupsList);
-        html += `</div>`;
-
-        contentEl.innerHTML = html;
-
-    } catch (err) {
-        contentEl.innerHTML = `
-            <div class="empty-state" style="padding: 36px 16px; text-align:center;">
-                <div style="font-size:36px; margin-bottom:8px;">📡</div>
-                <div style="font-size:15px; font-weight:700; color:#F87171; margin-bottom:6px;">Ulanishda xatolik</div>
-                <div style="font-size:13px; color:#94A3B8; max-width:320px; margin:0 auto 16px auto; line-height:1.5;">${escHtml(err.message)}</div>
-                <button class="btn btn--secondary" style="padding:10px 22px; font-size:13px; font-weight:700; border-radius:12px; display:inline-flex; align-items:center; gap:6px;" onclick="showMarketGroups()">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    <span>Qayta urinish</span>
-                </button>
-            </div>
-        `;
     }
 }
 
