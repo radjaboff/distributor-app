@@ -2215,7 +2215,7 @@ button:disabled {
     justify-content: center;
     margin-top: 2px;
     margin-bottom: 4px;
-    height: 56px;
+    height: 60px;
     pointer-events: none;
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -2225,8 +2225,8 @@ button:disabled {
 }
 
 .market-tile__store-img {
-    width: 68px;
-    height: 54px;
+    width: 72px;
+    height: 58px;
     object-fit: contain;
     filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.65));
 }

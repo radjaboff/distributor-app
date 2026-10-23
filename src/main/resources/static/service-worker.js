@@ -1,12 +1,18 @@
-const CACHE_NAME = 'distributor-app-v60';
+const CACHE_NAME = 'distributor-app-v61';
 const urlsToCache = [
     '/',
     '/index.html',
-    '/css/style.css?v=60',
-    '/js/app.js?v=60',
+    '/css/style.css?v=61',
+    '/js/app.js?v=61',
     '/manifest.json',
     '/icons/icon-v2-192.png',
     '/icons/icon-v2-512.png',
+    '/icons/store_1.png?v=61',
+    '/icons/store_2.png?v=61',
+    '/icons/store_3.png?v=61',
+    '/icons/store_4.png?v=61',
+    '/icons/store_5.png?v=61',
+    '/icons/store_6.png?v=61',
     '/icons/store_1.png',
     '/icons/store_2.png',
     '/icons/store_3.png',

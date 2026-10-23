@@ -1258,7 +1258,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.16) 100%)',
         avatarBorder: 'rgba(56, 189, 248, 0.45)',
         avatarColor: '#38BDF8',
-        icon: 'icons/store_1.png',
+        icon: 'icons/store_1.png?v=61',
         badgeBg: 'rgba(56, 189, 248, 0.12)',
         badgeBorder: 'rgba(56, 189, 248, 0.25)',
         badgeText: '#7DD3FC'
@@ -1274,7 +1274,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)',
         avatarBorder: 'rgba(52, 211, 153, 0.45)',
         avatarColor: '#34D399',
-        icon: 'icons/store_2.png',
+        icon: 'icons/store_2.png?v=61',
         badgeBg: 'rgba(52, 211, 153, 0.12)',
         badgeBorder: 'rgba(52, 211, 153, 0.25)',
         badgeText: '#6EE7B7'
@@ -1290,7 +1290,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(124, 58, 237, 0.16) 100%)',
         avatarBorder: 'rgba(168, 85, 247, 0.45)',
         avatarColor: '#C084FC',
-        icon: 'icons/store_3.png',
+        icon: 'icons/store_3.png?v=61',
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         badgeBorder: 'rgba(168, 85, 247, 0.25)',
         badgeText: '#D8B4FE'
@@ -1306,7 +1306,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(217, 119, 6, 0.16) 100%)',
         avatarBorder: 'rgba(251, 191, 36, 0.45)',
         avatarColor: '#FBBF24',
-        icon: 'icons/store_4.png',
+        icon: 'icons/store_4.png?v=61',
         badgeBg: 'rgba(251, 191, 36, 0.12)',
         badgeBorder: 'rgba(251, 191, 36, 0.25)',
         badgeText: '#FDE68A'
@@ -1322,7 +1322,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)',
         avatarBorder: 'rgba(244, 63, 94, 0.45)',
         avatarColor: '#FB7185',
-        icon: 'icons/store_5.png',
+        icon: 'icons/store_5.png?v=61',
         badgeBg: 'rgba(244, 63, 94, 0.12)',
         badgeBorder: 'rgba(244, 63, 94, 0.25)',
         badgeText: '#FDA4AF'
@@ -1338,7 +1338,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(79, 70, 229, 0.16) 100%)',
         avatarBorder: 'rgba(99, 102, 241, 0.45)',
         avatarColor: '#60A5FA',
-        icon: 'icons/store_6.png',
+        icon: 'icons/store_6.png?v=61',
         badgeBg: 'rgba(99, 102, 241, 0.12)',
         badgeBorder: 'rgba(99, 102, 241, 0.25)',
         badgeText: '#A5B4FC'
