@@ -1258,7 +1258,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.16) 100%)',
         avatarBorder: 'rgba(56, 189, 248, 0.45)',
         avatarColor: '#38BDF8',
-        icon: 'icons/store_1.png?v=62',
+        icon: 'icons/store_1.png?v=63',
         badgeBg: 'rgba(56, 189, 248, 0.12)',
         badgeBorder: 'rgba(56, 189, 248, 0.25)',
         badgeText: '#7DD3FC'
@@ -1274,7 +1274,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)',
         avatarBorder: 'rgba(52, 211, 153, 0.45)',
         avatarColor: '#34D399',
-        icon: 'icons/store_2.png?v=62',
+        icon: 'icons/store_2.png?v=63',
         badgeBg: 'rgba(52, 211, 153, 0.12)',
         badgeBorder: 'rgba(52, 211, 153, 0.25)',
         badgeText: '#6EE7B7'
@@ -1290,7 +1290,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(124, 58, 237, 0.16) 100%)',
         avatarBorder: 'rgba(168, 85, 247, 0.45)',
         avatarColor: '#C084FC',
-        icon: 'icons/store_3.png?v=62',
+        icon: 'icons/store_3.png?v=63',
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         badgeBorder: 'rgba(168, 85, 247, 0.25)',
         badgeText: '#D8B4FE'
@@ -1306,7 +1306,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(217, 119, 6, 0.16) 100%)',
         avatarBorder: 'rgba(251, 191, 36, 0.45)',
         avatarColor: '#FBBF24',
-        icon: 'icons/store_4.png?v=62',
+        icon: 'icons/store_4.png?v=63',
         badgeBg: 'rgba(251, 191, 36, 0.12)',
         badgeBorder: 'rgba(251, 191, 36, 0.25)',
         badgeText: '#FDE68A'
@@ -1322,7 +1322,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)',
         avatarBorder: 'rgba(244, 63, 94, 0.45)',
         avatarColor: '#FB7185',
-        icon: 'icons/store_5.png?v=62',
+        icon: 'icons/store_5.png?v=63',
         badgeBg: 'rgba(244, 63, 94, 0.12)',
         badgeBorder: 'rgba(244, 63, 94, 0.25)',
         badgeText: '#FDA4AF'
@@ -1338,7 +1338,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(79, 70, 229, 0.16) 100%)',
         avatarBorder: 'rgba(99, 102, 241, 0.45)',
         avatarColor: '#60A5FA',
-        icon: 'icons/store_6.png?v=62',
+        icon: 'icons/store_6.png?v=63',
         badgeBg: 'rgba(99, 102, 241, 0.12)',
         badgeBorder: 'rgba(99, 102, 241, 0.25)',
         badgeText: '#A5B4FC'
@@ -1680,6 +1680,39 @@ async function submitMarketGroup() {
     }
 }
 
+const shopsCacheByGroup = {};
+
+function renderShopsView(shops) {
+    const totalMarketDebt = shops.reduce((sum, s) => sum + (Number(s.currentDebt) || 0), 0);
+
+    contentEl.innerHTML = `
+        <div class="market-summary-bar">
+            <div class="market-summary-item">
+                <span>🏪</span>
+                <span>Do'konlar: <strong>${shops.length} ta</strong></span>
+            </div>
+            <div class="market-summary-divider"></div>
+            <div class="market-summary-item">
+                <span>💳</span>
+                <span>${totalMarketDebt > 0 ? `Qarz: <strong style="color:#F87171;">${formatMoney(totalMarketDebt)}</strong>` : `<strong style="color:#34D399;">Qarz yo'q ✓</strong>`}</span>
+            </div>
+        </div>
+
+        <div class="form-group" style="padding-bottom:6px;">
+            <input type="text" class="form-input" id="shopSearchInput" placeholder="Do'kon yoki egasini qidirish..." oninput="filterShops()">
+        </div>
+        
+        <div class="sort-bar">
+            <button class="sort-btn ${shopSortMode === 'none' ? 'active' : ''}" id="sortNone" onclick="setShopSort('none')">Hammasi</button>
+            <button class="sort-btn ${shopSortMode === 'debtDesc' ? 'active' : ''}" id="sortDebt" onclick="setShopSort('debtDesc')">${Icons.sortDebt} Qarz bo'yicha</button>
+            <button class="sort-btn ${shopSortMode === 'nameAsc' ? 'active' : ''}" id="sortName" onclick="setShopSort('nameAsc')">${Icons.sortAlpha} Nomi (A-Z)</button>
+        </div>
+
+        <div id="shopsListContainer"></div>
+    `;
+    filterShops();
+}
+
 // Do'konlar ro'yxatini ko'rsatish
 async function showShops(groupId, groupName) {
     updateHeaderMeta(groupName, "Bozor do'konlari ro'yxati", 'BOZOR');
@@ -1689,43 +1722,28 @@ async function showShops(groupId, groupName) {
     fabBtn.style.display = 'flex';
     fabBtn.onclick = () => showAddShopForm(groupId);
 
-    contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    // 1. Agar ushbu bozor do'konlari avval yuklangan bo'lsa, DARHOL chiqaramiz (0ms!)
+    if (Array.isArray(shopsCacheByGroup[groupId]) && shopsCacheByGroup[groupId].length > 0) {
+        allShopsInGroup = shopsCacheByGroup[groupId];
+        renderShopsView(allShopsInGroup);
+    } else {
+        contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    }
 
     try {
-        allShopsInGroup = await apiGet(`/shops?groupId=${groupId}`);
-        allShopsInGroup = Array.isArray(allShopsInGroup) ? allShopsInGroup : [];
+        const shops = await apiGet(`/shops?groupId=${groupId}`);
+        const freshList = Array.isArray(shops) ? shops : [];
+        const isChanged = JSON.stringify(freshList) !== JSON.stringify(shopsCacheByGroup[groupId]);
+        shopsCacheByGroup[groupId] = freshList;
+        allShopsInGroup = freshList;
 
-        const totalMarketDebt = allShopsInGroup.reduce((sum, s) => sum + (Number(s.currentDebt) || 0), 0);
-
-        contentEl.innerHTML = `
-            <div class="market-summary-bar">
-                <div class="market-summary-item">
-                    <span>🏪</span>
-                    <span>Do'konlar: <strong>${allShopsInGroup.length} ta</strong></span>
-                </div>
-                <div class="market-summary-divider"></div>
-                <div class="market-summary-item">
-                    <span>💳</span>
-                    <span>${totalMarketDebt > 0 ? `Qarz: <strong style="color:#F87171;">${formatMoney(totalMarketDebt)}</strong>` : `<strong style="color:#34D399;">Qarz yo'q ✓</strong>`}</span>
-                </div>
-            </div>
-
-            <div class="form-group" style="padding-bottom:6px;">
-                <input type="text" class="form-input" id="shopSearchInput" placeholder="Do'kon yoki egasini qidirish..." oninput="filterShops()">
-            </div>
-            
-            <div class="sort-bar">
-                <button class="sort-btn ${shopSortMode === 'none' ? 'active' : ''}" id="sortNone" onclick="setShopSort('none')">Hammasi</button>
-                <button class="sort-btn ${shopSortMode === 'debtDesc' ? 'active' : ''}" id="sortDebt" onclick="setShopSort('debtDesc')">${Icons.sortDebt} Qarz bo'yicha</button>
-                <button class="sort-btn ${shopSortMode === 'nameAsc' ? 'active' : ''}" id="sortName" onclick="setShopSort('nameAsc')">${Icons.sortAlpha} Nomi (A-Z)</button>
-            </div>
-
-            <div id="shopsListContainer"></div>
-        `;
-        filterShops();
-
+        if (isChanged || !contentEl.querySelector('#shopsListContainer')) {
+            renderShopsView(allShopsInGroup);
+        }
     } catch (err) {
-        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+        if (!allShopsInGroup || allShopsInGroup.length === 0) {
+            contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+        }
     }
 }
 
@@ -3148,6 +3166,23 @@ function goToTab(tab) {
     }
 }
 
+function renderProductsView(products) {
+    contentEl.innerHTML = `
+        <div class="market-summary-bar">
+            <div class="market-summary-item">
+                <span>📦</span>
+                <span>Jami: <strong>${products.length} turdagi tovar</strong></span>
+            </div>
+        </div>
+
+        <div class="form-group" style="padding-bottom:8px;">
+            <input type="text" class="form-input" id="productSearchInput" placeholder="Mahsulot nomini qidirish..." oninput="filterProducts()">
+        </div>
+        <div id="productsListContainer"></div>
+    `;
+    renderProductRows(products);
+}
+
 // Mahsulotlar ro'yxati
 async function showProducts() {
     updateHeaderMeta('Mahsulotlar', 'Mahsulotlar katalogi', 'KATALOG');
@@ -3155,29 +3190,26 @@ async function showProducts() {
     fabBtn.style.display = 'flex';
     fabBtn.onclick = showAddProductForm;
 
-    contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    // 1. Agar avval yuklangan ro'yxat bo'lsa, DARHOL chiqaramiz (0ms, spinnersiz!)
+    if (Array.isArray(allProductsList) && allProductsList.length > 0) {
+        renderProductsView(allProductsList);
+    } else {
+        contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    }
 
     try {
-        allProductsList = await apiGet('/products');
-        allProductsList = Array.isArray(allProductsList) ? allProductsList : [];
+        const products = await apiGet('/products');
+        const freshList = Array.isArray(products) ? products : [];
+        const isChanged = JSON.stringify(freshList) !== JSON.stringify(allProductsList);
+        allProductsList = freshList;
 
-        contentEl.innerHTML = `
-            <div class="market-summary-bar">
-                <div class="market-summary-item">
-                    <span>📦</span>
-                    <span>Jami: <strong>${allProductsList.length} turdagi tovar</strong></span>
-                </div>
-            </div>
-
-            <div class="form-group" style="padding-bottom:8px;">
-                <input type="text" class="form-input" id="productSearchInput" placeholder="Mahsulot nomini qidirish..." oninput="filterProducts()">
-            </div>
-            <div id="productsListContainer"></div>
-        `;
-        renderProductRows(allProductsList);
-
+        if (isChanged || !contentEl.querySelector('#productsListContainer')) {
+            renderProductsView(allProductsList);
+        }
     } catch (err) {
-        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+        if (!allProductsList || allProductsList.length === 0) {
+            contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+        }
     }
 }
 
@@ -3351,14 +3383,23 @@ function switchDashboardTab(tab) {
     renderDashboardTabs();
 }
 
+let cachedDashboardSummary = null;
+let cachedOverdueShops = null;
+
 async function loadDashboardTabContent() {
     const el = document.getElementById('dashboardContent');
+    if (!el) return;
     try {
         if (dashboardTab === 'umumiy') {
+            if (cachedDashboardSummary && cachedOverdueShops) {
+                el.innerHTML = renderSummaryHtml(cachedDashboardSummary, cachedOverdueShops);
+            }
             const [summary, overdueShops] = await Promise.all([
                 apiGet('/dashboard/summary'),
                 apiGet('/shops/overdue?days=14')
             ]);
+            cachedDashboardSummary = summary;
+            cachedOverdueShops = overdueShops;
             el.innerHTML = renderSummaryHtml(summary, overdueShops);
         } else if (dashboardTab === 'kunlik') {
             renderDailyPicker(el);
@@ -3368,7 +3409,9 @@ async function loadDashboardTabContent() {
             renderRangePicker(el);
         }
     } catch (err) {
-        el.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+        if (!cachedDashboardSummary) {
+            el.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+        }
     }
 }
 
@@ -4651,6 +4694,51 @@ function formatSupplyMoney(amount, category) {
     return formatMoney(amount);
 }
 
+let lastLoadedSupplyCategory = 'SHAKAR';
+
+function renderSuppliersView(suppliers, category) {
+    const isOil = category === 'YOG';
+    const totalDebt = suppliers.reduce((sum, s) => sum + (Number(s.currentDebt) || 0), 0);
+
+    let html = `
+        <!-- Kategoriya tablari (Shakar & Yog') -->
+        <div class="tab-bar" style="margin-bottom:14px;">
+            <button type="button" class="tab-btn ${category === 'SHAKAR' ? 'active' : ''}" onclick="showSuppliers('SHAKAR')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                <span>🍚</span>
+                <span>Shakar</span>
+            </button>
+            <button type="button" class="tab-btn ${category === 'YOG' ? 'active' : ''}" onclick="showSuppliers('YOG')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                <span>🛢️</span>
+                <span>Yog'</span>
+                <span style="font-size:10px; background:rgba(16,185,129,0.22); color:#34D399; border:1px solid rgba(16,185,129,0.35); padding:1px 6px; border-radius:6px; font-weight:700;">$ USD</span>
+            </button>
+        </div>
+
+        <!-- Sarhisob paneli -->
+        <div class="market-summary-bar" style="justify-content:space-between; padding:10px 16px;">
+            <div class="market-summary-item" style="font-size:12.5px;">
+                <span>🏭</span>
+                <span>Jami: <strong>${suppliers.length} ta ${isOil ? 'zavod' : 'birja'}</strong></span>
+            </div>
+            <div class="market-summary-divider"></div>
+            <div class="market-summary-item" style="font-size:12.5px;">
+                <span>💳</span>
+                <span>Qarzimiz: <strong style="color:${totalDebt > 0 ? '#FB7185' : '#34D399'}; font-variant-numeric:tabular-nums; white-space:nowrap;">${isOil ? formatDollar(totalDebt) : formatMoney(totalDebt)}</strong></span>
+            </div>
+        </div>
+
+        <!-- Qidiruv maydoni -->
+        <div class="form-group" style="padding-bottom:10px;">
+            <input type="text" class="form-input" id="supplierSearchInput" placeholder="${isOil ? 'Yog\' zavodi yoki ta\'minotchi nomini qidirish...' : 'Birja yoki ta\'minotchi nomini qidirish...'}" oninput="filterSuppliers()">
+        </div>
+
+        <div id="suppliersListContainer"></div>
+    `;
+
+    contentEl.innerHTML = html;
+    renderSupplierRows(suppliers);
+}
+
 async function showSuppliers(category = 'SHAKAR') {
     currentSupplyCategory = category;
     const isOil = category === 'YOG';
@@ -4663,54 +4751,27 @@ async function showSuppliers(category = 'SHAKAR') {
     fabBtn.style.display = 'flex';
     fabBtn.onclick = () => showAddSupplierForm();
 
-    contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    // 1. Agar avval yuklangan ro'yxat va kategoriya mos kelsa, DARHOL chizamiz (0ms!)
+    if (Array.isArray(allSuppliersList) && allSuppliersList.length > 0 && lastLoadedSupplyCategory === category) {
+        renderSuppliersView(allSuppliersList, category);
+    } else {
+        contentEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    }
 
     try {
         const suppliers = await apiGet('/suppliers?category=' + encodeURIComponent(category));
-        allSuppliersList = Array.isArray(suppliers) ? suppliers : [];
+        const freshList = Array.isArray(suppliers) ? suppliers : [];
+        const isChanged = JSON.stringify(freshList) !== JSON.stringify(allSuppliersList) || lastLoadedSupplyCategory !== category;
+        allSuppliersList = freshList;
+        lastLoadedSupplyCategory = category;
 
-        const totalDebt = allSuppliersList.reduce((sum, s) => sum + (Number(s.currentDebt) || 0), 0);
-
-        let html = `
-            <!-- Kategoriya tablari (Shakar & Yog') -->
-            <div class="tab-bar" style="margin-bottom:14px;">
-                <button type="button" class="tab-btn ${currentSupplyCategory === 'SHAKAR' ? 'active' : ''}" onclick="showSuppliers('SHAKAR')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                    <span>🍚</span>
-                    <span>Shakar</span>
-                </button>
-                <button type="button" class="tab-btn ${currentSupplyCategory === 'YOG' ? 'active' : ''}" onclick="showSuppliers('YOG')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                    <span>🛢️</span>
-                    <span>Yog'</span>
-                    <span style="font-size:10px; background:rgba(16,185,129,0.22); color:#34D399; border:1px solid rgba(16,185,129,0.35); padding:1px 6px; border-radius:6px; font-weight:700;">$ USD</span>
-                </button>
-            </div>
-
-            <!-- Sarhisob paneli -->
-            <div class="market-summary-bar" style="justify-content:space-between; padding:10px 16px;">
-                <div class="market-summary-item" style="font-size:12.5px;">
-                    <span>🏭</span>
-                    <span>Jami: <strong>${allSuppliersList.length} ta ${isOil ? 'zavod' : 'birja'}</strong></span>
-                </div>
-                <div class="market-summary-divider"></div>
-                <div class="market-summary-item" style="font-size:12.5px;">
-                    <span>💳</span>
-                    <span>Qarzimiz: <strong style="color:${totalDebt > 0 ? '#FB7185' : '#34D399'}; font-variant-numeric:tabular-nums; white-space:nowrap;">${isOil ? formatDollar(totalDebt) : formatMoney(totalDebt)}</strong></span>
-                </div>
-            </div>
-
-            <!-- Qidiruv maydoni -->
-            <div class="form-group" style="padding-bottom:10px;">
-                <input type="text" class="form-input" id="supplierSearchInput" placeholder="${isOil ? 'Yog\' zavodi yoki ta\'minotchi nomini qidirish...' : 'Birja yoki ta\'minotchi nomini qidirish...'}" oninput="filterSuppliers()">
-            </div>
-
-            <div id="suppliersListContainer"></div>
-        `;
-
-        contentEl.innerHTML = html;
-        renderSupplierRows(allSuppliersList);
-
+        if (isChanged || !contentEl.querySelector('#suppliersListContainer')) {
+            renderSuppliersView(allSuppliersList, category);
+        }
     } catch (err) {
-        contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+        if (!allSuppliersList || allSuppliersList.length === 0) {
+            contentEl.innerHTML = `<div class="empty-state">Xatolik: ${escHtml(err.message)}</div>`;
+        }
     }
 }
 
