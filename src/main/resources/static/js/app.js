@@ -1258,7 +1258,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.16) 100%)',
         avatarBorder: 'rgba(56, 189, 248, 0.45)',
         avatarColor: '#38BDF8',
-        icon: 'icons/store_1.png?v=64',
+        icon: 'icons/store_1.png?v=65',
         badgeBg: 'rgba(56, 189, 248, 0.12)',
         badgeBorder: 'rgba(56, 189, 248, 0.25)',
         badgeText: '#7DD3FC'
@@ -1274,7 +1274,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)',
         avatarBorder: 'rgba(52, 211, 153, 0.45)',
         avatarColor: '#34D399',
-        icon: 'icons/store_2.png?v=64',
+        icon: 'icons/store_2.png?v=65',
         badgeBg: 'rgba(52, 211, 153, 0.12)',
         badgeBorder: 'rgba(52, 211, 153, 0.25)',
         badgeText: '#6EE7B7'
@@ -1290,7 +1290,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(124, 58, 237, 0.16) 100%)',
         avatarBorder: 'rgba(168, 85, 247, 0.45)',
         avatarColor: '#C084FC',
-        icon: 'icons/store_3.png?v=64',
+        icon: 'icons/store_3.png?v=65',
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         badgeBorder: 'rgba(168, 85, 247, 0.25)',
         badgeText: '#D8B4FE'
@@ -1306,7 +1306,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(217, 119, 6, 0.16) 100%)',
         avatarBorder: 'rgba(251, 191, 36, 0.45)',
         avatarColor: '#FBBF24',
-        icon: 'icons/store_4.png?v=64',
+        icon: 'icons/store_4.png?v=65',
         badgeBg: 'rgba(251, 191, 36, 0.12)',
         badgeBorder: 'rgba(251, 191, 36, 0.25)',
         badgeText: '#FDE68A'
@@ -1322,7 +1322,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)',
         avatarBorder: 'rgba(244, 63, 94, 0.45)',
         avatarColor: '#FB7185',
-        icon: 'icons/store_5.png?v=64',
+        icon: 'icons/store_5.png?v=65',
         badgeBg: 'rgba(244, 63, 94, 0.12)',
         badgeBorder: 'rgba(244, 63, 94, 0.25)',
         badgeText: '#FDA4AF'
@@ -1338,7 +1338,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(79, 70, 229, 0.16) 100%)',
         avatarBorder: 'rgba(99, 102, 241, 0.45)',
         avatarColor: '#60A5FA',
-        icon: 'icons/store_6.png?v=64',
+        icon: 'icons/store_6.png?v=65',
         badgeBg: 'rgba(99, 102, 241, 0.12)',
         badgeBorder: 'rgba(99, 102, 241, 0.25)',
         badgeText: '#A5B4FC'
@@ -1359,7 +1359,7 @@ const PRELOADED_MARKET_ICONS = MARKET_THEMES.map(theme => {
     }
 });
 
-const PRELOADED_PRODUCT_ICONS = ['icons/product_oil.png?v=64', 'icons/product_sugar.png?v=64'].map(src => {
+const PRELOADED_PRODUCT_ICONS = ['icons/product_oil.png?v=65', 'icons/product_sugar.png?v=65'].map(src => {
     try {
         const img = new Image();
         img.src = src;
@@ -3193,7 +3193,7 @@ function getProductThemeAndIcon(p) {
         return {
             type: 'sugar',
             categoryName: 'Shakar',
-            icon: 'icons/product_sugar.png?v=64',
+            icon: 'icons/product_sugar.png?v=65',
             border: '#06B6D4',
             borderHover: '#22D3EE',
             innerBorder: 'rgba(6, 182, 212, 0.65)',
@@ -3208,7 +3208,7 @@ function getProductThemeAndIcon(p) {
         return {
             type: 'oil',
             categoryName: "Yog'",
-            icon: 'icons/product_oil.png?v=64',
+            icon: 'icons/product_oil.png?v=65',
             border: '#F59E0B',
             borderHover: '#FBBF24',
             innerBorder: 'rgba(245, 158, 11, 0.65)',
@@ -3316,16 +3316,11 @@ function renderProductRows(products) {
         return;
     }
 
-    container.innerHTML = `<div class="market-grid">` + products.map((p, index) => {
+    container.innerHTML = `<div class="product-grid">` + products.map((p) => {
         const t = getProductThemeAndIcon(p);
-        const capacity = getProductCapacityBadge(p);
-        const price = Number(p.sellPrice) || 0;
-        const priceHtml = price > 0
-            ? `<span class="market-pill" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#E2E8F0; font-weight:700;">${formatMoney(price)}</span>`
-            : `<span class="market-pill" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#94A3B8;">${t.categoryName}</span>`;
 
         return `
-            <div class="market-tile" style="
+            <div class="product-tile" style="
                 --tile-border: ${t.border};
                 --tile-border-hover: ${t.borderHover};
                 --tile-inner-border: ${t.innerBorder};
@@ -3333,10 +3328,10 @@ function renderProductRows(products) {
                 --tile-glow-hover: ${t.glowHover};
                 --tile-radial-glow: ${t.radialGlow};
             " onclick="showEditProductForm(${p.id})">
-                <div class="market-tile__inner">
-                    <div class="market-tile__actions" onclick="event.stopPropagation()">
-                        <button class="market-tile__menu-btn" onclick="showProductActions(${p.id}, '${escJs(p.name)}')" title="Mahsulot amallari" aria-label="Mahsulot amallari">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <div class="product-tile__inner">
+                    <div class="product-tile__actions" onclick="event.stopPropagation()">
+                        <button class="product-tile__menu-btn" onclick="showProductActions(${p.id}, '${escJs(p.name)}')" title="Mahsulot amallari" aria-label="Mahsulot amallari">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                                 <circle cx="12" cy="5" r="2.2"/>
                                 <circle cx="12" cy="12" r="2.2"/>
                                 <circle cx="12" cy="19" r="2.2"/>
@@ -3346,14 +3341,8 @@ function renderProductRows(products) {
                     <div class="product-tile__icon-wrap">
                         <img class="product-tile__icon-img" src="${t.icon}" alt="${escAttr(p.name)}" loading="eager">
                     </div>
-                    <div class="market-tile__title" title="${escAttr(p.name)}" style="font-size:13.5px; font-weight:700; line-height:1.25; margin-bottom:6px; min-height:34px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                    <div class="product-tile__title" title="${escAttr(p.name)}">
                         ${escHtml(p.name)}
-                    </div>
-                    <div class="market-tile__badges-row" style="justify-content:center; gap:6px;">
-                        <span class="market-pill" style="background:${t.badgeBg}; border:1px solid ${t.badgeBorder}; color:${t.badgeText}; font-weight:700;">
-                            ${capacity}
-                        </span>
-                        ${priceHtml}
                     </div>
                 </div>
             </div>
