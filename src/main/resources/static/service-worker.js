@@ -1,24 +1,28 @@
-const CACHE_NAME = 'distributor-app-v63';
+const CACHE_NAME = 'distributor-app-v64';
 const urlsToCache = [
     '/',
     '/index.html',
-    '/css/style.css?v=63',
-    '/js/app.js?v=63',
+    '/css/style.css?v=64',
+    '/js/app.js?v=64',
     '/manifest.json',
     '/icons/icon-v2-192.png',
     '/icons/icon-v2-512.png',
-    '/icons/store_1.png?v=63',
-    '/icons/store_2.png?v=63',
-    '/icons/store_3.png?v=63',
-    '/icons/store_4.png?v=63',
-    '/icons/store_5.png?v=63',
-    '/icons/store_6.png?v=63',
+    '/icons/store_1.png?v=64',
+    '/icons/store_2.png?v=64',
+    '/icons/store_3.png?v=64',
+    '/icons/store_4.png?v=64',
+    '/icons/store_5.png?v=64',
+    '/icons/store_6.png?v=64',
     '/icons/store_1.png',
     '/icons/store_2.png',
     '/icons/store_3.png',
     '/icons/store_4.png',
     '/icons/store_5.png',
-    '/icons/store_6.png'
+    '/icons/store_6.png',
+    '/icons/product_oil.png?v=64',
+    '/icons/product_sugar.png?v=64',
+    '/icons/product_oil.png',
+    '/icons/product_sugar.png'
 ];
 
 self.addEventListener('install', (event) => {

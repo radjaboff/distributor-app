@@ -2958,3 +2958,66 @@ button:disabled {
 
 
 
+/* ========================================================
+   3D MAHSULOTLAR GRID VA ICONFON (Variant A - 2-Ustunli)
+   ======================================================== */
+
+.product-tile__icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    margin-bottom: 6px;
+    height: 60px;
+    pointer-events: none;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.market-tile:hover .product-tile__icon-wrap {
+    transform: scale(1.08) translateY(-2px);
+}
+
+.product-tile__icon-img {
+    width: 58px;
+    height: 58px;
+    object-fit: contain;
+    border-radius: 13px;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.65));
+}
+
+/* Mahsulotlar toifa filtri (Category Tabs) */
+.prod-cat-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 2px 4px 2px;
+}
+.prod-cat-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.prod-cat-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    background: rgba(15, 23, 42, 0.7);
+    color: #94A3B8;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    white-space: nowrap;
+    text-align: center;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.prod-cat-btn.active {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(217, 119, 6, 0.3));
+    color: #FDE68A;
+    border-color: rgba(245, 158, 11, 0.5);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}

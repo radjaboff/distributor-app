@@ -1258,7 +1258,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.16) 100%)',
         avatarBorder: 'rgba(56, 189, 248, 0.45)',
         avatarColor: '#38BDF8',
-        icon: 'icons/store_1.png?v=63',
+        icon: 'icons/store_1.png?v=64',
         badgeBg: 'rgba(56, 189, 248, 0.12)',
         badgeBorder: 'rgba(56, 189, 248, 0.25)',
         badgeText: '#7DD3FC'
@@ -1274,7 +1274,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)',
         avatarBorder: 'rgba(52, 211, 153, 0.45)',
         avatarColor: '#34D399',
-        icon: 'icons/store_2.png?v=63',
+        icon: 'icons/store_2.png?v=64',
         badgeBg: 'rgba(52, 211, 153, 0.12)',
         badgeBorder: 'rgba(52, 211, 153, 0.25)',
         badgeText: '#6EE7B7'
@@ -1290,7 +1290,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(124, 58, 237, 0.16) 100%)',
         avatarBorder: 'rgba(168, 85, 247, 0.45)',
         avatarColor: '#C084FC',
-        icon: 'icons/store_3.png?v=63',
+        icon: 'icons/store_3.png?v=64',
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         badgeBorder: 'rgba(168, 85, 247, 0.25)',
         badgeText: '#D8B4FE'
@@ -1306,7 +1306,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(217, 119, 6, 0.16) 100%)',
         avatarBorder: 'rgba(251, 191, 36, 0.45)',
         avatarColor: '#FBBF24',
-        icon: 'icons/store_4.png?v=63',
+        icon: 'icons/store_4.png?v=64',
         badgeBg: 'rgba(251, 191, 36, 0.12)',
         badgeBorder: 'rgba(251, 191, 36, 0.25)',
         badgeText: '#FDE68A'
@@ -1322,7 +1322,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)',
         avatarBorder: 'rgba(244, 63, 94, 0.45)',
         avatarColor: '#FB7185',
-        icon: 'icons/store_5.png?v=63',
+        icon: 'icons/store_5.png?v=64',
         badgeBg: 'rgba(244, 63, 94, 0.12)',
         badgeBorder: 'rgba(244, 63, 94, 0.25)',
         badgeText: '#FDA4AF'
@@ -1338,18 +1338,31 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(79, 70, 229, 0.16) 100%)',
         avatarBorder: 'rgba(99, 102, 241, 0.45)',
         avatarColor: '#60A5FA',
-        icon: 'icons/store_6.png?v=63',
+        icon: 'icons/store_6.png?v=64',
         badgeBg: 'rgba(99, 102, 241, 0.12)',
         badgeBorder: 'rgba(99, 102, 241, 0.25)',
         badgeText: '#A5B4FC'
     }
 ];
 
-// 3D Bozor logotiplarini brauzer GPU xotirasiga oldindan yuklash (Instant paint, 0ms kechikish)
+// 3D Bozor va Mahsulot logotiplarini brauzer GPU xotirasiga oldindan yuklash (Instant paint, 0ms kechikish)
 const PRELOADED_MARKET_ICONS = MARKET_THEMES.map(theme => {
     try {
         const img = new Image();
         img.src = theme.icon;
+        if (img.decode) {
+            img.decode().catch(() => {});
+        }
+        return img;
+    } catch (e) {
+        return null;
+    }
+});
+
+const PRELOADED_PRODUCT_ICONS = ['icons/product_oil.png?v=64', 'icons/product_sugar.png?v=64'].map(src => {
+    try {
+        const img = new Image();
+        img.src = src;
         if (img.decode) {
             img.decode().catch(() => {});
         }
@@ -3166,13 +3179,94 @@ function goToTab(tab) {
     }
 }
 
+function isSugarProduct(p) {
+    if (!p) return false;
+    const name = (p.name || '').toLowerCase();
+    const unit = (p.unit || '').toLowerCase();
+    const pkg = (p.packageName || '').toLowerCase();
+    return name.includes('shakar') || name.includes('sugar') || unit.includes('qop') || pkg.includes('qop');
+}
+
+function getProductThemeAndIcon(p) {
+    const isSugar = isSugarProduct(p);
+    if (isSugar) {
+        return {
+            type: 'sugar',
+            categoryName: 'Shakar',
+            icon: 'icons/product_sugar.png?v=64',
+            border: '#06B6D4',
+            borderHover: '#22D3EE',
+            innerBorder: 'rgba(6, 182, 212, 0.65)',
+            glow: 'rgba(6, 182, 212, 0.45)',
+            glowHover: 'rgba(6, 182, 212, 0.75)',
+            radialGlow: 'rgba(6, 182, 212, 0.3)',
+            badgeBg: 'rgba(6, 182, 212, 0.15)',
+            badgeBorder: 'rgba(6, 182, 212, 0.35)',
+            badgeText: '#67E8F9'
+        };
+    } else {
+        return {
+            type: 'oil',
+            categoryName: "Yog'",
+            icon: 'icons/product_oil.png?v=64',
+            border: '#F59E0B',
+            borderHover: '#FBBF24',
+            innerBorder: 'rgba(245, 158, 11, 0.65)',
+            glow: 'rgba(245, 158, 11, 0.45)',
+            glowHover: 'rgba(245, 158, 11, 0.75)',
+            radialGlow: 'rgba(245, 158, 11, 0.3)',
+            badgeBg: 'rgba(245, 158, 11, 0.15)',
+            badgeBorder: 'rgba(245, 158, 11, 0.35)',
+            badgeText: '#FDE68A'
+        };
+    }
+}
+
+function getProductCapacityBadge(p) {
+    const name = p.name || '';
+    const lMatch = name.match(/(\d+(?:\.\d+)?)\s*(?:l|litr|lt)\b/i);
+    if (lMatch) return lMatch[1] + 'L';
+    const kgMatch = name.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilo)\b/i);
+    if (kgMatch) return kgMatch[1] + ' kg';
+    if (p.unit && p.unit.trim()) return escHtml(p.unit.trim());
+    if (p.packageName && p.packageName.trim()) return escHtml(p.packageName.trim());
+    return isSugarProduct(p) ? 'Qop' : 'Dona';
+}
+
+let currentProductCategory = 'ALL';
+function setProductCategory(cat) {
+    currentProductCategory = cat;
+    document.querySelectorAll('.prod-cat-btn').forEach(btn => btn.classList.remove('active'));
+    const btn = document.getElementById('prodCatBtn_' + cat);
+    if (btn) btn.classList.add('active');
+    _executeProductFilter();
+}
+
 function renderProductsView(products) {
+    const list = Array.isArray(allProductsList) && allProductsList.length > 0 ? allProductsList : (products || []);
+    const oilCount = list.filter(p => !isSugarProduct(p)).length;
+    const sugarCount = list.filter(p => isSugarProduct(p)).length;
+
     contentEl.innerHTML = `
         <div class="market-summary-bar">
             <div class="market-summary-item">
                 <span>📦</span>
-                <span>Jami: <strong>${products.length} turdagi tovar</strong></span>
+                <span>Jami: <strong>${list.length} xil</strong></span>
             </div>
+            <div class="market-summary-item">
+                <span>🛢️</span>
+                <span>Yog': <strong>${oilCount}</strong></span>
+            </div>
+            <div class="market-summary-item">
+                <span>🍚</span>
+                <span>Shakar: <strong>${sugarCount}</strong></span>
+            </div>
+        </div>
+
+        <div class="prod-cat-bar">
+            <button id="prodCatBtn_ALL" class="prod-cat-btn ${currentProductCategory === 'ALL' ? 'active' : ''}" onclick="setProductCategory('ALL')">Hammasi (${list.length})</button>
+            <button id="prodCatBtn_OIL" class="prod-cat-btn ${currentProductCategory === 'OIL' ? 'active' : ''}" onclick="setProductCategory('OIL')">🛢️ Yog'lar (${oilCount})</button>
+            <button id="prodCatBtn_SUGAR" class="prod-cat-btn ${currentProductCategory === 'SUGAR' ? 'active' : ''}" onclick="setProductCategory('SUGAR')">🍚 Shakar (${sugarCount})</button>
         </div>
 
         <div class="form-group" style="padding-bottom:8px;">
@@ -3180,7 +3274,7 @@ function renderProductsView(products) {
         </div>
         <div id="productsListContainer"></div>
     `;
-    renderProductRows(products);
+    _executeProductFilter();
 }
 
 // Mahsulotlar ro'yxati
@@ -3217,48 +3311,104 @@ function renderProductRows(products) {
     const container = document.getElementById('productsListContainer');
     if (!container) return;
 
-    if (products.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="padding:20px 0;">Mahsulot topilmadi.</div>';
+    if (!products || products.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="padding:28px 0; text-align:center; color:#94A3B8;">Mahsulot topilmadi.</div>';
         return;
     }
 
-    container.innerHTML = products.map((p, index) => {
-        const isOil = p.name.toLowerCase().includes('yog');
-        const unitText = p.unit ? escHtml(p.unit) : (p.packageName ? escHtml(p.packageName) : 'dona');
+    container.innerHTML = `<div class="market-grid">` + products.map((p, index) => {
+        const t = getProductThemeAndIcon(p);
+        const capacity = getProductCapacityBadge(p);
         const price = Number(p.sellPrice) || 0;
-        const t = MARKET_THEMES[index % MARKET_THEMES.length];
+        const priceHtml = price > 0
+            ? `<span class="market-pill" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#E2E8F0; font-weight:700;">${formatMoney(price)}</span>`
+            : `<span class="market-pill" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#94A3B8;">${t.categoryName}</span>`;
 
         return `
-            <div class="product-card" style="
-                --card-border: ${t.border};
-                --card-border-hover: ${t.borderHover};
-                --card-glow: ${t.glow};
-                --card-glow-hover: ${t.glowHover};
-                --avatar-bg: ${t.avatarBg};
-                --avatar-border: ${t.avatarBorder};
-                --avatar-color: ${t.avatarColor};
-                --avatar-shadow: ${t.avatarShadow};
+            <div class="market-tile" style="
+                --tile-border: ${t.border};
+                --tile-border-hover: ${t.borderHover};
+                --tile-inner-border: ${t.innerBorder};
+                --tile-glow: ${t.glow};
+                --tile-glow-hover: ${t.glowHover};
+                --tile-radial-glow: ${t.radialGlow};
             " onclick="showEditProductForm(${p.id})">
-                <div class="product-card__avatar">
-                    ${isOil ? Icons.oil : Icons.box}
-                </div>
-                <div class="product-card__info">
-                    <div class="product-card__title">${escHtml(p.name)}</div>
-                    <div class="product-card__badge" style="background:${t.badgeBg}; border:1px solid ${t.badgeBorder}; color:${t.badgeText};">
-                        <span>${unitText}</span>
+                <div class="market-tile__inner">
+                    <div class="market-tile__actions" onclick="event.stopPropagation()">
+                        <button class="market-tile__menu-btn" onclick="showProductActions(${p.id}, '${escJs(p.name)}')" title="Mahsulot amallari" aria-label="Mahsulot amallari">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="12" cy="5" r="2.2"/>
+                                <circle cx="12" cy="12" r="2.2"/>
+                                <circle cx="12" cy="19" r="2.2"/>
+                            </svg>
+                        </button>
                     </div>
-                </div>
-                <div class="product-card__price-wrap">
-                    ${price > 0 ? `<div class="product-card__price">${formatMoney(price)}</div>` : ''}
-                </div>
-                <div class="product-card__actions" onclick="event.stopPropagation()">
-                    <button class="market-action-btn" onclick="showEditProductForm(${p.id})" title="Tahrirlash">${Icons.edit}</button>
-                    <button class="market-action-btn market-action-btn--danger" onclick="deleteProduct(${p.id}, '${escJs(p.name)}')" title="O'chirish">${Icons.trash}</button>
-                    <span class="market-card__chevron">${Icons.chevronRight}</span>
+                    <div class="product-tile__icon-wrap">
+                        <img class="product-tile__icon-img" src="${t.icon}" alt="${escAttr(p.name)}" loading="eager">
+                    </div>
+                    <div class="market-tile__title" title="${escAttr(p.name)}" style="font-size:13.5px; font-weight:700; line-height:1.25; margin-bottom:6px; min-height:34px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                        ${escHtml(p.name)}
+                    </div>
+                    <div class="market-tile__badges-row" style="justify-content:center; gap:6px;">
+                        <span class="market-pill" style="background:${t.badgeBg}; border:1px solid ${t.badgeBorder}; color:${t.badgeText}; font-weight:700;">
+                            ${capacity}
+                        </span>
+                        ${priceHtml}
+                    </div>
                 </div>
             </div>
         `;
-    }).join('');
+    }).join('') + `</div>`;
+}
+
+function showProductActions(id, name) {
+    showBottomSheet(`
+        <div class="market-sheet">
+            <div class="market-sheet__header">
+                <div class="market-sheet__icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                </div>
+                <div class="market-sheet__info">
+                    <div class="market-sheet__title">${escHtml(name)}</div>
+                    <div class="market-sheet__subtitle">Mahsulotni boshqarish</div>
+                </div>
+            </div>
+            
+            <div class="market-sheet__list">
+                <button class="market-sheet-item" onclick="closeBottomSheet(); showEditProductForm(${id});">
+                    <div class="market-sheet-item__icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="market-sheet-item__content">
+                        <div class="market-sheet-item__title">Mahsulotni tahrirlash</div>
+                        <div class="market-sheet-item__desc">Nom, narx yoki toifani o'zgartirish</div>
+                    </div>
+                    <svg class="market-sheet-item__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+
+                <button class="market-sheet-item market-sheet-item--danger" onclick="closeBottomSheet(); deleteProduct(${id}, '${escJs(name)}');">
+                    <div class="market-sheet-item__icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </div>
+                    <div class="market-sheet-item__content">
+                        <div class="market-sheet-item__title">Mahsulotni o'chirish</div>
+                        <div class="market-sheet-item__desc">Katalogdan butunlay olib tashlash</div>
+                    </div>
+                    <svg class="market-sheet-item__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+        </div>
+    `);
 }
 
 let _productFilterTimer = null;
@@ -3275,11 +3425,18 @@ function filterProducts(immediate = false) {
 function _executeProductFilter() {
     const input = document.getElementById('productSearchInput');
     const query = input ? input.value.trim().toLowerCase() : '';
-    if (!query) {
-        renderProductRows(allProductsList);
-        return;
+    let filtered = allProductsList || [];
+
+    if (currentProductCategory === 'OIL') {
+        filtered = filtered.filter(p => !isSugarProduct(p));
+    } else if (currentProductCategory === 'SUGAR') {
+        filtered = filtered.filter(p => isSugarProduct(p));
     }
-    const filtered = allProductsList.filter(p => p.name.toLowerCase().includes(query));
+
+    if (query) {
+        filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(query));
+    }
+
     renderProductRows(filtered);
 }
 
