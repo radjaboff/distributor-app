@@ -103,7 +103,8 @@ public class SaleServiceImpl implements SaleService {
             item.setSale(sale);
             item.setPackageCount(itemRequest.getPackageCount());
             item.setPriceAtSale(unitPrice);
-            item.setCostAtSale(BigDecimal.ZERO);
+            BigDecimal costPrice = (product.getPurchasePrice() != null) ? product.getPurchasePrice() : BigDecimal.ZERO;
+            item.setCostAtSale(costPrice);
 
             sale.getItems().add(item);
 

@@ -1258,7 +1258,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.16) 100%)',
         avatarBorder: 'rgba(56, 189, 248, 0.45)',
         avatarColor: '#38BDF8',
-        icon: 'icons/store_1.png?v=65',
+        icon: 'icons/store_1.png?v=66',
         badgeBg: 'rgba(56, 189, 248, 0.12)',
         badgeBorder: 'rgba(56, 189, 248, 0.25)',
         badgeText: '#7DD3FC'
@@ -1274,7 +1274,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)',
         avatarBorder: 'rgba(52, 211, 153, 0.45)',
         avatarColor: '#34D399',
-        icon: 'icons/store_2.png?v=65',
+        icon: 'icons/store_2.png?v=66',
         badgeBg: 'rgba(52, 211, 153, 0.12)',
         badgeBorder: 'rgba(52, 211, 153, 0.25)',
         badgeText: '#6EE7B7'
@@ -1290,7 +1290,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(124, 58, 237, 0.16) 100%)',
         avatarBorder: 'rgba(168, 85, 247, 0.45)',
         avatarColor: '#C084FC',
-        icon: 'icons/store_3.png?v=65',
+        icon: 'icons/store_3.png?v=66',
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         badgeBorder: 'rgba(168, 85, 247, 0.25)',
         badgeText: '#D8B4FE'
@@ -1306,7 +1306,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(217, 119, 6, 0.16) 100%)',
         avatarBorder: 'rgba(251, 191, 36, 0.45)',
         avatarColor: '#FBBF24',
-        icon: 'icons/store_4.png?v=65',
+        icon: 'icons/store_4.png?v=66',
         badgeBg: 'rgba(251, 191, 36, 0.12)',
         badgeBorder: 'rgba(251, 191, 36, 0.25)',
         badgeText: '#FDE68A'
@@ -1322,7 +1322,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)',
         avatarBorder: 'rgba(244, 63, 94, 0.45)',
         avatarColor: '#FB7185',
-        icon: 'icons/store_5.png?v=65',
+        icon: 'icons/store_5.png?v=66',
         badgeBg: 'rgba(244, 63, 94, 0.12)',
         badgeBorder: 'rgba(244, 63, 94, 0.25)',
         badgeText: '#FDA4AF'
@@ -1338,7 +1338,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(79, 70, 229, 0.16) 100%)',
         avatarBorder: 'rgba(99, 102, 241, 0.45)',
         avatarColor: '#60A5FA',
-        icon: 'icons/store_6.png?v=65',
+        icon: 'icons/store_6.png?v=66',
         badgeBg: 'rgba(99, 102, 241, 0.12)',
         badgeBorder: 'rgba(99, 102, 241, 0.25)',
         badgeText: '#A5B4FC'
@@ -1359,7 +1359,7 @@ const PRELOADED_MARKET_ICONS = MARKET_THEMES.map(theme => {
     }
 });
 
-const PRELOADED_PRODUCT_ICONS = ['icons/product_oil.png?v=65', 'icons/product_sugar.png?v=65'].map(src => {
+const PRELOADED_PRODUCT_ICONS = ['icons/product_oil.png?v=66', 'icons/product_sugar.png?v=66'].map(src => {
     try {
         const img = new Image();
         img.src = src;
@@ -2543,7 +2543,11 @@ async function showAddSaleForm(shopId) {
                 <div class="form-group">
                     <label class="form-label" for="itemPriceInput">
                         <span class="label-icon">${Icons.money}</span>
-                        <span>1 tasi narxi (dona / qop / karobka)</span>
+                        <span>Narx (1 karobka / 1 xalta narxi)</span>
+                    </label>
+                    <div style="font-size:11.5px; color:var(--color-ink-dim); margin-top:-4px; margin-bottom:6px; line-height:1.4;">
+                        * Belgilangan sotish narxi avtomatik chiqadi, kelishilgan bo'lsa o'zgartirishingiz mumkin
+                    </div>
                     </label>
                     <div class="money-field-wrap">
                         <div class="money-input-box">
@@ -3193,7 +3197,7 @@ function getProductThemeAndIcon(p) {
         return {
             type: 'sugar',
             categoryName: 'Shakar',
-            icon: 'icons/product_sugar.png?v=65',
+            icon: 'icons/product_sugar.png?v=66',
             border: '#06B6D4',
             borderHover: '#22D3EE',
             innerBorder: 'rgba(6, 182, 212, 0.65)',
@@ -3208,7 +3212,7 @@ function getProductThemeAndIcon(p) {
         return {
             type: 'oil',
             categoryName: "Yog'",
-            icon: 'icons/product_oil.png?v=65',
+            icon: 'icons/product_oil.png?v=66',
             border: '#F59E0B',
             borderHover: '#FBBF24',
             innerBorder: 'rgba(245, 158, 11, 0.65)',
@@ -3318,6 +3322,8 @@ function renderProductRows(products) {
 
     container.innerHTML = `<div class="product-grid">` + products.map((p) => {
         const t = getProductThemeAndIcon(p);
+        const purchase = Number(p.purchasePrice) || 0;
+        const sell = Number(p.sellPrice) || 0;
 
         return `
             <div class="product-tile" style="
@@ -3343,6 +3349,16 @@ function renderProductRows(products) {
                     </div>
                     <div class="product-tile__title" title="${escAttr(p.name)}">
                         ${escHtml(p.name)}
+                    </div>
+                    <div class="product-tile__prices">
+                        <div class="product-tile__price-tag product-tile__price-tag--buy" title="Olish narxi (tannarx)">
+                            <span class="price-lbl">Ol:</span>
+                            <span class="price-val">${purchase > 0 ? formatNumberWithSpaces(purchase) : '—'}</span>
+                        </div>
+                        <div class="product-tile__price-tag product-tile__price-tag--sell" title="Sotish narxi">
+                            <span class="price-lbl">Sot:</span>
+                            <span class="price-val">${sell > 0 ? formatNumberWithSpaces(sell) : '—'}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3449,7 +3465,7 @@ function showAddProductForm() {
             <div class="form-group">
                 <label class="form-label" for="pNameInput">
                     <span class="label-icon">${Icons.box}</span>
-                    <span>Mahsulot nomi</span>
+                    <span>Mahsulot nomi *</span>
                 </label>
                 <input type="text" class="form-input" id="pNameInput" placeholder="Masalan: Shakar yoki Yog' 5L" autofocus>
             </div>
@@ -3460,6 +3476,46 @@ function showAddProductForm() {
                     <span>Birlik / Izoh (ixtiyoriy)</span>
                 </label>
                 <input type="text" class="form-input" id="pUnitInput" placeholder="Masalan: qop, karobka, dona">
+            </div>
+
+            <!-- Olish narxi (tannarx) -->
+            <div class="form-group">
+                <label class="form-label" for="pPurchasePriceInput">
+                    <span class="label-icon">📥</span>
+                    <span>Olish narxi / Tannarx (1 karobka / 1 xalta uchun)</span>
+                </label>
+                <div class="money-input-box">
+                    <input type="text" inputmode="numeric" class="form-input money-input" id="pPurchasePriceInput" placeholder="Masalan: 420 000" oninput="onMoneyInputChange(this, 'pPurchasePriceLive')">
+                    <span class="money-suffix">so'm</span>
+                </div>
+                <div class="money-live-container" id="pPurchasePriceLive" style="display:none;"></div>
+                <div class="quick-chips-row">
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 10000, 'pPurchasePriceLive')">+10 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 50000, 'pPurchasePriceLive')">+50 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 100000, 'pPurchasePriceLive')">+100 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 500000, 'pPurchasePriceLive')">+500 ming</button>
+                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('pPurchasePriceInput', 'pPurchasePriceLive')">Tozalash</button>
+                </div>
+            </div>
+
+            <!-- Sotish narxi -->
+            <div class="form-group">
+                <label class="form-label" for="pSellPriceInput">
+                    <span class="label-icon">📤</span>
+                    <span>Sotish narxi (1 karobka / 1 xalta uchun)</span>
+                </label>
+                <div class="money-input-box">
+                    <input type="text" inputmode="numeric" class="form-input money-input" id="pSellPriceInput" placeholder="Masalan: 450 000" oninput="onMoneyInputChange(this, 'pSellPriceLive')">
+                    <span class="money-suffix">so'm</span>
+                </div>
+                <div class="money-live-container" id="pSellPriceLive" style="display:none;"></div>
+                <div class="quick-chips-row">
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 10000, 'pSellPriceLive')">+10 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 50000, 'pSellPriceLive')">+50 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 100000, 'pSellPriceLive')">+100 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 500000, 'pSellPriceLive')">+500 ming</button>
+                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('pSellPriceInput', 'pSellPriceLive')">Tozalash</button>
+                </div>
             </div>
 
             <div class="form-group" style="margin-top: 24px;">
@@ -3474,6 +3530,8 @@ function showAddProductForm() {
 async function submitProduct() {
     const name = document.getElementById('pNameInput').value.trim();
     const unit = document.getElementById('pUnitInput').value.trim();
+    const purchasePrice = parseMoney(document.getElementById('pPurchasePriceInput')?.value) || 0;
+    const sellPrice = parseMoney(document.getElementById('pSellPriceInput')?.value) || 0;
 
     if (!name) {
         showToast('Mahsulot nomini kiriting', 'error');
@@ -3488,15 +3546,15 @@ async function submitProduct() {
     }
 
     try {
-        await apiPost('/products', { name, unit: unit || null });
-        showToast('Mahsulot muvaffaqiyatli saqlandi', 'success');
+        await apiPost('/products', { name, unit: unit || null, purchasePrice, sellPrice });
+        showToast('Mahsulot muvaffaqiyatli yaratildi', 'success');
         showProducts();
     } catch (err) {
+        showToast('Xatolik: ' + err.message, 'error');
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = `${Icons.check} Mahsulotni saqlash`;
         }
-        showToast('Xatolik: ' + err.message, 'error');
     }
 }
 
@@ -3603,7 +3661,7 @@ function renderSummaryHtml(summary, overdueShops) {
       <div class="stat-card__value" style="color: #FB7185; font-size: 30px; font-weight:800; margin-top:6px; font-variant-numeric:tabular-nums;">${formatMoney(summary.totalDebtAllShops || 0)}</div>
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 14px;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 10px;">
       <div class="stat-card stat-card--glow-blue" style="padding:16px 12px; text-align:center;">
         <div class="stat-card__label" style="font-size:11.5px; color:#93C5FD; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">Bugungi savdo</div>
         <div class="stat-card__value" style="color: #38BDF8; font-size:18px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums;">${formatMoney(summary.todaysSalesTotal || 0)}</div>
@@ -3612,6 +3670,11 @@ function renderSummaryHtml(summary, overdueShops) {
         <div class="stat-card__label" style="font-size:11.5px; color:#A7F3D0; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">Bugungi tushum (kassa)</div>
         <div class="stat-card__value" style="color: #34D399; font-size:18px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums;">${formatMoney(summary.todaysPaymentsTotal || 0)}</div>
       </div>
+    </div>
+
+    <div class="stat-card stat-card--glow-emerald" style="margin-bottom: 14px; text-align:center; padding:16px 14px; background: linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(6,95,70,0.16) 100%); border: 1.5px solid rgba(52,211,153,0.4); border-radius:18px; box-shadow:0 4px 18px rgba(16,185,129,0.15);">
+      <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:#6EE7B7;">✨ Bugungi sof foyda</div>
+      <div class="stat-card__value" style="color: #34D399; font-size: 24px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums;">${formatMoney(summary.todaysProfit || 0)}</div>
     </div>
 
     <div class="form-group" style="margin-bottom: 16px;">
@@ -3692,6 +3755,11 @@ function renderDailyReportHtml(report) {
       <div class="stat-card__value" style="font-size:26px; font-weight:800; color:#38BDF8; margin-top:4px;">${formatMoney(totalSalesForDay)}</div>
     </div>
 
+    <div class="stat-card stat-card--glow-emerald" style="margin-bottom:12px; padding:18px 16px; background: linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(6,95,70,0.16) 100%); border: 1.5px solid rgba(52,211,153,0.38); border-radius:18px;">
+      <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:#6EE7B7;">✨ Kunlik sof foyda</div>
+      <div class="stat-card__value" style="font-size:26px; font-weight:800; color:#34D399; margin-top:4px; font-variant-numeric:tabular-nums;">${formatMoney(report.dailyProfit || 0)}</div>
+    </div>
+
     <div class="stat-card stat-card--glow-emerald" style="margin-bottom:12px; padding:18px 16px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.08);">
         <div class="stat-card__label" style="font-weight:700; color:#34D399; margin:0; text-transform:uppercase; letter-spacing:0.5px; font-size:11.5px;">Kassaga tushgan to'lovlar</div>
@@ -3764,6 +3832,11 @@ function renderMonthlyReportHtml(report) {
     <div class="stat-card stat-card--glow-blue" style="margin-bottom:12px; padding:18px 16px;">
       <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:#93C5FD;">Oylik savdo</div>
       <div class="stat-card__value" style="font-size:26px; font-weight:800; color:#38BDF8; margin-top:4px;">${formatMoney(report.totalSalesAmount)}</div>
+    </div>
+
+    <div class="stat-card stat-card--glow-emerald" style="margin-bottom:12px; padding:18px 16px; background: linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(6,95,70,0.16) 100%); border: 1.5px solid rgba(52,211,153,0.38); border-radius:18px;">
+      <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:#6EE7B7;">✨ Oylik sof foyda</div>
+      <div class="stat-card__value" style="font-size:26px; font-weight:800; color:#34D399; margin-top:4px; font-variant-numeric:tabular-nums;">${formatMoney(report.totalProfit || 0)}</div>
     </div>
     
     <div class="stat-card stat-card--glow-emerald" style="margin-bottom:12px; padding:18px 16px;">
@@ -3976,7 +4049,7 @@ async function deleteShop(id, name, debt = 0) {
 }
 
 async function showEditProductForm(id) {
-    updateHeaderMeta('Mahsulotni tahrirlash', 'Nomini yangilash', 'TAHRIR');
+    updateHeaderMeta('Mahsulotni tahrirlash', 'Narx va ma\'lumotlarni yangilash', 'TAHRIR');
     setBackAction(showProducts, 'editProduct');
     fabBtn.style.display = 'none';
 
@@ -3993,14 +4066,14 @@ async function showEditProductForm(id) {
                 </div>
                 <div>
                     <div class="form-card__title">${escHtml(p.name)}</div>
-                    <div class="form-card__desc">Mahsulot nomini tahrirlash</div>
+                    <div class="form-card__desc">Mahsulot narxi va parametrlarini tahrirlash</div>
                 </div>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="pNameInput">
                     <span class="label-icon">${Icons.box}</span>
-                    <span>Mahsulot nomi</span>
+                    <span>Mahsulot nomi *</span>
                 </label>
                 <input type="text" class="form-input" id="pNameInput" value="${escAttr(p.name)}">
             </div>
@@ -4011,6 +4084,46 @@ async function showEditProductForm(id) {
                     <span>Birlik / Izoh (ixtiyoriy)</span>
                 </label>
                 <input type="text" class="form-input" id="pUnitInput" value="${escAttr(p.unit || '')}" placeholder="Masalan: qop, karobka, dona">
+            </div>
+
+            <!-- Olish narxi (tannarx) -->
+            <div class="form-group">
+                <label class="form-label" for="pPurchasePriceInput">
+                    <span class="label-icon">📥</span>
+                    <span>Olish narxi / Tannarx (1 karobka / 1 xalta uchun)</span>
+                </label>
+                <div class="money-input-box">
+                    <input type="text" inputmode="numeric" class="form-input money-input" id="pPurchasePriceInput" value="${p.purchasePrice && Number(p.purchasePrice) > 0 ? formatNumberWithSpaces(p.purchasePrice) : ''}" placeholder="Masalan: 420 000" oninput="onMoneyInputChange(this, 'pPurchasePriceLive')">
+                    <span class="money-suffix">so'm</span>
+                </div>
+                <div class="money-live-container" id="pPurchasePriceLive" style="display:none;"></div>
+                <div class="quick-chips-row">
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 10000, 'pPurchasePriceLive')">+10 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 50000, 'pPurchasePriceLive')">+50 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 100000, 'pPurchasePriceLive')">+100 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pPurchasePriceInput', 500000, 'pPurchasePriceLive')">+500 ming</button>
+                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('pPurchasePriceInput', 'pPurchasePriceLive')">Tozalash</button>
+                </div>
+            </div>
+
+            <!-- Sotish narxi -->
+            <div class="form-group">
+                <label class="form-label" for="pSellPriceInput">
+                    <span class="label-icon">📤</span>
+                    <span>Sotish narxi (1 karobka / 1 xalta uchun)</span>
+                </label>
+                <div class="money-input-box">
+                    <input type="text" inputmode="numeric" class="form-input money-input" id="pSellPriceInput" value="${p.sellPrice && Number(p.sellPrice) > 0 ? formatNumberWithSpaces(p.sellPrice) : ''}" placeholder="Masalan: 450 000" oninput="onMoneyInputChange(this, 'pSellPriceLive')">
+                    <span class="money-suffix">so'm</span>
+                </div>
+                <div class="money-live-container" id="pSellPriceLive" style="display:none;"></div>
+                <div class="quick-chips-row">
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 10000, 'pSellPriceLive')">+10 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 50000, 'pSellPriceLive')">+50 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 100000, 'pSellPriceLive')">+100 ming</button>
+                    <button type="button" class="preset-chip" onclick="addMoneyToInput('pSellPriceInput', 500000, 'pSellPriceLive')">+500 ming</button>
+                    <button type="button" class="preset-chip preset-chip--clear" onclick="clearMoneyInput('pSellPriceInput', 'pSellPriceLive')">Tozalash</button>
+                </div>
             </div>
 
             <div class="form-group" style="margin-top: 24px;">
@@ -4028,6 +4141,8 @@ async function showEditProductForm(id) {
 async function submitEditProduct(id) {
     const name = document.getElementById('pNameInput').value.trim();
     const unit = document.getElementById('pUnitInput').value.trim();
+    const purchasePrice = parseMoney(document.getElementById('pPurchasePriceInput')?.value) || 0;
+    const sellPrice = parseMoney(document.getElementById('pSellPriceInput')?.value) || 0;
 
     if (!name) {
         showToast('Mahsulot nomini kiriting', 'error');
@@ -4042,7 +4157,7 @@ async function submitEditProduct(id) {
     }
 
     try {
-        await apiPut(`/products/${id}`, { name, unit: unit || null });
+        await apiPut(`/products/${id}`, { name, unit: unit || null, purchasePrice, sellPrice });
         showToast('Mahsulot muvaffaqiyatli saqlandi', 'success');
         showProducts();
     } catch (err) {
@@ -4144,6 +4259,11 @@ function renderRangeReportHtml(report) {
     <div class="stat-card stat-card--glow-blue" style="margin-bottom:12px; padding:18px 16px;">
       <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:#93C5FD;">Umumiy savdo</div>
       <div class="stat-card__value" style="font-size:26px; font-weight:800; color:#38BDF8; margin-top:4px;">${formatMoney(report.totalSalesAmount)}</div>
+    </div>
+
+    <div class="stat-card stat-card--glow-emerald" style="margin-bottom:12px; padding:18px 16px; background: linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(6,95,70,0.16) 100%); border: 1.5px solid rgba(52,211,153,0.38); border-radius:18px;">
+      <div class="stat-card__label" style="text-transform:uppercase; letter-spacing:0.8px; font-size:11.5px; font-weight:700; color:#6EE7B7;">✨ Oraliq sof foyda</div>
+      <div class="stat-card__value" style="font-size:26px; font-weight:800; color:#34D399; margin-top:4px; font-variant-numeric:tabular-nums;">${formatMoney(report.totalProfit || 0)}</div>
     </div>
 
     <div class="stat-card stat-card--glow-emerald" style="margin-bottom:12px; padding:18px 16px;">

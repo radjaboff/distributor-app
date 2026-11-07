@@ -56,8 +56,9 @@ public class ReportServiceImpl implements ReportService {
         MonthlyReportResponse response = new MonthlyReportResponse();
         response.setMonth(month);
 
-        // 1) Umumiy sotuv summasi
+        // 1) Umumiy sotuv summasi va sof foyda
         BigDecimal totalSales = BigDecimal.ZERO;
+        BigDecimal totalProfit = BigDecimal.ZERO;
         Map<String, Integer> productVolumeMap = new java.util.HashMap<>();
 
         for (Sale sale : sales) {
@@ -70,11 +71,16 @@ public class ReportServiceImpl implements ReportService {
                     int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
                     String productName = item.getEffectiveProductName();
                     productVolumeMap.merge(productName, count, Integer::sum);
+
+                    BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
+                    BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
+                    BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
+                    totalProfit = totalProfit.add(itemProfit);
                 }
             }
         }
         response.setTotalSalesAmount(totalSales);
-        response.setTotalProfit(BigDecimal.ZERO);
+        response.setTotalProfit(totalProfit);
 
         // 1.1) To'lov turi bo'yicha tushum (NAQD/KARTA/NASIYA)
         Map<PaymentType, BigDecimal> revenueByType = new EnumMap<>(PaymentType.class);
@@ -173,8 +179,20 @@ public class ReportServiceImpl implements ReportService {
             return p;
         }).toList());
 
-        // 3) Kunlik foyda — tannarx nazorat qilinmagani sababli 0 qaytariladi
-        response.setDailyProfit(BigDecimal.ZERO);
+        // 3) Kunlik sof foyda
+        BigDecimal dailyProfit = BigDecimal.ZERO;
+        for (Sale sale : sales) {
+            if (sale.getItems() != null) {
+                for (SaleItem item : sale.getItems()) {
+                    BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
+                    BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
+                    int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
+                    BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
+                    dailyProfit = dailyProfit.add(itemProfit);
+                }
+            }
+        }
+        response.setDailyProfit(dailyProfit);
 
         // 4) To'lov turi bo'yicha summalar (NAQD/KARTA/NASIYA)
         Map<PaymentType, BigDecimal> revenueByType = new EnumMap<>(PaymentType.class);
@@ -229,13 +247,23 @@ public class ReportServiceImpl implements ReportService {
                 .toList();
 
         BigDecimal salesTotal = BigDecimal.ZERO;
+        BigDecimal profitTotal = BigDecimal.ZERO;
         for (Sale sale : todaysSales) {
             if (sale.getTotalAmount() != null) {
                 salesTotal = salesTotal.add(sale.getTotalAmount());
             }
+            if (sale.getItems() != null) {
+                for (SaleItem item : sale.getItems()) {
+                    BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
+                    BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
+                    int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
+                    BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
+                    profitTotal = profitTotal.add(itemProfit);
+                }
+            }
         }
         response.setTodaysSalesTotal(salesTotal);
-        response.setTodaysProfit(BigDecimal.ZERO);
+        response.setTodaysProfit(profitTotal);
 
         // 3) Bugungi undirilgan to'lovlar (kassa tushumi)
         List<Payment> todaysPayments = paymentRepository.findByDateBetweenWithShop(todayStart, todayEnd).stream()
@@ -273,6 +301,7 @@ public class ReportServiceImpl implements ReportService {
         response.setEndDate(end);
 
         BigDecimal totalSales = BigDecimal.ZERO;
+        BigDecimal totalProfit = BigDecimal.ZERO;
         Map<String, Integer> productVolumeMap = new java.util.HashMap<>();
 
         for (Sale sale : sales) {
@@ -284,11 +313,16 @@ public class ReportServiceImpl implements ReportService {
                 for (SaleItem item : sale.getItems()) {
                     int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
                     productVolumeMap.merge(item.getEffectiveProductName(), count, Integer::sum);
+
+                    BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
+                    BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
+                    BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
+                    totalProfit = totalProfit.add(itemProfit);
                 }
             }
         }
         response.setTotalSalesAmount(totalSales);
-        response.setTotalProfit(BigDecimal.ZERO);
+        response.setTotalProfit(totalProfit);
 
         // To'lov turi bo'yicha tushum (NAQD/KARTA/NASIYA) — Payment yozuvlari + Sale'ning NASIYA qismi orqali
         Map<PaymentType, BigDecimal> revenueByType = new EnumMap<>(PaymentType.class);
