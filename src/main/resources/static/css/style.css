@@ -3123,6 +3123,14 @@ button:disabled {
     font-weight: 800;
 }
 
+.price-unit {
+    font-size: 7.5px;
+    font-weight: 600;
+    opacity: 0.8;
+    margin-left: 2px;
+    letter-spacing: 0;
+}
+
 .price-lbl {
     font-size: 9px;
     text-transform: uppercase;

@@ -1258,7 +1258,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.16) 100%)',
         avatarBorder: 'rgba(56, 189, 248, 0.45)',
         avatarColor: '#38BDF8',
-        icon: 'icons/store_1.png?v=66',
+        icon: 'icons/store_1.png?v=67',
         badgeBg: 'rgba(56, 189, 248, 0.12)',
         badgeBorder: 'rgba(56, 189, 248, 0.25)',
         badgeText: '#7DD3FC'
@@ -1274,7 +1274,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(5, 150, 105, 0.16) 100%)',
         avatarBorder: 'rgba(52, 211, 153, 0.45)',
         avatarColor: '#34D399',
-        icon: 'icons/store_2.png?v=66',
+        icon: 'icons/store_2.png?v=67',
         badgeBg: 'rgba(52, 211, 153, 0.12)',
         badgeBorder: 'rgba(52, 211, 153, 0.25)',
         badgeText: '#6EE7B7'
@@ -1290,7 +1290,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(124, 58, 237, 0.16) 100%)',
         avatarBorder: 'rgba(168, 85, 247, 0.45)',
         avatarColor: '#C084FC',
-        icon: 'icons/store_3.png?v=66',
+        icon: 'icons/store_3.png?v=67',
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         badgeBorder: 'rgba(168, 85, 247, 0.25)',
         badgeText: '#D8B4FE'
@@ -1306,7 +1306,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(251, 191, 36, 0.22) 0%, rgba(217, 119, 6, 0.16) 100%)',
         avatarBorder: 'rgba(251, 191, 36, 0.45)',
         avatarColor: '#FBBF24',
-        icon: 'icons/store_4.png?v=66',
+        icon: 'icons/store_4.png?v=67',
         badgeBg: 'rgba(251, 191, 36, 0.12)',
         badgeBorder: 'rgba(251, 191, 36, 0.25)',
         badgeText: '#FDE68A'
@@ -1322,7 +1322,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.22) 0%, rgba(225, 29, 72, 0.16) 100%)',
         avatarBorder: 'rgba(244, 63, 94, 0.45)',
         avatarColor: '#FB7185',
-        icon: 'icons/store_5.png?v=66',
+        icon: 'icons/store_5.png?v=67',
         badgeBg: 'rgba(244, 63, 94, 0.12)',
         badgeBorder: 'rgba(244, 63, 94, 0.25)',
         badgeText: '#FDA4AF'
@@ -1338,7 +1338,7 @@ const MARKET_THEMES = [
         avatarBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(79, 70, 229, 0.16) 100%)',
         avatarBorder: 'rgba(99, 102, 241, 0.45)',
         avatarColor: '#60A5FA',
-        icon: 'icons/store_6.png?v=66',
+        icon: 'icons/store_6.png?v=67',
         badgeBg: 'rgba(99, 102, 241, 0.12)',
         badgeBorder: 'rgba(99, 102, 241, 0.25)',
         badgeText: '#A5B4FC'
@@ -1359,7 +1359,7 @@ const PRELOADED_MARKET_ICONS = MARKET_THEMES.map(theme => {
     }
 });
 
-const PRELOADED_PRODUCT_ICONS = ['icons/product_oil.png?v=66', 'icons/product_sugar.png?v=66'].map(src => {
+const PRELOADED_PRODUCT_ICONS = ['icons/product_oil.png?v=67', 'icons/product_sugar.png?v=67'].map(src => {
     try {
         const img = new Image();
         img.src = src;
@@ -2524,7 +2524,7 @@ async function showAddSaleForm(shopId) {
                 <div class="form-group">
                     <label class="form-label" for="packageCountInput">
                         <span class="label-icon">${Icons.box}</span>
-                        <span>Miqdori (soni / qop / karobka)</span>
+                        <span>Miqdori (qop / karobka / kg / dona)</span>
                     </label>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <button type="button" class="action-chip" style="width:46px; height:46px; padding:0; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF; flex-shrink:0;" onclick="stepQty('packageCountInput', -1)">−</button>
@@ -2543,7 +2543,7 @@ async function showAddSaleForm(shopId) {
                 <div class="form-group">
                     <label class="form-label" for="itemPriceInput">
                         <span class="label-icon">${Icons.money}</span>
-                        <span>Narx (1 karobka / 1 xalta narxi)</span>
+                        <span>Narx (1 karobka / xalta / kg / dona uchun)</span>
                     </label>
                     <div style="font-size:11.5px; color:var(--color-ink-dim); margin-top:-4px; margin-bottom:6px; line-height:1.4;">
                         * Belgilangan sotish narxi avtomatik chiqadi, kelishilgan bo'lsa o'zgartirishingiz mumkin
@@ -3197,7 +3197,7 @@ function getProductThemeAndIcon(p) {
         return {
             type: 'sugar',
             categoryName: 'Shakar',
-            icon: 'icons/product_sugar.png?v=66',
+            icon: 'icons/product_sugar.png?v=67',
             border: '#06B6D4',
             borderHover: '#22D3EE',
             innerBorder: 'rgba(6, 182, 212, 0.65)',
@@ -3212,7 +3212,7 @@ function getProductThemeAndIcon(p) {
         return {
             type: 'oil',
             categoryName: "Yog'",
-            icon: 'icons/product_oil.png?v=66',
+            icon: 'icons/product_oil.png?v=67',
             border: '#F59E0B',
             borderHover: '#FBBF24',
             innerBorder: 'rgba(245, 158, 11, 0.65)',
@@ -3353,11 +3353,11 @@ function renderProductRows(products) {
                     <div class="product-tile__prices">
                         <div class="product-tile__price-tag product-tile__price-tag--buy" title="Olish narxi (tannarx)">
                             <span class="price-lbl">Ol:</span>
-                            <span class="price-val">${purchase > 0 ? formatNumberWithSpaces(purchase) : '—'}</span>
+                            <span class="price-val">${purchase > 0 ? `${formatNumberWithSpaces(purchase)} <span class="price-unit">so'm</span>` : '—'}</span>
                         </div>
                         <div class="product-tile__price-tag product-tile__price-tag--sell" title="Sotish narxi">
                             <span class="price-lbl">Sot:</span>
-                            <span class="price-val">${sell > 0 ? formatNumberWithSpaces(sell) : '—'}</span>
+                            <span class="price-val">${sell > 0 ? `${formatNumberWithSpaces(sell)} <span class="price-unit">so'm</span>` : '—'}</span>
                         </div>
                     </div>
                 </div>
@@ -3475,14 +3475,14 @@ function showAddProductForm() {
                     <span class="label-icon">${Icons.info}</span>
                     <span>Birlik / Izoh (ixtiyoriy)</span>
                 </label>
-                <input type="text" class="form-input" id="pUnitInput" placeholder="Masalan: qop, karobka, dona">
+                <input type="text" class="form-input" id="pUnitInput" placeholder="Masalan: qop, karobka, kg, dona">
             </div>
 
             <!-- Olish narxi (tannarx) -->
             <div class="form-group">
                 <label class="form-label" for="pPurchasePriceInput">
                     <span class="label-icon">📥</span>
-                    <span>Olish narxi / Tannarx (1 karobka / 1 xalta uchun)</span>
+                    <span>Olish narxi / Tannarx (1 karobka / xalta / kg / dona uchun)</span>
                 </label>
                 <div class="money-input-box">
                     <input type="text" inputmode="numeric" class="form-input money-input" id="pPurchasePriceInput" placeholder="Masalan: 420 000" oninput="onMoneyInputChange(this, 'pPurchasePriceLive')">
@@ -3502,7 +3502,7 @@ function showAddProductForm() {
             <div class="form-group">
                 <label class="form-label" for="pSellPriceInput">
                     <span class="label-icon">📤</span>
-                    <span>Sotish narxi (1 karobka / 1 xalta uchun)</span>
+                    <span>Sotish narxi (1 karobka / xalta / kg / dona uchun)</span>
                 </label>
                 <div class="money-input-box">
                     <input type="text" inputmode="numeric" class="form-input money-input" id="pSellPriceInput" placeholder="Masalan: 450 000" oninput="onMoneyInputChange(this, 'pSellPriceLive')">
@@ -4083,14 +4083,14 @@ async function showEditProductForm(id) {
                     <span class="label-icon">${Icons.info}</span>
                     <span>Birlik / Izoh (ixtiyoriy)</span>
                 </label>
-                <input type="text" class="form-input" id="pUnitInput" value="${escAttr(p.unit || '')}" placeholder="Masalan: qop, karobka, dona">
+                <input type="text" class="form-input" id="pUnitInput" value="${escAttr(p.unit || '')}" placeholder="Masalan: qop, karobka, kg, dona">
             </div>
 
             <!-- Olish narxi (tannarx) -->
             <div class="form-group">
                 <label class="form-label" for="pPurchasePriceInput">
                     <span class="label-icon">📥</span>
-                    <span>Olish narxi / Tannarx (1 karobka / 1 xalta uchun)</span>
+                    <span>Olish narxi / Tannarx (1 karobka / xalta / kg / dona uchun)</span>
                 </label>
                 <div class="money-input-box">
                     <input type="text" inputmode="numeric" class="form-input money-input" id="pPurchasePriceInput" value="${p.purchasePrice && Number(p.purchasePrice) > 0 ? formatNumberWithSpaces(p.purchasePrice) : ''}" placeholder="Masalan: 420 000" oninput="onMoneyInputChange(this, 'pPurchasePriceLive')">
@@ -4110,7 +4110,7 @@ async function showEditProductForm(id) {
             <div class="form-group">
                 <label class="form-label" for="pSellPriceInput">
                     <span class="label-icon">📤</span>
-                    <span>Sotish narxi (1 karobka / 1 xalta uchun)</span>
+                    <span>Sotish narxi (1 karobka / xalta / kg / dona uchun)</span>
                 </label>
                 <div class="money-input-box">
                     <input type="text" inputmode="numeric" class="form-input money-input" id="pSellPriceInput" value="${p.sellPrice && Number(p.sellPrice) > 0 ? formatNumberWithSpaces(p.sellPrice) : ''}" placeholder="Masalan: 450 000" oninput="onMoneyInputChange(this, 'pSellPriceLive')">
