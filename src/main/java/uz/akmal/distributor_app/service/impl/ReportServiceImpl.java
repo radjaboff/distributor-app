@@ -72,9 +72,7 @@ public class ReportServiceImpl implements ReportService {
                     String productName = item.getEffectiveProductName();
                     productVolumeMap.merge(productName, count, Integer::sum);
 
-                    BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
-                    BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
-                    BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
+                    BigDecimal itemProfit = calculateItemProfit(item);
                     totalProfit = totalProfit.add(itemProfit);
                 }
             }
@@ -184,10 +182,7 @@ public class ReportServiceImpl implements ReportService {
         for (Sale sale : sales) {
             if (sale.getItems() != null) {
                 for (SaleItem item : sale.getItems()) {
-                    BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
-                    BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
-                    int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
-                    BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
+                    BigDecimal itemProfit = calculateItemProfit(item);
                     dailyProfit = dailyProfit.add(itemProfit);
                 }
             }
@@ -254,10 +249,7 @@ public class ReportServiceImpl implements ReportService {
             }
             if (sale.getItems() != null) {
                 for (SaleItem item : sale.getItems()) {
-                    BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
-                    BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
-                    int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
-                    BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
+                    BigDecimal itemProfit = calculateItemProfit(item);
                     profitTotal = profitTotal.add(itemProfit);
                 }
             }
@@ -314,9 +306,7 @@ public class ReportServiceImpl implements ReportService {
                     int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
                     productVolumeMap.merge(item.getEffectiveProductName(), count, Integer::sum);
 
-                    BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
-                    BigDecimal cost = (item.getCostAtSale() != null) ? item.getCostAtSale() : BigDecimal.ZERO;
-                    BigDecimal itemProfit = price.subtract(cost).multiply(BigDecimal.valueOf(count));
+                    BigDecimal itemProfit = calculateItemProfit(item);
                     totalProfit = totalProfit.add(itemProfit);
                 }
             }
@@ -374,4 +364,20 @@ public class ReportServiceImpl implements ReportService {
         return response;
     }
 
+
+    private BigDecimal calculateItemProfit(SaleItem item) {
+        if (item == null) return BigDecimal.ZERO;
+        BigDecimal price = (item.getPriceAtSale() != null) ? item.getPriceAtSale() : BigDecimal.ZERO;
+        BigDecimal cost = (item.getCostAtSale() != null && item.getCostAtSale().compareTo(BigDecimal.ZERO) > 0)
+                ? item.getCostAtSale()
+                : (item.getProduct() != null && item.getProduct().getPurchasePrice() != null ? item.getProduct().getPurchasePrice() : BigDecimal.ZERO);
+
+        // Agar olish narxi hali kiritilmagan bo'lsa (0 bo'lsa), sof foyda hisoblanmaydi (0 bo'lib turadi)
+        if (cost.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        int count = (item.getPackageCount() != null) ? item.getPackageCount() : 0;
+        return price.subtract(cost).multiply(BigDecimal.valueOf(count));
+    }
 }
