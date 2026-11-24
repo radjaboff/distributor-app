@@ -33,4 +33,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("SELECT p.shop.id, MAX(p.date) FROM Payment p WHERE (p.isCancelled = false OR p.isCancelled IS NULL) GROUP BY p.shop.id")
     List<Object[]> findLastActivePaymentDatesGroupedByShop();
+
+    @Query("SELECT p.shop.id, SUM(p.amount) FROM Payment p WHERE (p.isCancelled = false OR p.isCancelled IS NULL) GROUP BY p.shop.id")
+    List<Object[]> findTotalActivePaymentsGroupedByShop();
 }

@@ -237,25 +237,56 @@ public class ShopServiceImpl implements ShopService {
             return Collections.emptyList();
         }
 
-        // Barcha do'konlarning oxirgi to'lov va sotuv sanalarini 2 ta tezkor guruhlangan so'rov bilan olamiz (N+1 muammosi to'liq bartaraf etildi)
+        // Barcha do'konlarning oxirgi to'lov sanalari
         Map<Long, LocalDateTime> lastPaymentMap = paymentRepository.findLastActivePaymentDatesGroupedByShop().stream()
                 .filter(row -> row != null && row.length >= 2 && row[0] != null && row[1] != null)
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (LocalDateTime) row[1], (existing, replace) -> existing));
 
-        Map<Long, LocalDateTime> lastSaleMap = saleRepository.findLastActiveSaleDatesGroupedByShop().stream()
+        // Barcha do'konlarning jami to'langan summasi
+        Map<Long, BigDecimal> totalPaymentsMap = paymentRepository.findTotalActivePaymentsGroupedByShop().stream()
                 .filter(row -> row != null && row.length >= 2 && row[0] != null && row[1] != null)
-                .collect(Collectors.toMap(row -> (Long) row[0], row -> (LocalDateTime) row[1], (existing, replace) -> existing));
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (BigDecimal) row[1], (existing, replace) -> existing));
+
+        // Barcha do'konlarning faol sotuvlari (sana bo'yicha o'sish tartibida)
+        Map<Long, List<Object[]>> salesByShopMap = saleRepository.findAllActiveSalesSummary().stream()
+                .filter(row -> row != null && row.length >= 3 && row[0] != null)
+                .collect(Collectors.groupingBy(row -> (Long) row[0]));
 
         LocalDateTime now = LocalDateTime.now();
         List<OverdueShopResponse> result = new ArrayList<>();
 
         for (Shop shop : debtorShops) {
-            LocalDateTime lastPaymentDate = lastPaymentMap.get(shop.getId());
-            LocalDateTime lastSaleDate = lastSaleMap.get(shop.getId());
+            BigDecimal totalPaid = totalPaymentsMap.getOrDefault(shop.getId(), BigDecimal.ZERO);
+            List<Object[]> sales = salesByShopMap.getOrDefault(shop.getId(), Collections.emptyList());
 
-            LocalDateTime referenceDate = (lastPaymentDate != null) ? lastPaymentDate : lastSaleDate;
+            // FIFO: to'lovlar qoplamagan eng birinchi (eng eski) qarz sotuvini topamiz
+            BigDecimal covered = BigDecimal.ZERO;
+            LocalDateTime oldestUnpaidSaleDate = null;
+            LocalDateTime lastSaleDate = null;
+
+            for (Object[] row : sales) {
+                BigDecimal amount = (BigDecimal) row[1];
+                LocalDateTime date = (LocalDateTime) row[2];
+                lastSaleDate = date;
+                if (amount != null) {
+                    covered = covered.add(amount);
+                    if (oldestUnpaidSaleDate == null && covered.compareTo(totalPaid) > 0) {
+                        oldestUnpaidSaleDate = date;
+                    }
+                }
+            }
+
+            LocalDateTime lastPaymentDate = lastPaymentMap.get(shop.getId());
+
+            // Reference sana: agar qarz vujudga kelgandan keyin qisman to'lov qilingan bo'lsa - o'sha oxirgi to'lov sanasi;
+            // aks holda - ushbu to'lanmagan qarz paydo bo'lgan sotuv sanasi!
+            LocalDateTime referenceDate = (oldestUnpaidSaleDate != null) ? oldestUnpaidSaleDate : lastSaleDate;
+            if (lastPaymentDate != null && oldestUnpaidSaleDate != null && lastPaymentDate.isAfter(oldestUnpaidSaleDate)) {
+                referenceDate = lastPaymentDate;
+            }
+
             if (referenceDate == null) {
-                continue; // faol sotuv ham, to'lov ham yo'q — o'tkazib yuboramiz
+                continue;
             }
 
             long daysSince = Duration.between(referenceDate, now).toDays();

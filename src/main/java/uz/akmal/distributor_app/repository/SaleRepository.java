@@ -35,4 +35,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     @Query("SELECT s.shop.id, MAX(s.date) FROM Sale s WHERE (s.isCancelled = false OR s.isCancelled IS NULL) GROUP BY s.shop.id")
     List<Object[]> findLastActiveSaleDatesGroupedByShop();
+
+    @Query("SELECT s.shop.id, s.totalAmount, s.date FROM Sale s WHERE (s.isCancelled = false OR s.isCancelled IS NULL) ORDER BY s.date ASC")
+    List<Object[]> findAllActiveSalesSummary();
 }
